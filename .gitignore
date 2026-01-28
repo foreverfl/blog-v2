@@ -1,0 +1,114 @@
+# =============================================================================
+# Monorepo .gitignore
+# =============================================================================
+
+# =============================================================================
+# General
+# =============================================================================
+
+# Editor & IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Environment & secrets (NEVER commit these)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# Logs
+*.log
+logs/
+
+# =============================================================================
+# apps/web (Astro)
+# =============================================================================
+
+apps/web/node_modules/
+apps/web/dist/
+apps/web/.astro/
+
+# =============================================================================
+# services/rust (Axum)
+# =============================================================================
+
+services/rust/target/
+services/rust/Cargo.lock
+# Keep Cargo.lock for binaries, remove this line if it's a library
+
+# =============================================================================
+# services/go
+# =============================================================================
+
+services/go/bin/
+services/go/vendor/
+# Go modules cache is global, no need to ignore here
+
+# =============================================================================
+# services/haskell
+# =============================================================================
+
+services/haskell/.stack-work/
+services/haskell/dist-newstyle/
+services/haskell/*.cabal
+!services/haskell/*.cabal.template
+services/haskell/.ghc.environment.*
+
+# =============================================================================
+# contracts (Generated code from OpenAPI/Proto)
+# =============================================================================
+
+contracts/generated/
+# Keep specs, ignore generated outputs
+
+# =============================================================================
+# infra
+# =============================================================================
+
+# Terraform
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.*
+infra/terraform/*.tfvars
+!infra/terraform/*.tfvars.example
+infra/terraform/.terraform.lock.hcl
+
+# Docker (usually nothing to ignore, but just in case)
+infra/docker/*.env
+
+# =============================================================================
+# scripts
+# =============================================================================
+
+# Local dev artifacts
+scripts/dev/*.local.*
+
+# =============================================================================
+# Testing & Coverage
+# =============================================================================
+
+coverage/
+*.lcov
+.nyc_output/
+htmlcov/
+.coverage
+
+# =============================================================================
+# Build artifacts & caches
+# =============================================================================
+
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+.cache/
+tmp/
