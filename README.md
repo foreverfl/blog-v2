@@ -37,7 +37,8 @@ A polyglot monorepo for my personal blog platform. Migrating from [Next.js blog]
 │   ├── deploy/              # Deployment scripts
 │   └── db/                  # Database migrations/backups
 └── .github/
-    └── workflows/           # CI/CD pipelines
+    ├── workflows/           # CI/CD pipelines
+    └── PULL_REQUEST_TEMPLATE/  # PR templates per branch type
 ```
 
 ## Prerequisites
@@ -96,6 +97,33 @@ docker compose -f infra/docker/compose.dev.yml up
 cd services/rust && cargo run
 cd services/go && go run ./cmd/worker
 cd apps/web && npm run dev
+```
+
+## Branch Naming Convention
+
+| Prefix | Purpose | Example |
+|--------|---------|---------|
+| `feat/` | New feature | `feat/user-authentication` |
+| `fix/` | Bug fix | `fix/login-redirect-loop` |
+| `refactor/` | Code refactoring (no behavior change) | `refactor/extract-post-service` |
+| `chore/` | Maintenance (deps, config, CI) | `chore/upgrade-axum-0.8` |
+| `docs/` | Documentation only | `docs/api-endpoint-guide` |
+| `test/` | Test additions/modifications | `test/post-service-unit` |
+| `perf/` | Performance improvements | `perf/query-optimization` |
+| `spike/` | Investigation/experiment (may be discarded) | `spike/grpc-streaming` |
+
+## Contributing
+
+1. Create a branch following the naming convention above
+2. Make your changes
+3. Open a PR using the appropriate template (auto-selected by branch prefix)
+
+```bash
+# Example workflow
+git checkout -b feat/user-profile
+# ... make changes ...
+git push -u origin feat/user-profile
+gh pr create --template feat.md
 ```
 
 ## Documentation
