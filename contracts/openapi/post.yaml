@@ -1,0 +1,568 @@
+openapi: 3.1.0
+info:
+  title: Blog Post & Like API
+  description: |
+    Post and Like API for the blog platform.
+    Covers post metadata retrieval, post syncing, Google indexing,
+    and like toggle operations.
+  version: 0.1.0
+  license:
+    name: MIT
+    identifier: MIT
+
+servers:
+  - url: https://mogumogu.dev
+    description: Production
+
+tags:
+  - name: post
+    description: Post metadata and management
+  - name: like
+    description: Like operations (toggle, count)
+
+paths:
+  /api/post/meta:
+    get:
+      operationId: getPostMeta
+      summary: Get post metadata
+      description: |
+        Returns metadata for a single post identified by classification, category,
+        and slug. For `trends` classification, the title and date are derived from
+        the slug (e.g. `250327` → `2025-03-27`). For regular posts, metadata is
+        read from the MDX frontmatter. The `lan` parameter selects the locale for
+        the title.
+      tags:
+        - post
+      security: []
+      parameters:
+        - name: lan
+          in: query
+          required: true
+          description: Locale code for the post title (e.g. `en`, `ja`, `ko`)
+          schema:
+            type: string
+            enum:
+              - en
+              - ja
+              - ko
+        - $ref: "#/components/parameters/ClassificationQuery"
+        - $ref: "#/components/parameters/CategoryQuery"
+        - $ref: "#/components/parameters/SlugQuery"
+      responses:
+        "200":
+          description: Post metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostMeta"
+              examples:
+                regularPost:
+                  summary: Regular blog post
+                  value:
+                    fileName: my-first-post
+                    title: My First Blog Post
+                    date: "2025-06-01"
+                    classification: blog
+                    category: tech
+                    image: /images/blog/tech/my-first-post.png
+                trendsPost:
+                  summary: Trends post (Hacker News digest)
+                  value:
+                    title: Hacker News Digest
+                    date: "2025-03-27"
+                    classification: trends
+                    category: hackernews
+        "400":
+          description: Missing required query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Missing required query parameters
+        "404":
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Post not found
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/posts/sync:
+    post:
+      operationId: syncPosts
+      summary: Sync posts to database
+      description: |
+        Generates a sitemap from application routes, extracts post paths
+        (classification, category, slug), and upserts each post into the
+        database. Existing posts have their `updated_at` timestamp refreshed;
+        new posts are inserted. Requires a Bearer token for authorization.
+      tags:
+        - post
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Sync completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncResponse"
+              example:
+                ok: true
+                inserted: 42
+                message: Sync completed. Posts are upserted.
+        "401":
+          description: Missing authorization header
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Missing authorization header
+        "403":
+          description: Invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Invalid bearer token
+        "500":
+          description: Sitemap generation or database error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/posts/indexing:
+    post:
+      operationId: indexPosts
+      summary: Index posts for search
+      description: |
+        Fetches up to 30 unindexed posts (`indexed = false`) and submits each
+        to the Google Indexing API for all three locales (`en`, `ja`, `ko`).
+        A post is marked as indexed only when all locale URLs succeed. Returns
+        per-post results with individual URL statuses.
+      tags:
+        - post
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Indexing completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IndexingResponse"
+              examples:
+                withResults:
+                  summary: Posts were indexed
+                  value:
+                    ok: true
+                    processedCount: 2
+                    indexingResults:
+                      - postId: 550e8400-e29b-41d4-a716-446655440000
+                        urls:
+                          - url: https://mogumogu.dev/en/blog/tech/my-post
+                            result:
+                              ok: true
+                          - url: https://mogumogu.dev/ja/blog/tech/my-post
+                            result:
+                              ok: true
+                          - url: https://mogumogu.dev/ko/blog/tech/my-post
+                            result:
+                              ok: true
+                        allSuccess: true
+                noPending:
+                  summary: No unindexed posts
+                  value:
+                    ok: true
+                    message: There are no unindexed posts.
+        "401":
+          description: Missing authorization header
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Missing authorization header
+        "403":
+          description: Invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Invalid bearer token
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/like/{classification}/{category}/{slug}:
+    parameters:
+      - $ref: "#/components/parameters/Classification"
+      - $ref: "#/components/parameters/Category"
+      - $ref: "#/components/parameters/Slug"
+
+    get:
+      operationId: getLikeStatus
+      summary: Get like count and user status
+      description: |
+        Returns the total like count for a post and whether the specified user
+        has already liked it. If `userEmail` is omitted, `liked` defaults to
+        `false`.
+      tags:
+        - like
+      security: []
+      parameters:
+        - name: userEmail
+          in: query
+          required: false
+          description: Email of the user to check like status for
+          schema:
+            type: string
+            format: email
+      responses:
+        "200":
+          description: Like status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LikeStatus"
+              example:
+                likeCount: 5
+                liked: true
+        "404":
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Post not found
+        "500":
+          description: Failed to fetch like status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    post:
+      operationId: addLike
+      summary: Add a like to a post
+      description: |
+        Adds a like for the specified user on the post. Looks up the user by
+        email and the post by (classification, category, slug). The database
+        enforces a unique constraint on (post_id, user_id), so duplicate likes
+        are silently ignored (`ON CONFLICT DO NOTHING`).
+      tags:
+        - like
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LikeRequest"
+            example:
+              userEmail: user@example.com
+      responses:
+        "200":
+          description: Like added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: Like added
+        "400":
+          description: Missing userEmail in request body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Missing userEmail in request body
+        "404":
+          description: User or post not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Post not found
+        "500":
+          description: Failed to add like
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      operationId: removeLike
+      summary: Remove a like from a post
+      description: |
+        Removes the like for the specified user on the post. Safe to call even
+        if the like does not exist (no error is thrown).
+      tags:
+        - like
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LikeRequest"
+            example:
+              userEmail: user@example.com
+      responses:
+        "200":
+          description: Like removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: Like removed
+        "400":
+          description: Missing userEmail in request body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Missing userEmail in request body
+        "404":
+          description: User or post not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Post not found
+        "500":
+          description: Failed to remove like
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        Bearer token for internal/cron endpoints.
+        Validated against the server-side `HACKERNEWS_API_KEY` environment variable.
+
+  parameters:
+    # ── Path parameters ──────────────────────────────────────
+
+    Classification:
+      name: classification
+      in: path
+      required: true
+      description: Post classification (e.g. `blog`, `dev`, `trends`)
+      schema:
+        type: string
+
+    Category:
+      name: category
+      in: path
+      required: true
+      description: Post category within the classification
+      schema:
+        type: string
+
+    Slug:
+      name: slug
+      in: path
+      required: true
+      description: URL-friendly post identifier
+      schema:
+        type: string
+
+    # ── Query parameters ─────────────────────────────────────
+
+    ClassificationQuery:
+      name: classification
+      in: query
+      required: true
+      description: Post classification (e.g. `blog`, `dev`, `trends`)
+      schema:
+        type: string
+
+    CategoryQuery:
+      name: category
+      in: query
+      required: true
+      description: Post category within the classification
+      schema:
+        type: string
+
+    SlugQuery:
+      name: slug
+      in: query
+      required: true
+      description: URL-friendly post identifier
+      schema:
+        type: string
+
+  schemas:
+    # ── Responses ──────────────────────────────────────────────
+
+    PostMeta:
+      type: object
+      description: Post metadata returned from frontmatter or slug parsing
+      required:
+        - title
+        - date
+        - classification
+        - category
+      properties:
+        fileName:
+          type:
+            - string
+            - "null"
+          description: MDX file name (absent for trends posts)
+        title:
+          type: string
+        date:
+          type: string
+          description: Publication date (ISO 8601 date, e.g. `2025-06-01`)
+        classification:
+          type: string
+        category:
+          type: string
+        image:
+          type:
+            - string
+            - "null"
+          description: Cover image path (absent for trends posts)
+
+    SyncResponse:
+      type: object
+      required:
+        - ok
+        - inserted
+        - message
+      properties:
+        ok:
+          type: boolean
+        inserted:
+          type: integer
+          description: Number of posts upserted
+        message:
+          type: string
+
+    IndexingResponse:
+      type: object
+      required:
+        - ok
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
+          description: Present when there are no unindexed posts
+        processedCount:
+          type: integer
+          description: Number of posts processed
+        indexingResults:
+          type: array
+          description: Per-post indexing results
+          items:
+            $ref: "#/components/schemas/IndexingResult"
+
+    IndexingResult:
+      type: object
+      required:
+        - postId
+        - urls
+        - allSuccess
+      properties:
+        postId:
+          type: string
+          format: uuid
+        urls:
+          type: array
+          items:
+            $ref: "#/components/schemas/IndexingUrlResult"
+        allSuccess:
+          type: boolean
+          description: True only when all locale URLs were indexed successfully
+
+    IndexingUrlResult:
+      type: object
+      required:
+        - url
+        - result
+      properties:
+        url:
+          type: string
+          format: uri
+        result:
+          type: object
+          required:
+            - ok
+          properties:
+            ok:
+              type: boolean
+            error:
+              type: string
+            data:
+              type: object
+
+    LikeStatus:
+      type: object
+      required:
+        - likeCount
+        - liked
+      properties:
+        likeCount:
+          type: integer
+          description: Total number of likes on the post
+        liked:
+          type: boolean
+          description: Whether the queried user has liked the post
+
+    MessageResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+
+    # ── Request bodies ────────────────────────────────────────
+
+    LikeRequest:
+      type: object
+      required:
+        - userEmail
+      properties:
+        userEmail:
+          type: string
+          format: email
+          description: Email address of the user performing the like action
