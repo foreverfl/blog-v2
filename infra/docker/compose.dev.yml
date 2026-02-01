@@ -1,0 +1,60 @@
+services:
+  postgres:
+    image: postgres:18.1
+    container_name: blog-postgres
+    environment:
+      POSTGRES_DB: mogumogu
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d mogumogu"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  flyway:
+    image: flyway/flyway:12.0.0
+    container_name: blog-flyway
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      TZ: Asia/Tokyo
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/mogumogu
+      FLYWAY_USER: user
+      FLYWAY_PASSWORD: password
+      FLYWAY_SCHEMAS: public
+      FLYWAY_BASELINE_ON_MIGRATE: "true"
+      FLYWAY_LOCATIONS: filesystem:/flyway/migrations
+    volumes:
+      - ../db/migrations:/flyway/migrations:ro
+    command: migrate
+
+  redis:
+    image: redis:8.4.0
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --save 60 1 --loglevel warning
+
+  # Redis Insight
+  redis-insight:
+    image: redis/redisinsight:3.0
+    container_name: redis-insight
+    ports:
+      - "5540:5540"
+    depends_on:
+      - redis
+    volumes:
+      - redisinsight_data:/data
+
+volumes:
+  redis_data:
+  redisinsight_data:
+  postgres_data:
