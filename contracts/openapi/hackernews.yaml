@@ -1,0 +1,977 @@
+openapi: 3.1.0
+info:
+  title: Blog Hackernews API
+  description: |
+    Hackernews pipeline API for the blog platform.
+    Covers article listing, content crawling, summarization, translation,
+    image generation, and Redis cache management. Article data is stored
+    in Cloudflare R2 and intermediate results are cached in Redis.
+  version: 0.1.0
+  license:
+    name: MIT
+    identifier: MIT
+
+servers:
+  - url: https://mogumogu.dev
+    description: Production
+
+tags:
+  - name: article
+    description: Fetch and list Hacker News articles
+  - name: statistics
+    description: Article field completion counts
+  - name: processing
+    description: Content extraction, summarization, translation, and image generation
+  - name: cache
+    description: Redis cache flush and monitoring
+
+paths:
+  # ── Article listing ────────────────────────────────────────
+
+  /api/hackernews:
+    get:
+      operationId: listArticlesToday
+      summary: List today's articles
+      description: |
+        Returns today's top 100 Hacker News articles (KST date). If the
+        data does not yet exist in R2, fetches from the HN Firebase API,
+        processes titles, and caches the result in R2 before returning.
+      tags:
+        - article
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Array of articles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HackerNewsArticle"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          description: Failed to fetch Hacker News data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/hackernews/{date}:
+    parameters:
+      - $ref: "#/components/parameters/Date"
+
+    get:
+      operationId: listArticlesByDate
+      summary: List articles by date
+      description: |
+        Returns top 100 Hacker News articles for the given date. Behaviour
+        is identical to `listArticlesToday` but targets a specific date.
+      tags:
+        - article
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Array of articles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HackerNewsArticle"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          description: Failed to fetch Hacker News data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ── Statistics ─────────────────────────────────────────────
+
+  /api/hackernews/count:
+    get:
+      operationId: getArticleCountsToday
+      summary: Get article field counts for today
+      description: |
+        Reads today's article list from R2 and counts how many articles
+        have null or empty `content`, `summary.en`, `summary.ja`, and
+        `summary.ko` fields. Useful for monitoring pipeline progress.
+      tags:
+        - statistics
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Field completion counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+              example:
+                ok: true
+                date: "260201"
+                counts:
+                  nullContentCount: 12
+                  nullSummaryEnCount: 15
+                  nullSummaryJaCount: 80
+                  nullSummaryKoCount: 80
+                message: "Null fields count: content=12, summary.en=15, summary.ja=80, summary.ko=80"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          description: Failed to process daily data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkErrorResponse"
+
+  /api/hackernews/count/{date}:
+    parameters:
+      - $ref: "#/components/parameters/Date"
+
+    get:
+      operationId: getArticleCountsByDate
+      summary: Get article field counts by date
+      description: |
+        Same as `getArticleCountsToday` but targets a specific date.
+      tags:
+        - statistics
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Field completion counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CountResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          description: Failed to process daily data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkErrorResponse"
+
+  # ── Content fetching ───────────────────────────────────────
+
+  /api/hackernews/fetch:
+    post:
+      operationId: fetchContentToday
+      summary: Crawl article content for today
+      description: |
+        Reads today's article list from R2, filters articles that have a
+        URL but no `content` yet, and enqueues fetch tasks (concurrency 10).
+        Each task extracts the article body via Playwright (or PDF parser
+        for `.pdf` URLs), slices it to 15 000 tokens, and stores the result
+        in Redis (`content:{id}`, 24 h TTL). Returns immediately; tasks run
+        in the background.
+      tags:
+        - processing
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Fetch tasks enqueued (or error)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/FetchEnqueuedResponse"
+                  - $ref: "#/components/schemas/OkErrorResponse"
+              examples:
+                success:
+                  summary: Tasks enqueued
+                  value:
+                    ok: true
+                    type: fetch
+                    message: Enqueued 88 fetch tasks.
+                noData:
+                  summary: R2 data missing
+                  value:
+                    ok: false
+                    error: File not found
+                noRedis:
+                  summary: Redis unavailable
+                  value:
+                    ok: false
+                    error: No Redis
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/hackernews/fetch/{date}:
+    parameters:
+      - $ref: "#/components/parameters/Date"
+
+    post:
+      operationId: fetchContentByDate
+      summary: Crawl article content by date
+      description: |
+        Same as `fetchContentToday` but targets a specific date.
+      tags:
+        - processing
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Fetch tasks enqueued (or error)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/FetchEnqueuedResponse"
+                  - $ref: "#/components/schemas/OkErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  # ── Summarization ──────────────────────────────────────────
+
+  /api/hackernews/summarize:
+    post:
+      operationId: summarizeToday
+      summary: Summarize articles for today
+      description: |
+        Filters articles that have `content` but no `summary.en`, then
+        enqueues summarization tasks (concurrency 10). Each task calls
+        OpenAI `gpt-4o-mini` and stores the English summary in Redis
+        (`en:{id}`, 24 h TTL). Returns immediately.
+      tags:
+        - processing
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Summarization tasks enqueued (or error)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/SummarizeEnqueuedResponse"
+                  - $ref: "#/components/schemas/OkErrorResponse"
+              examples:
+                success:
+                  summary: Tasks enqueued
+                  value:
+                    ok: true
+                    type: summarize
+                    total: 75
+                    message: Enqueued 75 summerize tasks.
+                noData:
+                  summary: R2 data missing
+                  value:
+                    ok: false
+                    error: File not found
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/hackernews/summarize/{date}:
+    parameters:
+      - $ref: "#/components/parameters/Date"
+
+    post:
+      operationId: summarizeByDate
+      summary: Summarize articles by date
+      description: |
+        Same as `summarizeToday` but targets a specific date.
+      tags:
+        - processing
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Summarization tasks enqueued (or error)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/SummarizeEnqueuedResponse"
+                  - $ref: "#/components/schemas/OkErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  # ── Translation ────────────────────────────────────────────
+
+  /api/hackernews/translate:
+    post:
+      operationId: translateToday
+      summary: Translate articles for today
+      description: |
+        Filters articles that have `summary.en` but are missing the target
+        locale's summary, then enqueues translation tasks (concurrency 10).
+        Each task translates both the title and summary via OpenAI
+        `gpt-4o-mini` and stores results in Redis (`{lang}:title:{id}` and
+        `{lang}:summary:{id}`, 24 h TTL). Returns immediately.
+      tags:
+        - processing
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/LangQuery"
+      responses:
+        "200":
+          description: Translation tasks enqueued (or error)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/TranslateEnqueuedResponse"
+                  - $ref: "#/components/schemas/OkErrorResponse"
+              examples:
+                success:
+                  summary: Korean translation enqueued
+                  value:
+                    ok: true
+                    type: translate
+                    lang: ko
+                    total: 60
+                    message: Enqueued 60 ko, 0 ja translation tasks.
+                invalidLang:
+                  summary: Invalid language
+                  value:
+                    ok: false
+                    error: Invalid language
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/hackernews/translate/{date}:
+    parameters:
+      - $ref: "#/components/parameters/Date"
+
+    post:
+      operationId: translateByDate
+      summary: Translate articles by date
+      description: |
+        Same as `translateToday` but targets a specific date.
+      tags:
+        - processing
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/LangQuery"
+      responses:
+        "200":
+          description: Translation tasks enqueued (or error)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/TranslateEnqueuedResponse"
+                  - $ref: "#/components/schemas/OkErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  # ── Image generation ───────────────────────────────────────
+
+  /api/hackernews/draw:
+    post:
+      operationId: drawImageToday
+      summary: Generate cover image for today
+      description: |
+        Selects the top-scoring article with a non-empty `summary.en`,
+        extracts keywords, generates an image via DALL-E 3 (1024 x 1024, HD),
+        converts it to WebP, and uploads to R2 (`hackernews-images/{date}.webp`).
+        Only one image is generated per request (concurrency 1).
+      tags:
+        - processing
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Image generation queued (or error)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/DrawEnqueuedResponse"
+                  - $ref: "#/components/schemas/OkErrorResponse"
+              examples:
+                success:
+                  summary: Image generation queued
+                  value:
+                    ok: true
+                    message: Image generation request queued.
+                noData:
+                  summary: No R2 data for date
+                  value:
+                    ok: false
+                    error: No data found for the given date in R2
+                noSummary:
+                  summary: No article with summary
+                  value:
+                    ok: false
+                    error: No valid item with non-empty summary.en found
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/hackernews/draw/{date}:
+    parameters:
+      - $ref: "#/components/parameters/Date"
+
+    post:
+      operationId: drawImageByDate
+      summary: Generate cover image by date
+      description: |
+        Same as `drawImageToday` but targets a specific date.
+      tags:
+        - processing
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Image generation queued (or error)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/DrawEnqueuedResponse"
+                  - $ref: "#/components/schemas/OkErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  # ── Cache flush ────────────────────────────────────────────
+
+  /api/hackernews/flush:
+    post:
+      operationId: flushCacheToday
+      summary: Flush Redis cache to R2 for today
+      description: |
+        Validates that all background tasks of the given `type` have
+        completed by comparing Redis key counts against `total`, then
+        moves cached data from Redis into the R2 article JSON file.
+        Each flushed Redis key is deleted after the value is written.
+
+        **Flush conditions:**
+        - `fetch` — `content:*` key count equals `total`
+        - `summarize` — `en:*` key count equals `total`
+        - `translate` — `{lang}:*` key count equals `total × 2`
+          (title + summary per article)
+      tags:
+        - cache
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlushRequest"
+            examples:
+              fetchFlush:
+                summary: Flush fetched content
+                value:
+                  type: fetch
+                  total: 88
+              translateFlush:
+                summary: Flush Korean translations
+                value:
+                  type: translate
+                  total: 60
+                  lang: ko
+      responses:
+        "200":
+          description: Flush result
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/FlushResponse"
+                  - $ref: "#/components/schemas/OkErrorResponse"
+              examples:
+                flushed:
+                  summary: Successfully flushed
+                  value:
+                    ok: true
+                    type: fetch
+                    lang: null
+                    attempted: true
+                    canFlush: true
+                    flushed: 88
+                    counts:
+                      en: 0
+                      ja: 0
+                      ko: 0
+                      content: 0
+                    totalKeys: 0
+                    message: Flushed 88 items to R2.
+                notReady:
+                  summary: Tasks not yet complete
+                  value:
+                    ok: true
+                    type: fetch
+                    lang: null
+                    attempted: true
+                    canFlush: false
+                    flushed: 0
+                    counts:
+                      en: 0
+                      ja: 0
+                      ko: 0
+                      content: 42
+                    totalKeys: 42
+                    message: "Flush condition not met..."
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /api/hackernews/flush/{date}:
+    parameters:
+      - $ref: "#/components/parameters/Date"
+
+    post:
+      operationId: flushCacheByDate
+      summary: Flush Redis cache to R2 by date
+      description: |
+        Same as `flushCacheToday` but targets a specific date.
+      tags:
+        - cache
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FlushRequest"
+      responses:
+        "200":
+          description: Flush result
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/FlushResponse"
+                  - $ref: "#/components/schemas/OkErrorResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  # ── Redis monitoring ───────────────────────────────────────
+
+  /api/hackernews/redis/count:
+    get:
+      operationId: getRedisKeyCount
+      summary: Get Redis cache key count
+      description: |
+        Returns all keys currently in Redis along with the total count.
+        Useful for monitoring background task progress before flushing.
+      tags:
+        - cache
+      security: []
+      responses:
+        "200":
+          description: Redis key listing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RedisCountResponse"
+              example:
+                ok: true
+                keyCount: 3
+                keys:
+                  - "content:abc123def456"
+                  - "en:xyz789012345"
+                  - "ko:title:abc123def456"
+        "500":
+          description: Redis connection failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkErrorResponse"
+              example:
+                ok: false
+                error: Redis Connection Failed
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        Bearer token for admin/cron endpoints.
+        Validated against the server-side `HACKERNEWS_API_KEY` environment variable.
+
+  # ── Reusable responses ───────────────────────────────────────
+
+  responses:
+    Unauthorized:
+      description: Missing or malformed Authorization header
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: Unauthorized
+
+    Forbidden:
+      description: Invalid bearer token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: Forbidden
+
+  # ── Parameters ─────────────────────────────────────────────
+
+  parameters:
+    Date:
+      name: date
+      in: path
+      required: true
+      description: Date in `YYMMDD` format (e.g. `260201` for 2026-02-01)
+      schema:
+        type: string
+        pattern: '^\d{6}$'
+
+    LangQuery:
+      name: lang
+      in: query
+      required: true
+      description: Target translation language
+      schema:
+        type: string
+        enum:
+          - ko
+          - ja
+
+  # ── Schemas ────────────────────────────────────────────────
+
+  schemas:
+    # ── Domain objects ────────────────────────────────────────
+
+    HackerNewsArticle:
+      type: object
+      description: |
+        A single Hacker News article. The `id` is a 16-character hex string
+        derived from SHA-256 of the title. Titles have HN prefixes
+        (`Show HN:`, `Ask HN:`, `Launch HN:`) removed.
+      required:
+        - id
+        - hnId
+        - title
+        - type
+      properties:
+        id:
+          type: string
+          description: 16-char SHA-256 hex digest of the original title
+        hnId:
+          type: integer
+          description: Original Hacker News story ID
+        title:
+          $ref: "#/components/schemas/LocalizedText"
+        type:
+          type: string
+          description: HN item type (e.g. `story`)
+        url:
+          type:
+            - string
+            - "null"
+          format: uri
+          description: Original article URL
+        score:
+          type:
+            - integer
+            - "null"
+          description: HN upvote score
+        by:
+          type:
+            - string
+            - "null"
+          description: HN username of the submitter
+        time:
+          type:
+            - integer
+            - "null"
+          description: Submission time (Unix timestamp)
+        content:
+          type:
+            - string
+            - "null"
+          description: Full article text (max 15 000 tokens)
+        summary:
+          $ref: "#/components/schemas/LocalizedText"
+
+    LocalizedText:
+      type: object
+      description: Text in three locales
+      properties:
+        en:
+          type:
+            - string
+            - "null"
+        ko:
+          type:
+            - string
+            - "null"
+        ja:
+          type:
+            - string
+            - "null"
+
+    # ── Responses ─────────────────────────────────────────────
+
+    CountResponse:
+      type: object
+      required:
+        - ok
+        - counts
+        - message
+      properties:
+        ok:
+          type: boolean
+        date:
+          type:
+            - string
+            - "null"
+          description: Date in `YYMMDD` format
+        counts:
+          $ref: "#/components/schemas/NullFieldCounts"
+        message:
+          type: string
+
+    NullFieldCounts:
+      type: object
+      required:
+        - nullContentCount
+        - nullSummaryEnCount
+        - nullSummaryJaCount
+        - nullSummaryKoCount
+      properties:
+        nullContentCount:
+          type: integer
+        nullSummaryEnCount:
+          type: integer
+        nullSummaryJaCount:
+          type: integer
+        nullSummaryKoCount:
+          type: integer
+
+    FetchEnqueuedResponse:
+      type: object
+      required:
+        - ok
+        - type
+        - message
+      properties:
+        ok:
+          type: boolean
+          const: true
+        type:
+          type: string
+          const: fetch
+        message:
+          type: string
+
+    SummarizeEnqueuedResponse:
+      type: object
+      required:
+        - ok
+        - type
+        - total
+        - message
+      properties:
+        ok:
+          type: boolean
+          const: true
+        type:
+          type: string
+          const: summarize
+        total:
+          type: integer
+          description: Number of articles enqueued
+        message:
+          type: string
+
+    TranslateEnqueuedResponse:
+      type: object
+      required:
+        - ok
+        - type
+        - lang
+        - total
+        - message
+      properties:
+        ok:
+          type: boolean
+          const: true
+        type:
+          type: string
+          const: translate
+        lang:
+          type: string
+          enum:
+            - ko
+            - ja
+        total:
+          type: integer
+          description: Number of articles enqueued
+        message:
+          type: string
+
+    DrawEnqueuedResponse:
+      type: object
+      required:
+        - ok
+        - message
+      properties:
+        ok:
+          type: boolean
+          const: true
+        message:
+          type: string
+
+    FlushResponse:
+      type: object
+      required:
+        - ok
+        - type
+        - attempted
+        - canFlush
+        - flushed
+        - counts
+        - totalKeys
+        - message
+      properties:
+        ok:
+          type: boolean
+        type:
+          type: string
+          enum:
+            - fetch
+            - summarize
+            - translate
+        lang:
+          type:
+            - string
+            - "null"
+          enum:
+            - ko
+            - ja
+            - null
+        attempted:
+          type: boolean
+        canFlush:
+          type: boolean
+          description: Whether the flush condition was met
+        flushed:
+          type: integer
+          description: Number of items flushed from Redis to R2
+        counts:
+          $ref: "#/components/schemas/RedisPrefixCounts"
+        totalKeys:
+          type: integer
+          description: Total Redis keys remaining after flush
+        message:
+          type: string
+
+    RedisPrefixCounts:
+      type: object
+      description: Number of Redis keys grouped by prefix
+      required:
+        - en
+        - ja
+        - ko
+        - content
+      properties:
+        en:
+          type: integer
+        ja:
+          type: integer
+        ko:
+          type: integer
+        content:
+          type: integer
+
+    RedisCountResponse:
+      type: object
+      required:
+        - ok
+        - keyCount
+        - keys
+      properties:
+        ok:
+          type: boolean
+        keyCount:
+          type: integer
+        keys:
+          type: array
+          items:
+            type: string
+
+    OkErrorResponse:
+      type: object
+      description: "Error response using `ok: false` pattern"
+      required:
+        - ok
+        - error
+      properties:
+        ok:
+          type: boolean
+          const: false
+        error:
+          type: string
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+
+    # ── Request bodies ────────────────────────────────────────
+
+    FlushRequest:
+      type: object
+      required:
+        - type
+        - total
+      properties:
+        type:
+          type: string
+          enum:
+            - fetch
+            - summarize
+            - translate
+          description: Which processing step to flush
+        total:
+          type: integer
+          description: Expected number of completed tasks
+        lang:
+          type: string
+          enum:
+            - ko
+            - ja
+          description: Target language (required when `type` is `translate`)
