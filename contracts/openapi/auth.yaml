@@ -1,0 +1,291 @@
+openapi: 3.1.0
+info:
+  title: Blog Auth API
+  description: |
+    Authentication API for the blog platform.
+    Uses OAuth 2.0 (GitHub, Google) with JWT tokens stored in httpOnly cookies.
+  version: 0.1.0
+  license:
+    name: MIT
+    identifier: MIT
+
+servers:
+  - url: https://mogumogu.dev
+    description: Production
+
+tags:
+  - name: auth
+    description: Session management (status check, logout)
+  - name: oauth
+    description: OAuth 2.0 provider callbacks
+
+paths:
+  /api/auth/status:
+    get:
+      operationId: getAuthStatus
+      summary: Check authentication status
+      description: |
+        Verifies the JWT token in the `auth` cookie and returns the current
+        user's identity. Returns a non-authenticated response (not 401) when
+        no valid token is present.
+      tags:
+        - auth
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Authentication status
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/AuthenticatedStatus"
+                  - $ref: "#/components/schemas/UnauthenticatedStatus"
+              examples:
+                authenticated:
+                  summary: Valid session
+                  value:
+                    isAuthenticated: true
+                    user:
+                      userId: 550e8400-e29b-41d4-a716-446655440000
+                      username: foreverfl
+                      email: foreverfl@example.com
+                      photo: https://avatars.githubusercontent.com/u/12345
+                unauthenticated:
+                  summary: No session
+                  value:
+                    message: Not authenticated
+        "400":
+          description: Invalid or expired JWT token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Token verification failed: jwt expired"
+
+  /api/auth/logout:
+    post:
+      operationId: logout
+      summary: Logout and clear session
+      description: |
+        Clears the `auth` cookie by setting its expiry to a past date.
+        Always returns 200 regardless of whether a session existed.
+      tags:
+        - auth
+      security: []
+      responses:
+        "200":
+          description: Successfully logged out
+          headers:
+            Set-Cookie:
+              description: Expired `auth` cookie to clear the session
+              schema:
+                type: string
+                example: "auth=; HttpOnly; Secure; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: Successfully logged out
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/auth/providers/github:
+    get:
+      operationId: githubOAuthCallback
+      summary: GitHub OAuth callback
+      description: |
+        Receives the authorization code from GitHub's OAuth flow, exchanges it
+        for an access token, fetches the user profile, upserts the user in the
+        database, issues a JWT, and redirects to the application root.
+      tags:
+        - oauth
+      security: []
+      parameters:
+        - name: code
+          in: query
+          required: true
+          description: Authorization code from GitHub OAuth redirect
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OAuth flow completed (browser receives 302 redirect)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "302":
+          description: Redirect to application after successful login
+          headers:
+            Location:
+              description: Redirect target URL
+              schema:
+                type: string
+                format: uri
+                example: https://mogumogu.dev/
+            Set-Cookie:
+              description: JWT auth cookie (httpOnly, 2h max-age)
+              schema:
+                type: string
+                example: "auth=eyJhbG...; HttpOnly; Secure; Path=/; Max-Age=7200"
+        "400":
+          description: Missing authorization code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Code is required
+        "500":
+          description: OAuth exchange or user creation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Internal Server Error
+
+  /api/auth/providers/google:
+    get:
+      operationId: googleOAuthCallback
+      summary: Google OAuth callback
+      description: |
+        Receives the authorization code from Google's OAuth flow, exchanges it
+        for an access token, fetches the user profile, upserts the user in the
+        database, issues a JWT, and redirects to the pre-login URL stored in
+        the `preLoginUrl` cookie.
+      tags:
+        - oauth
+      security: []
+      parameters:
+        - name: code
+          in: query
+          required: true
+          description: Authorization code from Google OAuth redirect
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OAuth flow completed (browser receives 302 redirect)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "302":
+          description: Redirect to pre-login URL after successful login
+          headers:
+            Location:
+              description: URL the user was on before initiating login
+              schema:
+                type: string
+                format: uri
+            Set-Cookie:
+              description: JWT auth cookie (httpOnly, sameSite=lax)
+              schema:
+                type: string
+                example: "auth=eyJhbG...; HttpOnly; Secure; Path=/; Max-Age=600; SameSite=Lax"
+        "400":
+          description: Missing authorization code or expired pre-login cookie
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                missingCode:
+                  summary: No authorization code
+                  value:
+                    error: Code is required
+                expiredCookie:
+                  summary: Pre-login URL cookie expired
+                  value:
+                    error: Cookie has expired. Please try again.
+        "500":
+          description: OAuth exchange or user creation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Internal Server Error
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: auth
+      description: |
+        JWT token stored in an httpOnly cookie.
+        Issued on successful OAuth login; 2-hour expiry.
+
+  schemas:
+    # ── Responses ──────────────────────────────────────────────
+
+    AuthenticatedStatus:
+      type: object
+      required:
+        - isAuthenticated
+        - user
+      properties:
+        isAuthenticated:
+          type: boolean
+          const: true
+        user:
+          $ref: "#/components/schemas/SessionUser"
+
+    UnauthenticatedStatus:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          const: Not authenticated
+
+    MessageResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+
+    # ── Domain objects ─────────────────────────────────────────
+
+    SessionUser:
+      type: object
+      description: User identity decoded from the JWT payload
+      required:
+        - userId
+        - username
+        - email
+      properties:
+        userId:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        photo:
+          type:
+            - string
+            - "null"
+          format: uri
