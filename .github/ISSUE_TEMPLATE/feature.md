@@ -19,5 +19,5 @@ assignees: ""
 - 
 
 ## ✅ Acceptance criteria
-- [ ] 
-- [ ] 
+- [ ] Acceptance criterion 1 (clear, testable outcome)
+- [ ] Acceptance criterion 2 (clear, testable outcome)
