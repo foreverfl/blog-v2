@@ -1,0 +1,351 @@
+openapi: 3.1.0
+info:
+  title: Blog Misc API
+  description: |
+    Miscellaneous small-scope APIs for the blog platform.
+    Covers language preference, Cloudflare Turnstile CAPTCHA verification,
+    and Discord admin webhook notifications.
+  version: 0.1.0
+  license:
+    name: MIT
+    identifier: MIT
+
+servers:
+  - url: https://mogumogu.dev
+    description: Production
+
+tags:
+  - name: language
+    description: Language preference management
+  - name: cloudflare
+    description: Cloudflare Turnstile CAPTCHA verification
+  - name: discord
+    description: Discord admin notifications
+
+paths:
+  /api/language/{lan}:
+    parameters:
+      - $ref: "#/components/parameters/Language"
+
+    post:
+      operationId: setLanguage
+      summary: Set language preference
+      description: |
+        Sets the user's language preference by writing a `lan` cookie.
+        Accepts `en`, `ja`, or `ko`. Returns 400 for any other value.
+      tags:
+        - language
+      security: []
+      responses:
+        "200":
+          description: Language preference set
+          headers:
+            Set-Cookie:
+              description: "`lan` cookie containing the selected language code"
+              schema:
+                type: string
+                example: "lan=ko; Path=/"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+              example:
+                success: true
+        "400":
+          description: Invalid language parameter
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LanguageErrorResponse"
+              example:
+                success: false
+                message: Invalid language parameter
+
+  /api/cloudflare/turnstile-verify:
+    post:
+      operationId: verifyTurnstile
+      summary: Verify Cloudflare Turnstile CAPTCHA
+      description: |
+        Validates a Turnstile token by forwarding it to the Cloudflare
+        siteverify endpoint (`https://challenges.cloudflare.com/turnstile/v0/siteverify`).
+        Requires a server-side `TURNSTILE_SECRET_KEY` environment variable.
+      tags:
+        - cloudflare
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TurnstileVerifyRequest"
+            example:
+              turnstileToken: 0.AbCdEfGhIjKlMnOpQrStUvWxYz
+      responses:
+        "200":
+          description: Token is valid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+              example:
+                ok: true
+        "400":
+          description: Missing turnstile token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkErrorResponse"
+              example:
+                ok: false
+                error: No token
+        "403":
+          description: Turnstile validation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkErrorResponse"
+              example:
+                ok: false
+                error: Turnstile validation failed
+        "500":
+          description: Server error during verification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkErrorResponse"
+
+  /api/discord/admin:
+    post:
+      operationId: sendDiscordAdminNotification
+      summary: Send Discord admin webhook
+      description: |
+        Sends a notification to the admin's Discord DM channel via bot.
+        The message is formatted with Markdown based on the event type.
+        Includes the client IP (from `X-Forwarded-For`) and current KST
+        timestamp in the message. Requires `DISCORD_BOT_TOKEN` and
+        `DISCORD_USER_ID` environment variables.
+      tags:
+        - discord
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiscordAdminRequest"
+            examples:
+              bugReport:
+                summary: Bug report notification
+                value:
+                  type: bug_report
+                  title: Login button broken
+                  content: The login button does not respond on Safari.
+              commentCreate:
+                summary: New comment notification
+                value:
+                  type: comment_create
+                  content: Great post!
+                  username: foreverfl
+                  post_url: https://mogumogu.dev/en/blog/tech/my-post
+              commentUpdate:
+                summary: Comment update notification
+                value:
+                  type: comment_update
+                  updatedContent: Updated comment text
+                  username: foreverfl
+                  post_url: https://mogumogu.dev/en/blog/tech/my-post
+              commentDelete:
+                summary: Comment delete notification
+                value:
+                  type: comment_delete
+                  username: foreverfl
+                  post_url: https://mogumogu.dev/en/blog/tech/my-post
+      responses:
+        "200":
+          description: Notification sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+              example:
+                ok: true
+        "400":
+          description: Missing or unknown type
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkErrorResponse"
+              examples:
+                missingType:
+                  summary: Missing type field
+                  value:
+                    ok: false
+                    error: Missing payload.type
+                unknownType:
+                  summary: Unknown type value
+                  value:
+                    ok: false
+                    error: "Unknown type: invalid_type"
+        "500":
+          description: Failed to send Discord message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkErrorResponse"
+
+components:
+  parameters:
+    Language:
+      name: lan
+      in: path
+      required: true
+      description: Language code
+      schema:
+        type: string
+        enum:
+          - en
+          - ja
+          - ko
+
+  schemas:
+    # ── Responses ──────────────────────────────────────────────
+
+    SuccessResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+          const: true
+
+    LanguageErrorResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+          const: false
+        message:
+          type: string
+
+    OkResponse:
+      type: object
+      required:
+        - ok
+      properties:
+        ok:
+          type: boolean
+          const: true
+
+    OkErrorResponse:
+      type: object
+      required:
+        - ok
+        - error
+      properties:
+        ok:
+          type: boolean
+          const: false
+        error:
+          type: string
+          description: Human-readable error message
+
+    # ── Request bodies ────────────────────────────────────────
+
+    TurnstileVerifyRequest:
+      type: object
+      required:
+        - turnstileToken
+      properties:
+        turnstileToken:
+          type: string
+          description: Cloudflare Turnstile client-side token
+
+    DiscordAdminRequest:
+      type: object
+      required:
+        - type
+      discriminator:
+        propertyName: type
+        mapping:
+          bug_report: "#/components/schemas/BugReportPayload"
+          comment_create: "#/components/schemas/CommentCreatePayload"
+          comment_update: "#/components/schemas/CommentUpdatePayload"
+          comment_delete: "#/components/schemas/CommentDeletePayload"
+      oneOf:
+        - $ref: "#/components/schemas/BugReportPayload"
+        - $ref: "#/components/schemas/CommentCreatePayload"
+        - $ref: "#/components/schemas/CommentUpdatePayload"
+        - $ref: "#/components/schemas/CommentDeletePayload"
+
+    BugReportPayload:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          const: bug_report
+        title:
+          type: string
+          description: Bug report title
+        content:
+          type: string
+          description: Bug report details
+
+    CommentCreatePayload:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          const: comment_create
+        content:
+          type: string
+          description: Comment content
+        username:
+          type: string
+          description: Comment author username
+        post_url:
+          type: string
+          format: uri
+          description: URL of the post where the comment was created
+
+    CommentUpdatePayload:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          const: comment_update
+        updatedContent:
+          type: string
+          description: Updated comment content
+        username:
+          type: string
+          description: Comment author username
+        post_url:
+          type: string
+          format: uri
+          description: URL of the post where the comment was updated
+
+    CommentDeletePayload:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          const: comment_delete
+        username:
+          type: string
+          description: Comment author username
+        post_url:
+          type: string
+          format: uri
+          description: URL of the post where the comment was deleted
