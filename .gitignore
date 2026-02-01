@@ -65,7 +65,7 @@ services/haskell/.ghc.environment.*
 # contracts (Generated code from OpenAPI/Proto)
 # =============================================================================
 
-contracts/generated/
+contracts/openapi/dist/
 # Keep specs, ignore generated outputs
 
 # =============================================================================

@@ -9,6 +9,7 @@ info:
   license:
     name: MIT
     identifier: MIT
+  x-api-id: anime
 
 servers:
   - url: https://mogumogu.dev

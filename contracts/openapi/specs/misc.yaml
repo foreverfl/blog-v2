@@ -9,6 +9,7 @@ info:
   license:
     name: MIT
     identifier: MIT
+  x-api-id: misc
 
 servers:
   - url: https://mogumogu.dev

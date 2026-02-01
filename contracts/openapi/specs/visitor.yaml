@@ -8,6 +8,7 @@ info:
   license:
     name: MIT
     identifier: MIT
+  x-api-id: visitor
 
 servers:
   - url: https://mogumogu.dev

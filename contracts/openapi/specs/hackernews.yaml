@@ -10,6 +10,7 @@ info:
   license:
     name: MIT
     identifier: MIT
+  x-api-id: hackernews
 
 servers:
   - url: https://mogumogu.dev
