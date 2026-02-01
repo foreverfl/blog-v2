@@ -1,0 +1,608 @@
+openapi: 3.1.0
+info:
+  title: Blog Anime API
+  description: |
+    Anime API for the blog platform.
+    Covers anime listing with season-based pagination, single-anime updates,
+    AniList/Jellyfin sync, and Jellyfin library listing.
+  version: 0.1.0
+  license:
+    name: MIT
+    identifier: MIT
+
+servers:
+  - url: https://mogumogu.dev
+    description: Production
+
+tags:
+  - name: anime
+    description: Anime listing and updates
+  - name: sync
+    description: Data synchronization from external services
+
+paths:
+  /api/anime:
+    get:
+      operationId: listAnime
+      summary: List anime by season (paginated)
+      description: |
+        Returns anime for the given season and year, filtered to only
+        visible entries (`is_visible = true`) and ordered by `start_date`
+        descending. Supports offset-based pagination.
+      tags:
+        - anime
+      security: []
+      parameters:
+        - name: season
+          in: query
+          required: true
+          description: |
+            Season name (case-insensitive; stored as uppercase in the database).
+          schema:
+            type: string
+            enum:
+              - winter
+              - spring
+              - summer
+              - fall
+        - name: seasonYear
+          in: query
+          required: true
+          description: Year of the season (e.g. `2025`)
+          schema:
+            type: integer
+        - name: page
+          in: query
+          required: false
+          description: Page number (1-based)
+          schema:
+            type: integer
+            default: 1
+        - name: perPage
+          in: query
+          required: false
+          description: Number of items per page
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Paginated anime list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnimeListResponse"
+              example:
+                animes:
+                  - id: 170890
+                    romaji_title: "Solo Leveling Season 2"
+                    english_title: "Solo Leveling Season 2"
+                    japanese_title: "俺だけレベルアップな件 Season 2"
+                    start_date: "2025-01-04"
+                    end_date: "2025-06-28"
+                    episodes: 24
+                    cover_color: "#1a237e"
+                    cover_image_url: "https://s4.anilist.co/file/anilistcdn/media/anime/cover/large/bx170890.jpg"
+                    review: null
+                    seasons_info: []
+                    updated_at: "2025-06-01T12:00:00.000Z"
+                    season: WINTER
+                    season_year: 2025
+                    is_visible: true
+        "400":
+          description: Missing required query parameters
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Missing season or seasonYear
+        "500":
+          description: Database query failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Failed to fetch data from DB
+
+  /api/anime/{id}:
+    parameters:
+      - $ref: "#/components/parameters/AnimeId"
+
+    patch:
+      operationId: updateAnime
+      summary: Update an anime
+      description: |
+        Merges the request body into the existing anime record and upserts
+        to the database. Fields not provided in the body are preserved
+        from the current record. The `updated_at` timestamp is set to
+        `CURRENT_TIMESTAMP` on every update.
+      tags:
+        - anime
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAnimeRequest"
+            example:
+              review: "Great sequel with improved animation."
+              isVisible: true
+      responses:
+        "200":
+          description: Anime updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateAnimeResponse"
+        "400":
+          description: Invalid or missing anime ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Invalid ID
+        "404":
+          description: Anime not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Anime not found
+        "500":
+          description: Database update failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Update failed
+
+  /api/anime/sync:
+    post:
+      operationId: syncAnime
+      summary: Sync anime data from AniList via Jellyfin
+      description: |
+        Fetches the Jellyfin library matching the given season
+        (`{seasonYear}-{seasonNum}` naming convention, e.g. `2025-1` for
+        Winter 2025), extracts AniList IDs from each series, queries the
+        AniList GraphQL API for full anime details, and bulk-upserts the
+        results into the `anime` table.
+      tags:
+        - sync
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncRequest"
+            example:
+              season: winter
+              seasonYear: 2025
+      responses:
+        "200":
+          description: Sync completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+              example:
+                message: Sync complete
+        "400":
+          description: Missing season or seasonYear
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Missing season or seasonYear
+        "500":
+          description: Sync failed
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/ErrorResponse"
+                  - $ref: "#/components/schemas/SyncMissingIdsError"
+              examples:
+                invalidSeason:
+                  summary: Invalid season value
+                  value:
+                    error: Invalid season
+                libraryNotFound:
+                  summary: Jellyfin library not found
+                  value:
+                    error: Library not found
+                missingAnilistIds:
+                  summary: Series missing AniList IDs
+                  value:
+                    error: Some animes have no Anilist ID.
+                    data:
+                      - id: "abc123"
+                        name: "Unknown Series"
+                syncFailed:
+                  summary: General sync failure
+                  value:
+                    error: Sync failed
+
+  /api/anime/libraries:
+    get:
+      operationId: listAnimeLibraries
+      summary: List Jellyfin anime libraries
+      description: |
+        Fetches all items from Jellyfin and returns library names that
+        match the `{year}-{seasonNum}` pattern (e.g. `2025-1`, `2024-4`).
+        Results are sorted in descending order (newest first).
+      tags:
+        - sync
+      security: []
+      responses:
+        "200":
+          description: Library name list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LibrariesResponse"
+              example:
+                libraries:
+                  - "2025-1"
+                  - "2024-4"
+                  - "2024-3"
+                  - "2024-2"
+        "500":
+          description: Failed to fetch from Jellyfin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Failed to fetch Jellyfin views
+
+components:
+  parameters:
+    AnimeId:
+      name: id
+      in: path
+      required: true
+      description: AniList anime ID
+      schema:
+        type: integer
+        format: int64
+
+  schemas:
+    # ── Domain objects ────────────────────────────────────────
+
+    AnimeRow:
+      type: object
+      description: Anime record as stored in the database (snake_case)
+      required:
+        - id
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: AniList ID (primary key)
+        romaji_title:
+          type:
+            - string
+            - "null"
+        english_title:
+          type:
+            - string
+            - "null"
+        japanese_title:
+          type:
+            - string
+            - "null"
+        start_date:
+          type:
+            - string
+            - "null"
+          format: date
+          description: "ISO date (e.g. `2025-01-04`)"
+        end_date:
+          type:
+            - string
+            - "null"
+          format: date
+        episodes:
+          type:
+            - integer
+            - "null"
+        cover_color:
+          type:
+            - string
+            - "null"
+          description: "Hex colour (e.g. `#1a237e`)"
+        cover_image_url:
+          type:
+            - string
+            - "null"
+          format: uri
+        review:
+          type:
+            - string
+            - "null"
+        seasons_info:
+          description: JSONB array of related anime entries
+          type:
+            - array
+            - "null"
+          items:
+            $ref: "#/components/schemas/SeasonRelation"
+        updated_at:
+          type:
+            - string
+            - "null"
+          format: date-time
+        season:
+          type:
+            - string
+            - "null"
+          description: "Uppercase season name (e.g. `WINTER`)"
+        season_year:
+          type:
+            - integer
+            - "null"
+        is_visible:
+          type: boolean
+          default: true
+
+    SeasonRelation:
+      type: object
+      description: Related anime entry stored in `seasons_info` JSONB
+      properties:
+        id:
+          type: integer
+        relationType:
+          type: string
+          description: "AniList relation type (e.g. `PREQUEL`, `SEQUEL`)"
+        title:
+          $ref: "#/components/schemas/AnimeTitle"
+        startDate:
+          $ref: "#/components/schemas/AnimeDate"
+        coverImage:
+          type:
+            - string
+            - "null"
+          format: uri
+        season:
+          type:
+            - string
+            - "null"
+        seasonYear:
+          type:
+            - integer
+            - "null"
+
+    AnimeTitle:
+      type: object
+      properties:
+        romaji:
+          type:
+            - string
+            - "null"
+        english:
+          type:
+            - string
+            - "null"
+        native:
+          type:
+            - string
+            - "null"
+
+    AnimeDate:
+      type: object
+      properties:
+        year:
+          type:
+            - integer
+            - "null"
+        month:
+          type:
+            - integer
+            - "null"
+        day:
+          type:
+            - integer
+            - "null"
+
+    AnimeCoverImage:
+      type: object
+      properties:
+        color:
+          type:
+            - string
+            - "null"
+        extraLarge:
+          type:
+            - string
+            - "null"
+          format: uri
+
+    # ── Responses ─────────────────────────────────────────────
+
+    AnimeListResponse:
+      type: object
+      required:
+        - animes
+      properties:
+        animes:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnimeRow"
+
+    UpdateAnimeResponse:
+      type: object
+      required:
+        - message
+        - anime
+      properties:
+        message:
+          type: string
+        anime:
+          type: object
+          description: Merged anime object (camelCase, AniList format)
+          properties:
+            id:
+              type: integer
+            title:
+              $ref: "#/components/schemas/AnimeTitle"
+            startDate:
+              $ref: "#/components/schemas/AnimeDate"
+            endDate:
+              $ref: "#/components/schemas/AnimeDate"
+            episodes:
+              type:
+                - integer
+                - "null"
+            season:
+              type:
+                - string
+                - "null"
+            seasonYear:
+              type:
+                - integer
+                - "null"
+            coverImage:
+              $ref: "#/components/schemas/AnimeCoverImage"
+            relations:
+              type: object
+              properties:
+                edges:
+                  type: array
+                  items:
+                    type: object
+                nodes:
+                  type: array
+                  items:
+                    type: object
+            isVisible:
+              type: boolean
+            review:
+              type:
+                - string
+                - "null"
+
+    LibrariesResponse:
+      type: object
+      required:
+        - libraries
+      properties:
+        libraries:
+          type: array
+          description: |
+            Jellyfin library names matching `{year}-{seasonNum}` pattern,
+            sorted descending.
+          items:
+            type: string
+
+    MessageResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+
+    SyncMissingIdsError:
+      type: object
+      required:
+        - error
+        - data
+      properties:
+        error:
+          type: string
+        data:
+          type: array
+          description: Jellyfin series entries that lack an AniList provider ID
+          items:
+            type: object
+            required:
+              - id
+              - name
+            properties:
+              id:
+                type: string
+                description: Jellyfin series ID
+              name:
+                type: string
+                description: Jellyfin series name
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+
+    # ── Request bodies ────────────────────────────────────────
+
+    UpdateAnimeRequest:
+      type: object
+      description: |
+        Partial anime update. All fields are optional; only provided fields
+        are merged into the existing record.
+      properties:
+        title:
+          $ref: "#/components/schemas/AnimeTitle"
+        startDate:
+          $ref: "#/components/schemas/AnimeDate"
+        endDate:
+          $ref: "#/components/schemas/AnimeDate"
+        episodes:
+          type:
+            - integer
+            - "null"
+        season:
+          type:
+            - string
+            - "null"
+        seasonYear:
+          type:
+            - integer
+            - "null"
+        coverImage:
+          $ref: "#/components/schemas/AnimeCoverImage"
+        relations:
+          type: object
+          properties:
+            edges:
+              type: array
+              items:
+                type: object
+            nodes:
+              type: array
+              items:
+                type: object
+        isVisible:
+          type: boolean
+        review:
+          type:
+            - string
+            - "null"
+
+    SyncRequest:
+      type: object
+      required:
+        - season
+        - seasonYear
+      properties:
+        season:
+          type: string
+          enum:
+            - winter
+            - spring
+            - summer
+            - fall
+          description: Lowercase season name
+        seasonYear:
+          type: integer
+          description: Year of the season (e.g. `2025`)
