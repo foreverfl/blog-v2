@@ -1,0 +1,421 @@
+openapi: 3.1.0
+info:
+  title: Blog Comment API
+  description: |
+    Comment API for the blog platform.
+    Supports CRUD operations on post comments and admin replies.
+  version: 0.1.0
+  license:
+    name: MIT
+    identifier: MIT
+
+servers:
+  - url: https://mogumogu.dev
+    description: Production
+
+tags:
+  - name: comment
+    description: Comment CRUD operations
+  - name: admin
+    description: Admin reply management
+
+paths:
+  /api/comment/{classification}/{category}/{slug}:
+    parameters:
+      - $ref: "#/components/parameters/Classification"
+      - $ref: "#/components/parameters/Category"
+      - $ref: "#/components/parameters/Slug"
+
+    get:
+      operationId: listComments
+      summary: List comments for a post
+      description: |
+        Returns all comments for the specified post, ordered by creation date
+        ascending. Includes user details (email, username, photo) joined from
+        the users table.
+      tags:
+        - comment
+      security: []
+      responses:
+        "200":
+          description: List of comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Comment"
+              example:
+                - id: "1"
+                  postId: "42"
+                  userId: 550e8400-e29b-41d4-a716-446655440000
+                  userPhoto: https://avatars.githubusercontent.com/u/12345
+                  content: Great post!
+                  email: user@example.com
+                  username: foreverfl
+                  photo: https://avatars.githubusercontent.com/u/12345
+                  reply: Thanks for reading!
+                  repliedAt: "2025-01-15T10:30:00.000Z"
+                  createdAt: "2025-01-15T09:00:00.000Z"
+        "404":
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Post not found
+
+    post:
+      operationId: createComment
+      summary: Create a comment on a post
+      description: |
+        Creates a new comment on the specified post. The `user_id` must
+        reference an existing user in the database (foreign key constraint).
+        Returns the created comment with joined user details.
+      tags:
+        - comment
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCommentRequest"
+            example:
+              user_id: 550e8400-e29b-41d4-a716-446655440000
+              user_photo: https://avatars.githubusercontent.com/u/12345
+              content: Great post!
+      responses:
+        "200":
+          description: Comment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+        "404":
+          description: Post not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/comment/{classification}/{category}/{slug}/{comment_id}:
+    parameters:
+      - $ref: "#/components/parameters/Classification"
+      - $ref: "#/components/parameters/Category"
+      - $ref: "#/components/parameters/Slug"
+      - $ref: "#/components/parameters/CommentId"
+
+    patch:
+      operationId: updateComment
+      summary: Update a comment
+      description: |
+        Updates the content of an existing comment. Automatically sets
+        `updated_at` to the current timestamp.
+      tags:
+        - comment
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCommentRequest"
+            example:
+              content: Updated comment text
+      responses:
+        "200":
+          description: Comment updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentRaw"
+        "404":
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Comment not found
+
+    delete:
+      operationId: deleteComment
+      summary: Delete a comment
+      description: |
+        Deletes a comment by ID. The request body must include the `user_id`
+        which must match the comment's owner. Only the comment author can
+        delete their own comment.
+      tags:
+        - comment
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteCommentRequest"
+            example:
+              user_id: 550e8400-e29b-41d4-a716-446655440000
+      responses:
+        "200":
+          description: Comment deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - deletedCommentId
+                properties:
+                  deletedCommentId:
+                    type: string
+              example:
+                deletedCommentId: "1"
+        "404":
+          description: Comment not found or not authorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: Comment not found
+
+  /api/comment/{classification}/{category}/{slug}/{comment_id}/admin:
+    parameters:
+      - $ref: "#/components/parameters/Classification"
+      - $ref: "#/components/parameters/Category"
+      - $ref: "#/components/parameters/Slug"
+      - $ref: "#/components/parameters/CommentId"
+
+    patch:
+      operationId: upsertAdminReply
+      summary: Add or update admin reply
+      description: |
+        Adds or updates an admin reply on a comment. Automatically sets
+        `replied_at` to the current timestamp.
+      tags:
+        - admin
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminReplyRequest"
+            example:
+              reply: Thanks for the feedback!
+      responses:
+        "200":
+          description: Admin reply added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentRaw"
+        "404":
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      operationId: deleteAdminReply
+      summary: Remove admin reply
+      description: |
+        Removes the admin reply from a comment by setting `reply` and
+        `replied_at` to null.
+      tags:
+        - admin
+      security: []
+      responses:
+        "200":
+          description: Admin reply removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommentRaw"
+        "404":
+          description: Comment not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  parameters:
+    Classification:
+      name: classification
+      in: path
+      required: true
+      description: Post classification (e.g. `blog`, `dev`)
+      schema:
+        type: string
+
+    Category:
+      name: category
+      in: path
+      required: true
+      description: Post category within the classification
+      schema:
+        type: string
+
+    Slug:
+      name: slug
+      in: path
+      required: true
+      description: URL-friendly post identifier
+      schema:
+        type: string
+
+    CommentId:
+      name: comment_id
+      in: path
+      required: true
+      description: Comment identifier
+      schema:
+        type: string
+
+  schemas:
+    # ── Responses ──────────────────────────────────────────────
+
+    Comment:
+      type: object
+      description: Comment with joined user details (camelCase)
+      required:
+        - id
+        - postId
+        - userId
+        - content
+        - email
+        - username
+        - createdAt
+      properties:
+        id:
+          type: string
+        postId:
+          type: string
+        userId:
+          type: string
+        userPhoto:
+          type:
+            - string
+            - "null"
+          format: uri
+        content:
+          type: string
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        photo:
+          type:
+            - string
+            - "null"
+          format: uri
+        reply:
+          type:
+            - string
+            - "null"
+        repliedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    CommentRaw:
+      type: object
+      description: Comment as returned from database (snake_case)
+      required:
+        - id
+        - post_id
+        - user_id
+        - content
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+        post_id:
+          type: string
+        user_id:
+          type: string
+        user_photo:
+          type:
+            - string
+            - "null"
+          format: uri
+        content:
+          type: string
+        reply:
+          type:
+            - string
+            - "null"
+        replied_at:
+          type:
+            - string
+            - "null"
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Human-readable error message
+
+    # ── Request bodies ────────────────────────────────────────
+
+    CreateCommentRequest:
+      type: object
+      required:
+        - user_id
+        - content
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        user_photo:
+          type:
+            - string
+            - "null"
+          format: uri
+        content:
+          type: string
+
+    UpdateCommentRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+
+    DeleteCommentRequest:
+      type: object
+      required:
+        - user_id
+      properties:
+        user_id:
+          type: string
+          format: uuid
+
+    AdminReplyRequest:
+      type: object
+      required:
+        - reply
+      properties:
+        reply:
+          type: string
