@@ -14,6 +14,25 @@ data "aws_security_group" "details" {
   id       = each.value
 }
 
+# Security Group Rules
+data "aws_vpc_security_group_rules" "by_sg" {
+  for_each = toset(data.aws_security_groups.all.ids)
+
+  filter {
+    name   = "group-id"
+    values = [each.value]
+  }
+}
+
+# Security Group Rule Details
+data "aws_vpc_security_group_rule" "details" {
+  for_each = toset(flatten([
+    for sg_id, rules in data.aws_vpc_security_group_rules.by_sg : rules.ids
+  ]))
+
+  security_group_rule_id = each.value
+}
+
 # =============================================================================
 # Security Groups by Name Pattern
 # =============================================================================

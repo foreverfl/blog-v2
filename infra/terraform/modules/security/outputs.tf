@@ -19,12 +19,36 @@ output "security_group_details" {
       description = sg.description
       vpc_id      = sg.vpc_id
       tags        = sg.tags
+      ingress = [
+        for rule_id, rule in data.aws_vpc_security_group_rule.details : {
+          rule_id                   = rule.security_group_rule_id
+          from_port                 = rule.from_port
+          to_port                   = rule.to_port
+          protocol                  = rule.ip_protocol
+          cidr_ipv4                 = rule.cidr_ipv4
+          cidr_ipv6                 = rule.cidr_ipv6
+          referenced_security_group = rule.referenced_security_group_id
+          description               = rule.description
+        } if rule.security_group_id == id && !rule.is_egress
+      ]
+      egress = [
+        for rule_id, rule in data.aws_vpc_security_group_rule.details : {
+          rule_id                   = rule.security_group_rule_id
+          from_port                 = rule.from_port
+          to_port                   = rule.to_port
+          protocol                  = rule.ip_protocol
+          cidr_ipv4                 = rule.cidr_ipv4
+          cidr_ipv6                 = rule.cidr_ipv6
+          referenced_security_group = rule.referenced_security_group_id
+          description               = rule.description
+        } if rule.security_group_id == id && rule.is_egress
+      ]
     }
   }
 }
 
 # =============================================================================
-# 주요 Security Group IDs (발견된 경우)
+# Primary Security Group IDs (if found)
 # =============================================================================
 
 output "web_security_group_ids" {
@@ -60,7 +84,7 @@ output "ssm_policy_arn" {
 }
 
 # =============================================================================
-# Security Summary (한눈에 보기)
+# Security Summary
 # =============================================================================
 
 output "security_overview" {
