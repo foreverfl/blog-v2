@@ -1,5 +1,5 @@
 # =============================================================================
-# VPCs (메인 출력)
+# VPCs
 # =============================================================================
 
 output "vpcs" {
@@ -26,11 +26,11 @@ output "vpcs" {
 }
 
 # =============================================================================
-# Subnet Details (전체 서브넷 상세)
+# Subnet Details
 # =============================================================================
 
 output "subnet_details" {
-  description = "Detailed subnet information grouped by VPC"
+  description = "Detailed subnet information with associated route table"
   value = {
     for id, subnet in data.aws_subnet.details : id => {
       vpc_id            = subnet.vpc_id
@@ -38,6 +38,7 @@ output "subnet_details" {
       cidr_block        = subnet.cidr_block
       available_ips     = subnet.available_ip_address_count
       is_public         = subnet.map_public_ip_on_launch
+      route_table_id    = data.aws_route_table.by_subnet[id].route_table_id
       tags              = subnet.tags
     }
   }
@@ -48,12 +49,16 @@ output "subnet_details" {
 # =============================================================================
 
 output "route_table_details" {
-  description = "Detailed route table information"
+  description = "Detailed route table information with associated subnets"
   value = {
     for id, rt in data.aws_route_table.details : id => {
       vpc_id = rt.vpc_id
       routes = rt.routes
       tags   = rt.tags
+      associated_subnets = [
+        for subnet_id in local.all_subnet_ids :
+        subnet_id if data.aws_route_table.by_subnet[subnet_id].route_table_id == id
+      ]
     }
   }
 }
@@ -68,7 +73,7 @@ output "availability_zones" {
 }
 
 # =============================================================================
-# Summary (한눈에 보기)
+# Summary
 # =============================================================================
 
 output "summary" {
