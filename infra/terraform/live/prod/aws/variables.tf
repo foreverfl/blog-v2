@@ -19,28 +19,28 @@ variable "vpc_id" {
 }
 
 # =============================================================================
-# Security Module Variables (비활성)
+# Security Module Variables
 # =============================================================================
-# variable "allowed_ssh_cidrs" {
-#   description = "CIDR blocks allowed for SSH access"
-#   type        = list(string)
-#   default     = []
-# }
+variable "allowed_ssh_cidrs" {
+  description = "CIDR blocks allowed for SSH access"
+  type        = list(string)
+  default     = []
+}
 
 # =============================================================================
-# Compute Module Variables (비활성)
+# Compute Module Variables
 # =============================================================================
-# variable "include_stopped_instances" {
-#   description = "Include stopped instances in query results"
-#   type        = bool
-#   default     = true
-# }
+variable "include_stopped_instances" {
+  description = "Include stopped instances in query results"
+  type        = bool
+  default     = true
+}
 
 # =============================================================================
-# Observability Module Variables (비활성)
+# Observability Module Variables
 # =============================================================================
-# variable "log_group_prefix" {
-#   description = "Prefix to filter CloudWatch log groups"
-#   type        = string
-#   default     = ""
-# }
+variable "log_group_prefix" {
+  description = "Prefix to filter CloudWatch log groups"
+  type        = string
+  default     = ""
+}
