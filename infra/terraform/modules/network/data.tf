@@ -5,7 +5,7 @@
 data "aws_vpcs" "all" {}
 
 locals {
-  # vpc_id 지정 → 그것만 / 비어있으면 → 전부
+  # Assign vpc_id from variable or all VPCs
   target_vpc_ids = var.vpc_id != "" ? toset([var.vpc_id]) : toset(data.aws_vpcs.all.ids)
 }
 
@@ -23,7 +23,7 @@ data "aws_availability_zones" "available" {
 }
 
 # =============================================================================
-# Subnets (VPC별)
+# Subnets (per VPC)
 # =============================================================================
 
 data "aws_subnets" "by_vpc" {
@@ -63,7 +63,7 @@ data "aws_subnets" "private_by_vpc" {
   }
 }
 
-# 서브넷 상세 (전체 VPC의 서브넷을 합쳐서 조회)
+# Subnet details (combined subnets of all VPCs)
 locals {
   all_subnet_ids = toset(flatten([
     for vpc_id in local.target_vpc_ids : data.aws_subnets.by_vpc[vpc_id].ids
@@ -75,8 +75,14 @@ data "aws_subnet" "details" {
   id       = each.value
 }
 
+# Effective route table per subnet (explicit association or main route table)
+data "aws_route_table" "by_subnet" {
+  for_each  = local.all_subnet_ids
+  subnet_id = each.value
+}
+
 # =============================================================================
-# NAT Gateways (VPC별)
+# NAT Gateways (per VPC)
 # =============================================================================
 
 data "aws_nat_gateways" "by_vpc" {
@@ -94,7 +100,7 @@ data "aws_nat_gateways" "by_vpc" {
 }
 
 # =============================================================================
-# Route Tables (VPC별)
+# Route Tables (per VPC)
 # =============================================================================
 
 data "aws_route_tables" "by_vpc" {
