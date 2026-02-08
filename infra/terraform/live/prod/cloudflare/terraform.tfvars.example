@@ -1,8 +1,8 @@
 # =============================================================================
 # Prod Cloudflare Configuration
 # =============================================================================
-# Modify this file to change Cloudflare settings!
+# Copy this file to terraform.tfvars and fill in actual values:
+#   cp terraform.tfvars.example terraform.tfvars
 # =============================================================================
 
-# Domain name
-zone_name = "mogumogu.dev"
+# zone_id = "your-cloudflare-zone-id"

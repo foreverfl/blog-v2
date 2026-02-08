@@ -13,43 +13,34 @@ variable "aws_region" {
 # =============================================================================
 
 variable "vpc_id" {
-  description = "Target VPC ID (optional - uses first VPC if not specified)"
+  description = "Specific VPC ID to query. Empty = query all VPCs."
   type        = string
   default     = ""
 }
 
-variable "enable_nat" {
-  description = "Enable NAT Gateway for private subnets"
-  type        = bool
-  default     = false
-}
+# =============================================================================
+# Security Module Variables (비활성)
+# =============================================================================
+# variable "allowed_ssh_cidrs" {
+#   description = "CIDR blocks allowed for SSH access"
+#   type        = list(string)
+#   default     = []
+# }
 
 # =============================================================================
-# Security Module Variables
+# Compute Module Variables (비활성)
 # =============================================================================
-
-variable "allowed_ssh_cidrs" {
-  description = "CIDR blocks allowed for SSH access"
-  type        = list(string)
-  default     = []
-}
-
-# =============================================================================
-# Compute Module Variables
-# =============================================================================
-
-variable "include_stopped_instances" {
-  description = "Include stopped instances in query results"
-  type        = bool
-  default     = true
-}
+# variable "include_stopped_instances" {
+#   description = "Include stopped instances in query results"
+#   type        = bool
+#   default     = true
+# }
 
 # =============================================================================
-# Observability Module Variables
+# Observability Module Variables (비활성)
 # =============================================================================
-
-variable "log_group_prefix" {
-  description = "Prefix to filter CloudWatch log groups"
-  type        = string
-  default     = ""
-}
+# variable "log_group_prefix" {
+#   description = "Prefix to filter CloudWatch log groups"
+#   type        = string
+#   default     = ""
+# }
