@@ -75,45 +75,45 @@ module "observability" {
 # 2. Outputs - Security
 # =============================================================================
 
-output "security_groups_summary" {
-  description = "Security Groups summary"
-  value       = module.security.security_groups_summary
-}
+# output "security_groups_summary" {
+#   description = "Security Groups summary"
+#   value       = module.security.security_groups_summary
+# }
 
-output "security_group_details" {
-  description = "Detailed Security Group information"
-  value       = module.security.security_group_details
-}
+# output "security_group_details" {
+#   description = "Detailed Security Group information"
+#   value       = module.security.security_group_details
+# }
 
-output "security_web_sg_ids" {
-  description = "Web/HTTP related security group IDs"
-  value       = module.security.web_security_group_ids
-}
+# output "security_web_sg_ids" {
+#   description = "Web/HTTP related security group IDs"
+#   value       = module.security.web_security_group_ids
+# }
 
-output "security_ssh_sg_ids" {
-  description = "SSH/Bastion related security group IDs"
-  value       = module.security.ssh_security_group_ids
-}
+# output "security_ssh_sg_ids" {
+#   description = "SSH/Bastion related security group IDs"
+#   value       = module.security.ssh_security_group_ids
+# }
 
-output "security_database_sg_ids" {
-  description = "Database related security group IDs"
-  value       = module.security.database_security_group_ids
-}
+# output "security_database_sg_ids" {
+#   description = "Database related security group IDs"
+#   value       = module.security.database_security_group_ids
+# }
 
-output "security_ec2_iam_roles" {
-  description = "IAM roles available for EC2"
-  value       = module.security.ec2_iam_roles
-}
+# output "security_ec2_iam_roles" {
+#   description = "IAM roles available for EC2"
+#   value       = module.security.ec2_iam_roles
+# }
 
-output "security_ssm_policy_arn" {
-  description = "SSM Managed Instance Core policy ARN"
-  value       = module.security.ssm_policy_arn
-}
+# output "security_ssm_policy_arn" {
+#   description = "SSM Managed Instance Core policy ARN"
+#   value       = module.security.ssm_policy_arn
+# }
 
-output "security_overview" {
-  description = "Overall security configuration overview"
-  value       = module.security.security_overview
-}
+# output "security_overview" {
+#   description = "Overall security configuration overview"
+#   value       = module.security.security_overview
+# }
 
 # =============================================================================
 # 3. Outputs - Compute

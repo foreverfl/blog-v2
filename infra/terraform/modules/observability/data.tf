@@ -19,11 +19,11 @@ data "aws_cloudwatch_log_groups" "all" {
 # CloudWatch Dashboards
 # =============================================================================
 
-# 참고: aws_cloudwatch_dashboards data source는 없음
-# Dashboard 목록은 AWS CLI로 확인: aws cloudwatch list-dashboards
+# Note: aws_cloudwatch_dashboards data source does not exist
+# Use AWS CLI to list dashboards: aws cloudwatch list-dashboards
 
 # =============================================================================
-# SSM Parameter Store (설정값 저장용)
+# SSM Parameter Store (for application config)
 # =============================================================================
 
 data "aws_ssm_parameters_by_path" "config" {
@@ -33,7 +33,7 @@ data "aws_ssm_parameters_by_path" "config" {
 }
 
 # =============================================================================
-# Current Region & Account (참조용)
+# Current Region & Account (for reference)
 # =============================================================================
 
 data "aws_region" "current" {}
