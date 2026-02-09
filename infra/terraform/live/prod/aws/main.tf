@@ -9,7 +9,10 @@
 module "network" {
   source = "../../../modules/network"
 
-  vpc_id = var.vpc_id
+  vpc_id                  = var.vpc_id
+  nat_enabled             = var.nat_enabled
+  nat_subnet_id           = var.nat_subnet_id
+  nat_private_route_table_ids = var.nat_private_route_table_ids
 }
 
 # =============================================================================
@@ -46,30 +49,35 @@ module "observability" {
 # 1. Outputs - Network
 # =============================================================================
 
-# output "network_vpcs" {
-#   description = "VPC details"
-#   value       = module.network.vpcs
-# }
+output "network_vpcs" {
+  description = "VPC details"
+  value       = module.network.vpcs
+}
 
-# output "network_subnet_details" {
-#   description = "Subnet details"
-#   value       = module.network.subnet_details
-# }
+output "network_subnet_details" {
+  description = "Subnet details"
+  value       = module.network.subnet_details
+}
 
-# output "network_route_tables" {
-#   description = "Route table details"
-#   value       = module.network.route_table_details
-# }
+output "network_route_tables" {
+  description = "Route table details"
+  value       = module.network.route_table_details
+}
 
-# output "network_availability_zones" {
-#   description = "Available AZs"
-#   value       = module.network.availability_zones
-# }
+output "network_availability_zones" {
+  description = "Available AZs"
+  value       = module.network.availability_zones
+}
 
-# output "network_summary" {
-#   description = "Network summary"
-#   value       = module.network.summary
-# }
+output "network_summary" {
+  description = "Network summary"
+  value       = module.network.summary
+}
+
+output "network_nat_gateway" {
+  description = "NAT Gateway details"
+  value       = module.network.nat_gateway
+}
 
 # =============================================================================
 # 2. Outputs - Security

@@ -15,3 +15,6 @@ aws_region = "ap-northeast-1" # Tokyo
 # -----------------------------------------------------------------------------
 # vpc_id = ""                  # Empty = query all VPCs
 # vpc_id = "vpc-xxxxxxxxx"    # Specific VPC
+# nat_enabled                 = false              # true = create NAT Gateway, false = destroy (cost saving)
+# nat_subnet_id               = "subnet-xxxxxxxx"  # Public subnet to place NAT Gateway in
+# nat_private_route_table_ids = ["rtb-xxxxxxxx"]   # Private subnet route table IDs

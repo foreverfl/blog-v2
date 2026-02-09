@@ -18,6 +18,24 @@ variable "vpc_id" {
   default     = ""
 }
 
+variable "nat_enabled" {
+  description = "Create a NAT Gateway for private subnet internet access"
+  type        = bool
+  default     = false
+}
+
+variable "nat_subnet_id" {
+  description = "Subnet ID to place the NAT Gateway in (must have IGW route)"
+  type        = string
+  default     = ""
+}
+
+variable "nat_private_route_table_ids" {
+  description = "Route table IDs of private subnets to add NAT route to"
+  type        = list(string)
+  default     = []
+}
+
 # =============================================================================
 # Security Module Variables
 # =============================================================================
