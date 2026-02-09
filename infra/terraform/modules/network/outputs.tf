@@ -64,6 +64,29 @@ output "route_table_details" {
 }
 
 # =============================================================================
+# NAT Gateway
+# =============================================================================
+
+output "nat_gateway" {
+  description = "NAT Gateway details (null when disabled)"
+  value = local.nat_create ? {
+    enabled         = true
+    nat_gateway_id  = aws_nat_gateway.main[0].id
+    eip_public_ip   = aws_eip.nat[0].public_ip
+    eip_id          = aws_eip.nat[0].id
+    subnet_id       = var.nat_subnet_id
+    route_table_ids = toset(var.nat_private_route_table_ids)
+  } : {
+    enabled         = false
+    nat_gateway_id  = null
+    eip_public_ip   = null
+    eip_id          = null
+    subnet_id       = null
+    route_table_ids = toset([])
+  }
+}
+
+# =============================================================================
 # Availability Zones
 # =============================================================================
 
