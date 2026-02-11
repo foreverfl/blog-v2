@@ -63,3 +63,56 @@
 #     Name = "ssh-sg"
 #   }
 # }
+
+# =============================================================================
+# Database Ingress Rules (add to existing SG)
+# =============================================================================
+
+locals {
+  db_instance_name  = "parapara-postgres"
+  app_instance_name = "parapara-server"
+  db_postgres_port  = 5431
+  db_redis_port     = 6379
+}
+
+data "aws_instance" "db" {
+  filter {
+    name   = "tag:Name"
+    values = [local.db_instance_name]
+  }
+
+  filter {
+    name   = "vpc-id"
+    values = [var.vpc_id]
+  }
+}
+
+data "aws_instance" "app" {
+  filter {
+    name   = "tag:Name"
+    values = [local.app_instance_name]
+  }
+
+  filter {
+    name   = "vpc-id"
+    values = [var.vpc_id]
+  }
+}
+
+resource "aws_vpc_security_group_ingress_rule" "db_postgres" {
+  security_group_id = tolist(data.aws_instance.db.vpc_security_group_ids)[0]
+  from_port         = local.db_postgres_port
+  to_port           = local.db_postgres_port
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "${data.aws_instance.app.private_ip}/32"
+  description       = "PostgreSQL from ${local.app_instance_name}"
+}
+
+resource "aws_vpc_security_group_ingress_rule" "db_redis" {
+  security_group_id = tolist(data.aws_instance.db.vpc_security_group_ids)[0]
+  from_port         = local.db_redis_port
+  to_port           = local.db_redis_port
+  ip_protocol       = "tcp"
+  cidr_ipv4         = "${data.aws_instance.app.private_ip}/32"
+  description       = "Redis from ${local.app_instance_name}"
+}
