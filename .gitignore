@@ -57,8 +57,6 @@ services/go/vendor/
 
 services/haskell/.stack-work/
 services/haskell/dist-newstyle/
-services/haskell/*.cabal
-!services/haskell/*.cabal.template
 services/haskell/.ghc.environment.*
 
 # =============================================================================
