@@ -73,7 +73,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-    command: cargo run
+    command: bash -c "cargo install cargo-watch && cargo watch -x run"
 
   # Go
   go-api:
@@ -93,7 +93,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-    command: go run .
+    command: bash -c "go install github.com/air-verse/air@latest && air"
 
   # Haskell
   haskell-api:
@@ -114,7 +114,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-    command: bash -c "cabal update && cabal clean && cabal run"
+    command: bash -c "cabal update && cabal install ghcid && ghcid --command='cabal repl' --run=Main.main --restart=blog-haskell-api.cabal"
 
 volumes:
   redis_data:
