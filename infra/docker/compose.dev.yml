@@ -54,7 +54,74 @@ services:
     volumes:
       - redisinsight_data:/data
 
+  # Rust (axum)
+  rust-api:
+    image: rust:1.93
+    container_name: blog-rust-api
+    working_dir: /app
+    ports:
+      - "8001:8001"
+    environment:
+      DATABASE_URL: postgres://user:password@postgres:5432/mogumogu
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - ../../services/rust:/app
+      - rust_cargo_cache:/usr/local/cargo/registry
+      - rust_target_cache:/app/target
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    command: cargo run
+
+  # Go
+  go-api:
+    image: golang:1.26
+    container_name: blog-go-api
+    working_dir: /app
+    ports:
+      - "8002:8002"
+    environment:
+      DATABASE_URL: postgres://user:password@postgres:5432/mogumogu
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - ../../services/go:/app
+      - go_mod_cache:/go/pkg/mod
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    command: go run .
+
+  # Haskell
+  haskell-api:
+    image: haskell:9.14
+    container_name: blog-haskell-api
+    working_dir: /app
+    ports:
+      - "8003:8003"
+    environment:
+      DATABASE_URL: postgres://user:password@postgres:5432/mogumogu
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - ../../services/haskell:/app
+      - haskell_cabal_cache:/root/.cabal
+      - haskell_cabal_store:/root/.local/state/cabal
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    command: bash -c "cabal update && cabal clean && cabal run"
+
 volumes:
   redis_data:
   redisinsight_data:
   postgres_data:
+  rust_cargo_cache:
+  rust_target_cache:
+  go_mod_cache:
+  haskell_cabal_cache:
+  haskell_cabal_store:
