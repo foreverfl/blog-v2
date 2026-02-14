@@ -13,5 +13,5 @@ app req respond = case pathInfo req of
 
 main :: IO ()
 main = do
-  putStrLn "haskell-api listening on :8003"
-  run 8003 app
+  putStrLn "haskell-api listening on :8004"
+  run 8004 app

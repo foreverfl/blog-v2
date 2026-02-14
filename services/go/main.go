@@ -11,6 +11,6 @@ func health(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/health", health)
-	fmt.Println("go-api listening on :8002")
-	http.ListenAndServe(":8002", nil)
+	fmt.Println("go-api listening on :8003")
+	http.ListenAndServe(":8003", nil)
 }
