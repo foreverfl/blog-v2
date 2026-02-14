@@ -54,13 +54,34 @@ services:
     volumes:
       - redisinsight_data:/data
 
+  # Auth (axum)
+  auth-api:
+    image: rust:1.93
+    container_name: blog-auth-api
+    working_dir: /app
+    ports:
+      - "8001:8001"
+    environment:
+      DATABASE_URL: postgres://user:password@postgres:5432/mogumogu
+      REDIS_URL: redis://redis:6379
+    volumes:
+      - ../../services/auth:/app
+      - auth_cargo_cache:/usr/local/cargo/registry
+      - auth_target_cache:/app/target
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    command: bash -c "cargo install cargo-watch && cargo watch -x run"
+
   # Rust (axum)
   rust-api:
     image: rust:1.93
     container_name: blog-rust-api
     working_dir: /app
     ports:
-      - "8001:8001"
+      - "8002:8002"
     environment:
       DATABASE_URL: postgres://user:password@postgres:5432/mogumogu
       REDIS_URL: redis://redis:6379
@@ -81,7 +102,7 @@ services:
     container_name: blog-go-api
     working_dir: /app
     ports:
-      - "8002:8002"
+      - "8003:8003"
     environment:
       DATABASE_URL: postgres://user:password@postgres:5432/mogumogu
       REDIS_URL: redis://redis:6379
@@ -101,7 +122,7 @@ services:
     container_name: blog-haskell-api
     working_dir: /app
     ports:
-      - "8003:8003"
+      - "8004:8004"
     environment:
       DATABASE_URL: postgres://user:password@postgres:5432/mogumogu
       REDIS_URL: redis://redis:6379
@@ -120,6 +141,8 @@ volumes:
   redis_data:
   redisinsight_data:
   postgres_data:
+  auth_cargo_cache:
+  auth_target_cache:
   rust_cargo_cache:
   rust_target_cache:
   go_mod_cache:
