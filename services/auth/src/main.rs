@@ -9,7 +9,7 @@ async fn health() -> &'static str {
 async fn main() {
     let app = Router::new().route("/health", get(health));
 
-    let listener = TcpListener::bind("0.0.0.0:8002").await.unwrap();
-    println!("rust-api listening on :8002");
+    let listener = TcpListener::bind("0.0.0.0:8001").await.unwrap();
+    println!("auth-api listening on :8001");
     serve(listener, app).await.unwrap();
 }
