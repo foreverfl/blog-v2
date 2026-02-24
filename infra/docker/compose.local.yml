@@ -3,15 +3,15 @@ services:
     image: postgres:18.1
     container_name: blog-postgres
     environment:
-      POSTGRES_DB: mogumogu
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d mogumogu"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -24,9 +24,9 @@ services:
         condition: service_healthy
     environment:
       TZ: Asia/Tokyo
-      FLYWAY_URL: jdbc:postgresql://postgres:5432/mogumogu
-      FLYWAY_USER: user
-      FLYWAY_PASSWORD: password
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      FLYWAY_USER: ${POSTGRES_USER}
+      FLYWAY_PASSWORD: ${POSTGRES_PASSWORD}
       FLYWAY_SCHEMAS: public
       FLYWAY_BASELINE_ON_MIGRATE: "true"
       FLYWAY_LOCATIONS: filesystem:/flyway/migrations
@@ -61,9 +61,7 @@ services:
     working_dir: /app
     ports:
       - "8001:8001"
-    environment:
-      DATABASE_URL: postgres://user:password@postgres:5432/mogumogu
-      REDIS_URL: redis://redis:6379
+    env_file: .env.local
     volumes:
       - ../../services/auth:/app
       - auth_cargo_cache:/usr/local/cargo/registry
@@ -83,8 +81,8 @@ services:
     ports:
       - "8002:8002"
     environment:
-      DATABASE_URL: postgres://user:password@postgres:5432/mogumogu
-      REDIS_URL: redis://redis:6379
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
     volumes:
       - ../../services/rust:/app
       - rust_cargo_cache:/usr/local/cargo/registry
@@ -104,8 +102,8 @@ services:
     ports:
       - "8003:8003"
     environment:
-      DATABASE_URL: postgres://user:password@postgres:5432/mogumogu
-      REDIS_URL: redis://redis:6379
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
     volumes:
       - ../../services/go:/app
       - go_mod_cache:/go/pkg/mod
@@ -124,8 +122,8 @@ services:
     ports:
       - "8004:8004"
     environment:
-      DATABASE_URL: postgres://user:password@postgres:5432/mogumogu
-      REDIS_URL: redis://redis:6379
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
     volumes:
       - ../../services/haskell:/app
       - haskell_cabal_cache:/root/.cabal
@@ -135,7 +133,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-    command: bash -c "cabal update && cabal install ghcid && ghcid --command='cabal repl' --run=Main.main --restart=blog-haskell-api.cabal"
+    command: bash -c "cabal update && cabal install ghcid --overwrite-policy=always && ghcid --command='cabal repl' --run=Main.main --restart=blog-haskell-api.cabal"
 
 volumes:
   redis_data:
