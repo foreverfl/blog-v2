@@ -2,6 +2,30 @@
 # Blog v2 – Makefile
 # =============================================================================
 
+# ── Docker ──────────────────────────────────────────────────────────────────
+
+COMPOSE_DIR := infra/docker
+
+## local-up: Start local dev environment
+.PHONY: local-up
+local-up:
+	set -a && . $(COMPOSE_DIR)/.env.local && set +a && docker-compose -f $(COMPOSE_DIR)/compose.local.yml up -d
+
+## local-down: Stop local dev environment
+.PHONY: local-down
+local-down:
+	set -a && . $(COMPOSE_DIR)/.env.local && set +a && docker-compose -f $(COMPOSE_DIR)/compose.local.yml down
+
+## prod-up: Start production environment
+.PHONY: prod-up
+prod-up:
+	set -a && . $(COMPOSE_DIR)/.env.prod && set +a && docker-compose -f $(COMPOSE_DIR)/compose.prod.yml up -d
+
+## prod-down: Stop production environment
+.PHONY: prod-down
+prod-down:
+	set -a && . $(COMPOSE_DIR)/.env.prod && set +a && docker-compose -f $(COMPOSE_DIR)/compose.prod.yml down
+
 # ── OpenAPI ──────────────────────────────────────────────────────────────────
 
 OPENAPI_SPECS_DIR := contracts/openapi/specs
