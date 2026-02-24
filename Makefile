@@ -16,6 +16,18 @@ local-up:
 local-down:
 	set -a && . $(COMPOSE_DIR)/.env.local && set +a && docker-compose -f $(COMPOSE_DIR)/compose.local.yml down
 
+## local-restart: Stop → rebuild → start local dev environment
+.PHONY: local-restart
+local-restart:
+	set -a && . $(COMPOSE_DIR)/.env.local && set +a && \
+		docker-compose -f $(COMPOSE_DIR)/compose.local.yml down && \
+		docker-compose -f $(COMPOSE_DIR)/compose.local.yml up -d --build
+
+## local-logs-auth: Tail logs for auth-api only
+.PHONY: local-logs-auth
+local-logs-auth:
+	set -a && . $(COMPOSE_DIR)/.env.local && set +a && docker-compose -f $(COMPOSE_DIR)/compose.local.yml logs -f auth-api
+
 ## prod-up: Start production environment
 .PHONY: prod-up
 prod-up:
