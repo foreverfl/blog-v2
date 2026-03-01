@@ -2,6 +2,7 @@ use axum::http::{header, Method};
 use axum::routing::{get, post};
 use axum::Router;
 use tower_http::cors::CorsLayer;
+use tower_http::trace::TraceLayer;
 
 use crate::config::AppState;
 use crate::handlers;
@@ -34,6 +35,7 @@ pub fn create_router(state: AppState) -> Router {
         .route("/health", get(health))
         .nest("/auth", auth_routes)
         .layer(cors)
+        .layer(TraceLayer::new_for_http())
         .with_state(state)
 }
 
