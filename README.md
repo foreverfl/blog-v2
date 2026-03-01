@@ -87,6 +87,28 @@ grpcurl -plaintext localhost:50051 list
 grpcurl -plaintext -d '{"id":"123"}' localhost:50051 blog.v1.PostService/GetPost
 ```
 
+## Environment Variables
+
+### Auth Service (`services/auth`)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `REDIS_URL` | No | Redis connection string (default: `redis://127.0.0.1:6379`) |
+| `JWT_SECRET` | Yes (production) | Secret key for signing/verifying JWT access tokens |
+| `ACCESS_TOKEN_TTL` | No | Access token lifetime in seconds (default: `900`) |
+| `REFRESH_TOKEN_TTL` | No | Refresh token lifetime in seconds (default: `604800`) |
+| `FRONTEND_URL` | No | Frontend origin URL (default: `http://localhost:3000`) |
+| `SERVER_URL` | No | Auth server URL (default: `http://localhost:8001`) |
+| `{PROVIDER}_CLIENT_ID` | No | OAuth client ID (`GOOGLE`, `GITHUB`, `APPLE`, `LINE`, `KAKAO`) |
+| `{PROVIDER}_CLIENT_SECRET` | No | OAuth client secret |
+
+#### Generating `JWT_SECRET`
+
+```bash
+openssl rand -base64 32
+```
+
 ## Development
 
 ```bash
