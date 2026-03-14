@@ -17,9 +17,15 @@ categories:
   - title: "⚡ Performance"
     labels:
       - perf
+  - title: "♻️ Refactoring"
+    labels:
+      - refactor
   - title: "🔧 Maintenance"
     labels:
       - chore
+  - title: "🔬 Spikes"
+    labels:
+      - spike
 
 autolabeler:
   - label: feature
@@ -32,8 +38,12 @@ autolabeler:
     branch: /^test\/.*/
   - label: perf
     branch: /^perf\/.*/
+  - label: refactor
+    branch: /^refactor\/.*/
   - label: chore
     branch: /^chore\/.*/
+  - label: spike
+    branch: /^spike\/.*/
 
 version-resolver:
   major:
@@ -41,7 +51,7 @@ version-resolver:
   minor:
     labels: [feature]
   patch:
-    labels: [bug, chore, docs, test, perf]
+    labels: [bug, chore, docs, test, perf, refactor, spike]
   default: patch
 
 template: |

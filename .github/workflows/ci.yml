@@ -1,16 +1,6 @@
 name: CI
 
 on:
-  push:
-    branches:
-      - main
-      - develop
-      - 'feat/**'
-      - 'fix/**'
-      - 'bug/**'
-      - 'refactor/**'
-      - 'chore/**'
-      - 'docs/**'
   pull_request:
     branches:
       - main
@@ -116,18 +106,3 @@ jobs:
           key: ${{ runner.os }}-cabal-${{ hashFiles('services/haskell/blog-haskell-api.cabal') }}
           restore-keys: ${{ runner.os }}-cabal-
       - run: cabal build
-
-  release-draft:
-    name: Create release draft
-    needs: [build-auth, build-rust, build-go, build-haskell]
-    if: github.ref == 'refs/heads/main' && always() && !contains(needs.*.result, 'failure')
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: release-drafter/release-drafter@v6
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
