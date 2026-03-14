@@ -16,7 +16,7 @@ services:
 
   # Auth (axum)
   auth-api:
-    image: ghcr.io/foreverfl/blog-v2/auth-api:latest
+    image: ghcr.io/foreverfl/blog-v2/auth-api:${IMAGE_TAG:-latest}
     container_name: blog-auth-api
     ports:
       - "8001:8001"
@@ -27,7 +27,7 @@ services:
 
   # Rust (axum)
   rust-api:
-    image: ghcr.io/foreverfl/blog-v2/rust-api:latest
+    image: ghcr.io/foreverfl/blog-v2/rust-api:${IMAGE_TAG:-latest}
     container_name: blog-rust-api
     ports:
       - "8002:8002"
@@ -38,7 +38,7 @@ services:
 
   # Go
   go-api:
-    image: ghcr.io/foreverfl/blog-v2/go-api:latest
+    image: ghcr.io/foreverfl/blog-v2/go-api:${IMAGE_TAG:-latest}
     container_name: blog-go-api
     ports:
       - "8003:8003"
@@ -49,7 +49,7 @@ services:
 
   # Haskell
   haskell-api:
-    image: ghcr.io/foreverfl/blog-v2/haskell-api:latest
+    image: ghcr.io/foreverfl/blog-v2/haskell-api:${IMAGE_TAG:-latest}
     container_name: blog-haskell-api
     ports:
       - "8004:8004"
