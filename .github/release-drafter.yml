@@ -1,0 +1,52 @@
+name-template: "v$RESOLVED_VERSION"
+tag-template: "v$RESOLVED_VERSION"
+
+categories:
+  - title: "🚀 Features"
+    labels:
+      - feature
+  - title: "🐛 Bug Fixes"
+    labels:
+      - bug
+  - title: "📝 Documentation"
+    labels:
+      - docs
+  - title: "🧪 Tests"
+    labels:
+      - test
+  - title: "⚡ Performance"
+    labels:
+      - perf
+  - title: "🔧 Maintenance"
+    labels:
+      - chore
+
+autolabeler:
+  - label: feature
+    branch: /^feat\/.*/
+  - label: bug
+    branch: /^fix\/.*/
+  - label: docs
+    branch: /^docs\/.*/
+  - label: test
+    branch: /^test\/.*/
+  - label: perf
+    branch: /^perf\/.*/
+  - label: chore
+    branch: /^chore\/.*/
+
+version-resolver:
+  major:
+    labels: [major]
+  minor:
+    labels: [feature]
+  patch:
+    labels: [bug, chore, docs, test, perf]
+  default: patch
+
+template: |
+  ## Changes
+
+  $CHANGES
+
+  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION

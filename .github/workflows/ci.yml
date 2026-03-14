@@ -1,0 +1,133 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'feat/**'
+      - 'fix/**'
+      - 'bug/**'
+      - 'refactor/**'
+      - 'chore/**'
+      - 'docs/**'
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      auth: ${{ steps.filter.outputs.auth }}
+      rust: ${{ steps.filter.outputs.rust }}
+      go: ${{ steps.filter.outputs.go }}
+      haskell: ${{ steps.filter.outputs.haskell }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            auth:
+              - 'services/auth/**'
+            rust:
+              - 'services/rust/**'
+            go:
+              - 'services/go/**'
+            haskell:
+              - 'services/haskell/**'
+
+  build-auth:
+    name: Build auth-api (Rust)
+    needs: changes
+    if: needs.changes.outputs.auth == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/auth
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: services/auth
+      - run: cargo check
+      - run: cargo build --release
+
+  build-rust:
+    name: Build rust-api (Rust)
+    needs: changes
+    if: needs.changes.outputs.rust == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/rust
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: services/rust
+      - run: cargo check
+      - run: cargo build --release
+
+  build-go:
+    name: Build go-api (Go)
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/go
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: services/go/go.mod
+          cache-dependency-path: services/go/go.sum
+      - run: go build ./...
+
+  build-haskell:
+    name: Build haskell-api (Haskell)
+    needs: changes
+    if: needs.changes.outputs.haskell == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/haskell
+    steps:
+      - uses: actions/checkout@v4
+      - uses: haskell-actions/setup@v2
+        with:
+          ghc-version: "9.12"
+          cabal-version: "latest"
+      - run: cabal update
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cabal/store
+            dist-newstyle
+          key: ${{ runner.os }}-cabal-${{ hashFiles('services/haskell/blog-haskell-api.cabal') }}
+          restore-keys: ${{ runner.os }}-cabal-
+      - run: cabal build
+
+  release-draft:
+    name: Create release draft
+    needs: [build-auth, build-rust, build-go, build-haskell]
+    if: github.ref == 'refs/heads/main' && always() && !contains(needs.*.result, 'failure')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: release-drafter/release-drafter@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
