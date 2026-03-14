@@ -115,6 +115,9 @@ jobs:
     name: Deploy to EC2
     needs: [build-auth, build-rust, build-go, build-haskell]
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     steps:
       - uses: appleboy/ssh-action@v1
         with:
@@ -134,21 +137,21 @@ jobs:
               exit 1
             fi
 
-            # Download latest compose.prod.yml
+            # Download compose.prod.yml from release tag
             curl -sf -o docker-compose.prod.yml \
-              https://raw.githubusercontent.com/${{ github.repository }}/main/infra/docker/compose.prod.yml
+              https://raw.githubusercontent.com/${{ github.repository }}/${{ env.VERSION }}/infra/docker/compose.prod.yml
 
-            # Download latest migrations
+            # Download migrations from release tag
             curl -sf -L \
-              "https://api.github.com/repos/${{ github.repository }}/tarball/main" \
-              | tar xz --strip-components=3 -C migrations/ --wildcards '*/infra/db/migrations/*'
+              "https://api.github.com/repos/${{ github.repository }}/tarball/${{ env.VERSION }}" \
+              | tar xz --strip-components=4 -C migrations/ --wildcards '*/infra/db/migrations/*'
 
             # Login to GHCR
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # Deploy
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml up -d
+            # Deploy with release version tag
+            IMAGE_TAG=${{ env.VERSION }} docker compose -f docker-compose.prod.yml pull
+            IMAGE_TAG=${{ env.VERSION }} docker compose -f docker-compose.prod.yml up -d
 
             # Cleanup old images
             docker image prune -f
