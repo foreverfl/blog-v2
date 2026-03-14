@@ -2,96 +2,58 @@ services:
   flyway:
     image: flyway/flyway:12.0.0
     container_name: blog-flyway
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
       TZ: Asia/Tokyo
-      FLYWAY_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      FLYWAY_URL: jdbc:postgresql://${POSTGRES_HOST}:5432/${POSTGRES_DB}
       FLYWAY_USER: ${POSTGRES_USER}
       FLYWAY_PASSWORD: ${POSTGRES_PASSWORD}
       FLYWAY_SCHEMAS: public
       FLYWAY_BASELINE_ON_MIGRATE: "true"
       FLYWAY_LOCATIONS: filesystem:/flyway/migrations
     volumes:
-      - ../db/migrations:/flyway/migrations:ro
+      - ./migrations:/flyway/migrations:ro
     command: migrate
-
-  redis:
-    image: redis:8.4.0
-    container_name: redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    command: redis-server --save 60 1 --loglevel warning
 
   # Auth (axum)
   auth-api:
-    image: rust:1.93
+    image: ghcr.io/foreverfl/blog-v2/auth-api:latest
     container_name: blog-auth-api
-    working_dir: /app
     ports:
       - "8001:8001"
     env_file: .env.prod
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    command: bash -c "cargo build --release && ./target/release/auth-api"
+      flyway:
+        condition: service_completed_successfully
 
   # Rust (axum)
   rust-api:
-    image: rust:1.93
+    image: ghcr.io/foreverfl/blog-v2/rust-api:latest
     container_name: blog-rust-api
-    working_dir: /app
     ports:
       - "8002:8002"
-    environment:
-      DATABASE_URL: ${DATABASE_URL}
-      REDIS_URL: ${REDIS_URL}
+    env_file: .env.prod
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    command: bash -c "cargo build --release && ./target/release/rust-api"
+      flyway:
+        condition: service_completed_successfully
 
   # Go
   go-api:
-    image: golang:1.26
+    image: ghcr.io/foreverfl/blog-v2/go-api:latest
     container_name: blog-go-api
-    working_dir: /app
     ports:
       - "8003:8003"
-    environment:
-      DATABASE_URL: ${DATABASE_URL}
-      REDIS_URL: ${REDIS_URL}
+    env_file: .env.prod
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    command: go run .
+      flyway:
+        condition: service_completed_successfully
 
   # Haskell
   haskell-api:
-    image: haskell:9.14
+    image: ghcr.io/foreverfl/blog-v2/haskell-api:latest
     container_name: blog-haskell-api
-    working_dir: /app
     ports:
       - "8004:8004"
-    environment:
-      DATABASE_URL: ${DATABASE_URL}
-      REDIS_URL: ${REDIS_URL}
+    env_file: .env.prod
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
-    command: bash -c "cabal build && cabal run"
-
-volumes:
-  redis_data:
-  postgres_data:
+      flyway:
+        condition: service_completed_successfully

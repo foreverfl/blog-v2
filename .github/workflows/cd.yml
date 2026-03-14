@@ -1,0 +1,154 @@
+name: CD
+
+on:
+  release:
+    types:
+      - published
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository }}
+  VERSION: ${{ github.event.release.tag_name }}
+
+jobs:
+  build-auth:
+    name: Build auth-api image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: services/auth
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/auth-api:latest
+            ${{ env.IMAGE_PREFIX }}/auth-api:${{ env.VERSION }}
+          cache-from: type=gha,scope=auth
+          cache-to: type=gha,mode=max,scope=auth
+
+  build-rust:
+    name: Build rust-api image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: services/rust
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/rust-api:latest
+            ${{ env.IMAGE_PREFIX }}/rust-api:${{ env.VERSION }}
+          cache-from: type=gha,scope=rust
+          cache-to: type=gha,mode=max,scope=rust
+
+  build-go:
+    name: Build go-api image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: services/go
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/go-api:latest
+            ${{ env.IMAGE_PREFIX }}/go-api:${{ env.VERSION }}
+          cache-from: type=gha,scope=go
+          cache-to: type=gha,mode=max,scope=go
+
+  build-haskell:
+    name: Build haskell-api image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: services/haskell
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}/haskell-api:latest
+            ${{ env.IMAGE_PREFIX }}/haskell-api:${{ env.VERSION }}
+          cache-from: type=gha,scope=haskell
+          cache-to: type=gha,mode=max,scope=haskell
+
+  deploy:
+    name: Deploy to EC2
+    needs: [build-auth, build-rust, build-go, build-haskell]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+
+            APP_DIR=/home/ubuntu/app/blog-v2
+            mkdir -p $APP_DIR/migrations
+            cd $APP_DIR
+
+            # Verify .env.prod exists
+            if [ ! -f ".env.prod" ]; then
+              echo "ERROR: .env.prod not found at $APP_DIR/.env.prod"
+              exit 1
+            fi
+
+            # Download latest compose.prod.yml
+            curl -sf -o docker-compose.prod.yml \
+              https://raw.githubusercontent.com/${{ github.repository }}/main/infra/docker/compose.prod.yml
+
+            # Download latest migrations
+            curl -sf -L \
+              "https://api.github.com/repos/${{ github.repository }}/tarball/main" \
+              | tar xz --strip-components=3 -C migrations/ --wildcards '*/infra/db/migrations/*'
+
+            # Login to GHCR
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Deploy
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d
+
+            # Cleanup old images
+            docker image prune -f
