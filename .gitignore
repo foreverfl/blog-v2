@@ -46,8 +46,6 @@ services/auth/target/
 # =============================================================================
 
 services/rust/target/
-services/rust/Cargo.lock
-# Keep Cargo.lock for binaries, remove this line if it's a library
 
 # =============================================================================
 # services/go
