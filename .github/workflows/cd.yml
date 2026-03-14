@@ -150,8 +150,8 @@ jobs:
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             # Deploy with release version tag
-            IMAGE_TAG=${{ env.VERSION }} docker compose -f docker-compose.prod.yml pull
-            IMAGE_TAG=${{ env.VERSION }} docker compose -f docker-compose.prod.yml up -d
+            IMAGE_TAG=${{ env.VERSION }} docker compose --env-file .env.prod -f docker-compose.prod.yml pull
+            IMAGE_TAG=${{ env.VERSION }} docker compose --env-file .env.prod -f docker-compose.prod.yml up -d
 
             # Cleanup old images
             docker image prune -f
