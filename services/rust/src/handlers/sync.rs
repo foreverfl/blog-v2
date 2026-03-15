@@ -59,7 +59,11 @@ pub async fn sync_from_github(
         return Err(ApiError::InvalidToken);
     }
 
-    let client = reqwest::Client::new();
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(30))
+        .connect_timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(|e| ApiError::Internal(format!("failed to build http client: {e}")))?;
 
     // 1. Fetch repo tree recursively
     let tree_url = format!(

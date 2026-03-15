@@ -23,8 +23,7 @@ impl AppConfig {
     pub fn from_env() -> Self {
         Self {
             database_url: env::var("DATABASE_URL").expect("DATABASE_URL required"),
-            jwt_secret: env::var("JWT_SECRET")
-                .unwrap_or_else(|_| "dev-secret-change-in-production".into()),
+            jwt_secret: env::var("JWT_SECRET").expect("JWT_SECRET required"),
             frontend_url: env::var("FRONTEND_URL")
                 .unwrap_or_else(|_| "http://localhost:3000".into()),
             s3_bucket: env::var("S3_BUCKET").unwrap_or_else(|_| "blog-assets".into()),
