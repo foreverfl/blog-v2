@@ -16,7 +16,7 @@ pub fn create_router(state: AppState) -> Router {
                 .config
                 .frontend_url
                 .parse::<axum::http::HeaderValue>()
-                .unwrap(),
+                .expect("FRONTEND_URL must be a valid header value"),
         )
         .allow_methods([
             Method::GET,
@@ -25,7 +25,11 @@ pub fn create_router(state: AppState) -> Router {
             Method::DELETE,
             Method::OPTIONS,
         ])
-        .allow_headers([header::AUTHORIZATION, header::CONTENT_TYPE])
+        .allow_headers([
+            header::AUTHORIZATION,
+            header::CONTENT_TYPE,
+            "X-Sync-Secret".parse().unwrap(),
+        ])
         .allow_credentials(true);
 
     let upload_limit = state.config.max_upload_size;
