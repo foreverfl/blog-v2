@@ -151,6 +151,11 @@ jobs:
 
             # Deploy with release version tag
             IMAGE_TAG=${{ env.VERSION }} docker compose --env-file .env.prod -f docker-compose.prod.yml pull
+
+            # Run Flyway migration (force recreate to apply new migrations)
+            IMAGE_TAG=${{ env.VERSION }} docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm flyway migrate
+
+            # Start API services
             IMAGE_TAG=${{ env.VERSION }} docker compose --env-file .env.prod -f docker-compose.prod.yml up -d
 
             # Cleanup old images
