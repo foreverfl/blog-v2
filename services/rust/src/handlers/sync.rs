@@ -3,6 +3,7 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::Json;
 use serde::{Deserialize, Serialize};
+use subtle::ConstantTimeEq;
 
 use crate::config::AppState;
 use crate::stores::postgres as pg;
@@ -49,12 +50,12 @@ pub async fn sync_from_github(
     State(state): State<AppState>,
     headers: HeaderMap,
 ) -> Result<impl IntoResponse, ApiError> {
-    // Verify sync secret from X-Sync-Secret header
+    // Verify sync secret from X-Sync-Secret header (constant-time comparison)
     let secret = headers
         .get("X-Sync-Secret")
         .and_then(|v| v.to_str().ok())
         .unwrap_or("");
-    if secret != state.config.sync_secret {
+    if secret.as_bytes().ct_eq(state.config.sync_secret.as_bytes()).unwrap_u8() != 1 {
         return Err(ApiError::InvalidToken);
     }
 
@@ -285,7 +286,7 @@ pub async fn sync_json(
         .get("X-Sync-Secret")
         .and_then(|v| v.to_str().ok())
         .unwrap_or("");
-    if secret != state.config.sync_secret {
+    if secret.as_bytes().ct_eq(state.config.sync_secret.as_bytes()).unwrap_u8() != 1 {
         return Err(ApiError::InvalidToken);
     }
 
