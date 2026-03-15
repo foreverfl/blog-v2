@@ -60,6 +60,7 @@ pub async fn upload(
         }
 
         let kind = kind_from_mime(&mime_type);
+        let data_len = data.len() as i64;
         let ext = file_name
             .rsplit('.')
             .next()
@@ -72,7 +73,7 @@ pub async fn upload(
             .put_object()
             .bucket(&state.config.s3_bucket)
             .key(&object_key)
-            .body(ByteStream::from(data.to_vec()))
+            .body(ByteStream::from(data))
             .content_type(&mime_type)
             .send()
             .await
@@ -84,7 +85,7 @@ pub async fn upload(
             &object_key,
             &file_name,
             &mime_type,
-            data.len() as i64,
+            data_len,
             &sha256,
             &kind,
         )

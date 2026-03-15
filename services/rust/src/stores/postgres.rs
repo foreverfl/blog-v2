@@ -178,7 +178,13 @@ async fn insert_content(
     .bind(&c.body_text)
     .bind(&metadata)
     .execute(tx)
-    .await?;
+    .await
+    .map_err(|e| match e {
+        sqlx::Error::Database(ref db_err) if db_err.is_unique_violation() => {
+            ApiError::Conflict("duplicate lang in contents".into())
+        }
+        other => ApiError::Database(other),
+    })?;
 
     Ok(())
 }
@@ -349,6 +355,8 @@ pub async fn insert_asset(
         r#"
         INSERT INTO assets (bucket, object_key, file_name, mime_type, size_bytes, sha256, kind)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        ON CONFLICT (sha256) WHERE sha256 IS NOT NULL DO UPDATE SET
+            updated_at = CURRENT_TIMESTAMP
         RETURNING id, bucket, object_key, file_name, mime_type, size_bytes, sha256, width, height, duration_ms, kind, status, metadata, created_at, updated_at
         "#,
     )
