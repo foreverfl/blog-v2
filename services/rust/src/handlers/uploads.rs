@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::auth;
 use crate::config::AppState;
-use crate::stores::postgres as pg;
+use crate::stores::assets as asset_store;
 use crate::types::{ApiError, AssetResponse};
 
 // POST /api/uploads
@@ -54,7 +54,7 @@ pub async fn upload(
         };
 
         // Deduplicate by SHA-256
-        if let Some(existing) = pg::find_asset_by_sha256(&state.db, &sha256).await? {
+        if let Some(existing) = asset_store::find_by_sha256(&state.db, &sha256).await? {
             assets.push(AssetResponse::from(&existing));
             continue;
         }
@@ -79,7 +79,7 @@ pub async fn upload(
             .await
             .map_err(|e| ApiError::S3(e.to_string()))?;
 
-        let row = pg::insert_asset(
+        let row = asset_store::insert(
             &state.db,
             &state.config.s3_bucket,
             &object_key,
