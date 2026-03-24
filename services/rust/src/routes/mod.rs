@@ -1,13 +1,15 @@
-use axum::extract::DefaultBodyLimit;
+mod posts;
+mod sync;
+mod uploads;
+
 use axum::http::{header, Method};
-use axum::routing::{delete, get, post, put};
+use axum::routing::get;
 use axum::Router;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing::Span;
 
 use crate::config::AppState;
-use crate::handlers;
 
 pub fn create_router(state: AppState) -> Router {
     let cors = CorsLayer::new()
@@ -34,21 +36,11 @@ pub fn create_router(state: AppState) -> Router {
 
     let upload_limit = state.config.max_upload_size;
 
-    let api_routes = Router::new()
-        .route("/posts", get(handlers::posts::list).post(handlers::posts::create))
-        .route("/posts/{id}", get(handlers::posts::get))
-        .route("/posts/{id}", put(handlers::posts::update))
-        .route("/posts/{id}", delete(handlers::posts::delete))
-        .route(
-            "/uploads",
-            post(handlers::uploads::upload).layer(DefaultBodyLimit::max(upload_limit)),
-        )
-        .route("/sync/mdx", post(handlers::sync::sync_from_github))
-        .route("/sync/json", post(handlers::sync::sync_json));
-
     Router::new()
         .route("/health", get(health))
-        .merge(api_routes)
+        .nest("/posts", posts::router())
+        .nest("/uploads", uploads::router(upload_limit))
+        .nest("/sync", sync::router())
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(|req: &axum::http::Request<_>| {

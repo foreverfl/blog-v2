@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use subtle::ConstantTimeEq;
 
 use crate::config::AppState;
-use crate::stores::postgres as pg;
+use crate::stores::{contents as content_store, posts as post_store};
 use crate::types::ApiError;
 
 const GITHUB_REPO: &str = "foreverfl/blog";
@@ -139,7 +139,7 @@ pub async fn sync_from_github(
         let (frontmatter, body) = parse_frontmatter(&raw_content);
 
         // Upsert post
-        let post = match pg::upsert_post(
+        let post = match post_store::upsert(
             &state.db,
             &parsed.classification,
             &parsed.category,
@@ -163,7 +163,7 @@ pub async fn sync_from_github(
             "source_path": entry.path,
         });
 
-        if let Err(e) = pg::upsert_sync_content(
+        if let Err(e) = content_store::upsert_sync(
             &state.db,
             post.id,
             &parsed.lang,
