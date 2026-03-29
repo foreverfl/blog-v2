@@ -16,7 +16,8 @@ pub struct AppConfig {
     pub s3_bucket: String,
     pub s3_prefix: String,
     pub max_upload_size: usize,
-    pub sync_secret: String,
+    pub import_secret: String,
+    pub github_token: Option<String>,
 }
 
 impl AppConfig {
@@ -32,7 +33,8 @@ impl AppConfig {
                 .ok()
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(50 * 1024 * 1024), // 50 MB
-            sync_secret: env::var("SYNC_SECRET").expect("SYNC_SECRET required"),
+            import_secret: env::var("IMPORT_SECRET").expect("IMPORT_SECRET required"),
+            github_token: env::var("GITHUB_TOKEN").ok(),
         }
     }
 }
