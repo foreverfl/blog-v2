@@ -54,10 +54,14 @@ async fn main() {
     };
     let s3 = aws_sdk_s3::Client::from_conf(s3_config);
 
+    let redis = redis::Client::open(config.redis_url.as_str())
+        .expect("failed to create redis client");
+
     let state = config::AppState {
         db,
         config: Arc::new(config),
         s3,
+        redis,
     };
 
     let app = routes::create_router(state);

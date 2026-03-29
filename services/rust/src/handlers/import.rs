@@ -1,4 +1,4 @@
-use axum::extract::{Query, State};
+use axum::extract::{Path, Query, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::Json;
@@ -336,14 +336,13 @@ struct HnI18n {
     ja: Option<String>,
 }
 
-/// POST /import/json?from=250324 — import HN items from Cloudflare R2, from date to today
+/// POST /import/json?from=250324 — import HN items from Cloudflare R2, from date to today.
+/// Returns 202 immediately with a job_id. Results stored in Redis (TTL 24h).
 pub async fn import_json(
     State(state): State<AppState>,
     headers: HeaderMap,
     Query(query): Query<ImportJsonQuery>,
 ) -> Result<impl IntoResponse, ApiError> {
-    use futures::stream::{self, StreamExt};
-
     let secret = headers
         .get("X-Import-Secret")
         .and_then(|v| v.to_str().ok())
@@ -366,13 +365,86 @@ pub async fn import_json(
         return Err(ApiError::BadRequest("from date is in the future".into()));
     }
 
-    let client = reqwest::Client::builder()
+    let job_id = uuid::Uuid::new_v4().to_string();
+    let redis_key = format!("import:json:{}", job_id);
+
+    // Store initial status
+    {
+        let mut conn = state.redis.get_multiplexed_async_connection().await
+            .map_err(|e| ApiError::Internal(format!("redis connection failed: {e}")))?;
+        let _: () = redis::cmd("SETEX")
+            .arg(&redis_key)
+            .arg(86400) // 24h TTL
+            .arg(serde_json::json!({"status": "processing", "from": query.from}).to_string())
+            .query_async(&mut conn)
+            .await
+            .map_err(|e| ApiError::Internal(format!("redis write failed: {e}")))?;
+    }
+
+    // Spawn background task
+    let bg_state = state.clone();
+    let bg_from = query.from.clone();
+    let bg_redis_key = redis_key.clone();
+    tokio::spawn(async move {
+        let result = run_json_import(&bg_state, from_date, today).await;
+
+        tracing::info!(
+            imported = result.imported,
+            skipped = result.skipped,
+            errors = result.errors.len(),
+            from = %bg_from,
+            "json import complete"
+        );
+
+        // Store result in Redis
+        if let Ok(mut conn) = bg_state.redis.get_multiplexed_async_connection().await {
+            let error_count = result.errors.len();
+            let errors_preview: Vec<&str> = result.errors.iter().take(20).map(|s| s.as_str()).collect();
+            let payload = serde_json::json!({
+                "status": "completed",
+                "from": bg_from,
+                "imported": result.imported,
+                "skipped": result.skipped,
+                "error_count": error_count,
+                "errors": errors_preview,
+            });
+            let _: Result<(), _> = redis::cmd("SETEX")
+                .arg(&bg_redis_key)
+                .arg(86400)
+                .arg(payload.to_string())
+                .query_async(&mut conn)
+                .await;
+        }
+    });
+
+    Ok((
+        StatusCode::ACCEPTED,
+        Json(serde_json::json!({ "job_id": job_id, "status": "processing" })),
+    ))
+}
+
+async fn run_json_import(
+    state: &AppState,
+    from_date: chrono::NaiveDate,
+    today: chrono::NaiveDate,
+) -> ImportResult {
+    use futures::stream::{self, StreamExt};
+
+    let client = match reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(30))
         .connect_timeout(std::time::Duration::from_secs(10))
         .build()
-        .map_err(|e| ApiError::Internal(format!("failed to build http client: {e}")))?;
+    {
+        Ok(c) => c,
+        Err(e) => {
+            return ImportResult {
+                imported: 0,
+                skipped: 0,
+                errors: vec![format!("failed to build http client: {e}")],
+            };
+        }
+    };
 
-    // Build list of dates
     let mut dates = vec![];
     let mut current = from_date;
     while current <= today {
@@ -380,7 +452,6 @@ pub async fn import_json(
         current += chrono::Duration::days(1);
     }
 
-    // Fetch all dates in parallel (10 concurrent)
     let batch_results: Vec<BatchResult> = stream::iter(dates)
         .map(|date| {
             let client = client.clone();
@@ -393,7 +464,6 @@ pub async fn import_json(
         .collect()
         .await;
 
-    // Process fetched batches sequentially (DB writes)
     let mut result = ImportResult {
         imported: 0,
         skipped: 0,
@@ -413,15 +483,31 @@ pub async fn import_json(
         }
     }
 
-    tracing::info!(
-        imported = result.imported,
-        skipped = result.skipped,
-        errors = result.errors.len(),
-        from = %query.from,
-        "json import complete"
-    );
+    result
+}
 
-    Ok((StatusCode::OK, Json(result)))
+/// GET /import/jobs/{job_id} — check import job status
+pub async fn get_import_job(
+    State(state): State<AppState>,
+    Path(job_id): Path<String>,
+) -> Result<impl IntoResponse, ApiError> {
+    let mut conn = state.redis.get_multiplexed_async_connection().await
+        .map_err(|e| ApiError::Internal(format!("redis connection failed: {e}")))?;
+
+    let result: Option<String> = redis::cmd("GET")
+        .arg(format!("import:json:{}", job_id))
+        .query_async(&mut conn)
+        .await
+        .map_err(|e| ApiError::Internal(format!("redis read failed: {e}")))?;
+
+    match result {
+        Some(data) => {
+            let value: serde_json::Value = serde_json::from_str(&data)
+                .map_err(|e| ApiError::Internal(format!("failed to parse job data: {e}")))?;
+            Ok(Json(value))
+        }
+        None => Err(ApiError::NotFound),
+    }
 }
 
 enum BatchResult {
@@ -480,13 +566,23 @@ async fn import_hn_batch(
     result: &mut ImportResult,
 ) {
     // slug = date (e.g. "260313")
-    let post = match post_store::upsert(db, "trends", "hackernews", batch_id, None).await {
+    let image_url = format!("{}/{}.webp", HN_IMAGE_BASE, batch_id);
+    let post = match post_store::upsert(db, "trends", "hackernews", batch_id, Some(&image_url)).await {
         Ok(p) => p,
         Err(e) => {
             result
                 .errors
                 .push(format!("{batch_id}: failed to upsert post: {e}"));
             return;
+        }
+    };
+
+    // Generate per-language titles
+    let title_fn = |lang: &str| -> String {
+        match lang {
+            "ko" => format!("데일리 해커뉴스"),
+            "ja" => format!("デイリーハッカーニュース"),
+            _ => format!("Daily Hacker News"),
         }
     };
 
@@ -532,10 +628,12 @@ async fn import_hn_batch(
 
         let body_json = sanitize_json(&serde_json::Value::Array(lang_items));
 
+        let title = title_fn(lang);
         if let Err(e) = content_store::upsert_batch_json(
             db,
             post.id,
             lang,
+            &title,
             &body_json,
         )
         .await
