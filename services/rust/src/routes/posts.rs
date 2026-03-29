@@ -1,4 +1,4 @@
-use axum::routing::{get, put};
+use axum::routing::{get, post, put};
 use axum::Router;
 
 use crate::config::AppState;
@@ -6,7 +6,8 @@ use crate::handlers;
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .route("/", get(handlers::posts::list_all).post(handlers::posts::create))
+        .route("/", post(handlers::posts::create))
+        .route("/recent", get(handlers::posts::list_posts))
         .route("/unindexed", get(handlers::posts::list_unindexed))
         .route("/mark-indexed", put(handlers::posts::mark_indexed))
         .route("/{classification}", get(handlers::posts::list_by_classification))

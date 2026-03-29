@@ -26,6 +26,23 @@ pub async fn list(
     })
 }
 
+pub async fn list_posts(
+    pool: &PgPool,
+    lang: Option<&str>,
+    page: i64,
+    per_page: i64,
+) -> Result<ListPostsResponse, ApiError> {
+    let (rows, total) =
+        post_store::list_excluding_classification(pool, lang, "trends", page, per_page).await?;
+
+    Ok(ListPostsResponse {
+        posts: rows.iter().map(PostSummaryResponse::from).collect(),
+        total,
+        page,
+        per_page,
+    })
+}
+
 pub async fn get_by_slug(
     pool: &PgPool,
     classification: &str,

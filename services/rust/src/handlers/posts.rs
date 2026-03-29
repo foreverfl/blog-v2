@@ -11,15 +11,15 @@ use crate::types::{
     PostResponse, UpdatePostRequest,
 };
 
-// GET /posts
-pub async fn list_all(
+// GET /posts/recent — exclude trends
+pub async fn list_posts(
     State(state): State<AppState>,
     Query(query): Query<ListPostsQuery>,
 ) -> Result<Json<ListPostsResponse>, ApiError> {
     let page = query.page.unwrap_or(1).max(1);
     let per_page = query.per_page.unwrap_or(20).clamp(1, 100);
 
-    let resp = repo::list(&state.db, query.lang.as_deref(), None, None, page, per_page).await?;
+    let resp = repo::list_posts(&state.db, query.lang.as_deref(), page, per_page).await?;
     Ok(Json(resp))
 }
 
