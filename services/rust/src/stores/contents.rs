@@ -146,3 +146,62 @@ pub async fn upsert_sync(
 
     Ok(())
 }
+
+pub async fn upsert_json(
+    pool: &PgPool,
+    post_id: Uuid,
+    lang: &str,
+    title: Option<&str>,
+    excerpt: Option<&str>,
+    body_text: Option<&str>,
+    metadata: &serde_json::Value,
+) -> Result<(), ApiError> {
+    sqlx::query(
+        r#"
+        INSERT INTO post_contents (post_id, lang, content_type, title, excerpt, body_text, metadata)
+        VALUES ($1, $2, 'json', $3, $4, $5, $6)
+        ON CONFLICT (post_id, lang) DO UPDATE SET
+            content_type = EXCLUDED.content_type,
+            title = EXCLUDED.title,
+            excerpt = EXCLUDED.excerpt,
+            body_text = EXCLUDED.body_text,
+            metadata = EXCLUDED.metadata,
+            updated_at = CURRENT_TIMESTAMP
+        "#,
+    )
+    .bind(post_id)
+    .bind(lang)
+    .bind(title)
+    .bind(excerpt)
+    .bind(body_text)
+    .bind(metadata)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn upsert_batch_json(
+    pool: &PgPool,
+    post_id: Uuid,
+    lang: &str,
+    body_json: &serde_json::Value,
+) -> Result<(), ApiError> {
+    sqlx::query(
+        r#"
+        INSERT INTO post_contents (post_id, lang, content_type, body_json)
+        VALUES ($1, $2, 'json', $3)
+        ON CONFLICT (post_id, lang) DO UPDATE SET
+            content_type = EXCLUDED.content_type,
+            body_json = EXCLUDED.body_json,
+            updated_at = CURRENT_TIMESTAMP
+        "#,
+    )
+    .bind(post_id)
+    .bind(lang)
+    .bind(body_json)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
