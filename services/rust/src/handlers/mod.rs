@@ -1,3 +1,3 @@
 pub mod posts;
-pub mod sync;
+pub mod import;
 pub mod uploads;

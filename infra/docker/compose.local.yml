@@ -92,7 +92,8 @@ services:
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_REGION: ${AWS_REGION:-auto}
       MAX_UPLOAD_SIZE: ${MAX_UPLOAD_SIZE:-52428800}
-      SYNC_SECRET: ${SYNC_SECRET}
+      IMPORT_SECRET: ${IMPORT_SECRET}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
     volumes:
       - ../../services/rust:/app
       - rust_cargo_cache:/usr/local/cargo/registry

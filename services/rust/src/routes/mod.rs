@@ -1,5 +1,5 @@
 mod posts;
-mod sync;
+mod import;
 mod uploads;
 
 use axum::http::{header, Method};
@@ -30,7 +30,7 @@ pub fn create_router(state: AppState) -> Router {
         .allow_headers([
             header::AUTHORIZATION,
             header::CONTENT_TYPE,
-            "X-Sync-Secret".parse().unwrap(),
+            "X-Import-Secret".parse().unwrap(),
         ])
         .allow_credentials(true);
 
@@ -40,7 +40,7 @@ pub fn create_router(state: AppState) -> Router {
         .route("/health", get(health))
         .nest("/posts", posts::router())
         .nest("/uploads", uploads::router(upload_limit))
-        .nest("/sync", sync::router())
+        .nest("/import", import::router())
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(|req: &axum::http::Request<_>| {

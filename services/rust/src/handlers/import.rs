@@ -26,8 +26,8 @@ struct GitHubTreeEntry {
 }
 
 #[derive(Debug, Serialize)]
-pub struct SyncResult {
-    pub synced: usize,
+pub struct ImportResult {
+    pub imported: usize,
     pub skipped: usize,
     pub errors: Vec<String>,
 }
@@ -46,16 +46,21 @@ struct ParsedFrontmatter {
     image: Option<String>,
 }
 
-pub async fn sync_from_github(
+/// POST /import/mdx — import markdown/mdx files from GitHub and upsert into DB
+pub async fn import_mdx_from_github(
     State(state): State<AppState>,
     headers: HeaderMap,
 ) -> Result<impl IntoResponse, ApiError> {
-    // Verify sync secret from X-Sync-Secret header (constant-time comparison)
     let secret = headers
-        .get("X-Sync-Secret")
+        .get("X-Import-Secret")
         .and_then(|v| v.to_str().ok())
         .unwrap_or("");
-    if secret.as_bytes().ct_eq(state.config.sync_secret.as_bytes()).unwrap_u8() != 1 {
+    if secret
+        .as_bytes()
+        .ct_eq(state.config.import_secret.as_bytes())
+        .unwrap_u8()
+        != 1
+    {
         return Err(ApiError::InvalidToken);
     }
 
@@ -65,17 +70,31 @@ pub async fn sync_from_github(
         .build()
         .map_err(|e| ApiError::Internal(format!("failed to build http client: {e}")))?;
 
+    let github_token = state.config.github_token.as_deref();
+
     // 1. Fetch repo tree recursively
     let tree_url = format!(
         "https://api.github.com/repos/{}/git/trees/{}?recursive=1",
         GITHUB_REPO, GITHUB_BRANCH
     );
-    let tree: GitHubTree = client
+    let mut req = client
         .get(&tree_url)
-        .header("User-Agent", "blog-sync")
+        .header("User-Agent", "blog-import");
+    if let Some(token) = github_token {
+        req = req.header("Authorization", format!("Bearer {token}"));
+    }
+    let resp = req
         .send()
         .await
-        .map_err(|e| ApiError::Internal(format!("failed to fetch github tree: {e}")))?
+        .map_err(|e| ApiError::Internal(format!("failed to fetch github tree: {e}")))?;
+    let status = resp.status();
+    if !status.is_success() {
+        let body = resp.text().await.unwrap_or_default();
+        return Err(ApiError::Internal(format!(
+            "github tree api returned {status}: {body}"
+        )));
+    }
+    let tree: GitHubTree = resp
         .json()
         .await
         .map_err(|e| ApiError::Internal(format!("failed to parse github tree: {e}")))?;
@@ -91,8 +110,8 @@ pub async fn sync_from_github(
         })
         .collect();
 
-    let mut result = SyncResult {
-        synced: 0,
+    let mut result = ImportResult {
+        imported: 0,
         skipped: 0,
         errors: vec![],
     };
@@ -112,9 +131,13 @@ pub async fn sync_from_github(
             "https://raw.githubusercontent.com/{}/{}/{}",
             GITHUB_REPO, GITHUB_BRANCH, entry.path
         );
-        let raw_content = match client
+        let mut req = client
             .get(&raw_url)
-            .header("User-Agent", "blog-sync")
+            .header("User-Agent", "blog-import");
+        if let Some(token) = github_token {
+            req = req.header("Authorization", format!("Bearer {token}"));
+        }
+        let raw_content = match req
             .send()
             .await
         {
@@ -180,14 +203,14 @@ pub async fn sync_from_github(
             continue;
         }
 
-        result.synced += 1;
+        result.imported += 1;
     }
 
     tracing::info!(
-        synced = result.synced,
+        imported = result.imported,
         skipped = result.skipped,
         errors = result.errors.len(),
-        "github sync complete"
+        "github import complete"
     );
 
     Ok((StatusCode::OK, Json(result)))
@@ -281,21 +304,26 @@ fn strip_quotes(s: &str) -> String {
     s.trim_matches('"').trim_matches('\'').to_string()
 }
 
-/// POST /sync/json — placeholder for JSON-based sync (not yet implemented)
-pub async fn sync_json(
+/// POST /import/json — placeholder for JSON-based import (not yet implemented)
+pub async fn import_json(
     State(state): State<AppState>,
     headers: HeaderMap,
 ) -> Result<impl IntoResponse, ApiError> {
     let secret = headers
-        .get("X-Sync-Secret")
+        .get("X-Import-Secret")
         .and_then(|v| v.to_str().ok())
         .unwrap_or("");
-    if secret.as_bytes().ct_eq(state.config.sync_secret.as_bytes()).unwrap_u8() != 1 {
+    if secret
+        .as_bytes()
+        .ct_eq(state.config.import_secret.as_bytes())
+        .unwrap_u8()
+        != 1
+    {
         return Err(ApiError::InvalidToken);
     }
 
     Ok((
         StatusCode::NOT_IMPLEMENTED,
-        Json(serde_json::json!({"error": "sync/json is not yet implemented"})),
+        Json(serde_json::json!({"error": "import/json is not yet implemented"})),
     ))
 }

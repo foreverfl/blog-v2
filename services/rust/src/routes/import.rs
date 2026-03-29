@@ -6,6 +6,6 @@ use crate::handlers;
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .route("/mdx", post(handlers::sync::sync_from_github))
-        .route("/json", post(handlers::sync::sync_json))
+        .route("/mdx", post(handlers::import::import_mdx_from_github))
+        .route("/json", post(handlers::import::import_json))
 }
