@@ -85,6 +85,47 @@ pub async fn list(
     Ok((rows, total.0))
 }
 
+pub async fn list_excluding_classification(
+    pool: &PgPool,
+    lang: Option<&str>,
+    exclude_classification: &str,
+    page: i64,
+    per_page: i64,
+) -> Result<(Vec<PostSummaryRow>, i64), ApiError> {
+    let offset = (page - 1) * per_page;
+
+    let total: (i64,) = sqlx::query_as(
+        r#"
+        SELECT COUNT(*)
+        FROM posts p
+        WHERE p.classification != $1
+        "#,
+    )
+    .bind(exclude_classification)
+    .fetch_one(pool)
+    .await?;
+
+    let rows = sqlx::query_as::<_, PostSummaryRow>(
+        r#"
+        SELECT p.id, p.classification, p.category, p.slug, p.body, p.created_at,
+               pc.title
+        FROM posts p
+        LEFT JOIN post_contents pc ON pc.post_id = p.id AND ($1::text IS NULL OR pc.lang = $1)
+        WHERE p.classification != $2
+        ORDER BY p.created_at DESC
+        LIMIT $3 OFFSET $4
+        "#,
+    )
+    .bind(lang)
+    .bind(exclude_classification)
+    .bind(per_page)
+    .bind(offset)
+    .fetch_all(pool)
+    .await?;
+
+    Ok((rows, total.0))
+}
+
 pub async fn get_by_slug(
     pool: &PgPool,
     classification: &str,
