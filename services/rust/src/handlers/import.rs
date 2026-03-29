@@ -121,6 +121,7 @@ pub async fn import_mdx_from_github(
         let parsed = match parse_file_path(&entry.path) {
             Some(p) => p,
             None => {
+                tracing::info!(path = %entry.path, "skipped: could not parse file path");
                 result.skipped += 1;
                 continue;
             }
