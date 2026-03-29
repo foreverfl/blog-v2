@@ -162,12 +162,13 @@ pub async fn import_mdx_from_github(
         // Parse frontmatter and body
         let (frontmatter, body) = parse_frontmatter(&raw_content);
 
-        // Upsert post
+        // Upsert post (store frontmatter image in posts.image)
         let post = match post_store::upsert(
             &state.db,
             &parsed.classification,
             &parsed.category,
             &parsed.slug,
+            frontmatter.image.as_deref(),
         )
         .await
         {

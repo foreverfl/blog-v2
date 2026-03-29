@@ -13,15 +13,15 @@ pub async fn create(
 
     let post = sqlx::query_as::<_, PostRow>(
         r#"
-        INSERT INTO posts (classification, category, slug, body)
+        INSERT INTO posts (classification, category, slug, image)
         VALUES ($1, $2, $3, $4)
-        RETURNING id, classification, category, slug, body, created_at, updated_at, indexed
+        RETURNING id, classification, category, slug, image, created_at, updated_at, indexed
         "#,
     )
     .bind(&req.classification)
     .bind(&req.category)
     .bind(&req.slug)
-    .bind(&req.body)
+    .bind(&req.image)
     .fetch_one(&mut *tx)
     .await
     .map_err(|e| match e {
@@ -64,7 +64,7 @@ pub async fn list(
 
     let rows = sqlx::query_as::<_, PostSummaryRow>(
         r#"
-        SELECT p.id, p.classification, p.category, p.slug, p.body, p.created_at,
+        SELECT p.id, p.classification, p.category, p.slug, p.image, p.created_at,
                pc.title
         FROM posts p
         LEFT JOIN post_contents pc ON pc.post_id = p.id AND ($1::text IS NULL OR pc.lang = $1)
@@ -107,7 +107,7 @@ pub async fn list_excluding_classification(
 
     let rows = sqlx::query_as::<_, PostSummaryRow>(
         r#"
-        SELECT p.id, p.classification, p.category, p.slug, p.body, p.created_at,
+        SELECT p.id, p.classification, p.category, p.slug, p.image, p.created_at,
                pc.title
         FROM posts p
         LEFT JOIN post_contents pc ON pc.post_id = p.id AND ($1::text IS NULL OR pc.lang = $1)
@@ -134,7 +134,7 @@ pub async fn get_by_slug(
 ) -> Result<Option<PostRow>, ApiError> {
     let row = sqlx::query_as::<_, PostRow>(
         r#"
-        SELECT id, classification, category, slug, body, created_at, updated_at, indexed
+        SELECT id, classification, category, slug, image, created_at, updated_at, indexed
         FROM posts
         WHERE classification = $1 AND category = $2 AND slug = $3
         LIMIT 1
@@ -163,7 +163,7 @@ pub async fn list_unindexed(
 
     let rows = sqlx::query_as::<_, PostSummaryRow>(
         r#"
-        SELECT p.id, p.classification, p.category, p.slug, p.body, p.created_at,
+        SELECT p.id, p.classification, p.category, p.slug, p.image, p.created_at,
                NULL::text AS title
         FROM posts p
         WHERE p.indexed = false
@@ -188,7 +188,7 @@ pub async fn mark_indexed(
         UPDATE posts
         SET indexed = true, updated_at = CURRENT_TIMESTAMP
         WHERE id = ANY($1)
-        RETURNING id, classification, category, slug, body, created_at, updated_at, indexed
+        RETURNING id, classification, category, slug, image, created_at, updated_at, indexed
         "#,
     )
     .bind(ids)
@@ -211,17 +211,17 @@ pub async fn update(
             classification = COALESCE($2, classification),
             category = COALESCE($3, category),
             slug = COALESCE($4, slug),
-            body = COALESCE($5, body),
+            image = COALESCE($5, image),
             updated_at = CURRENT_TIMESTAMP
         WHERE id = $1
-        RETURNING id, classification, category, slug, body, created_at, updated_at, indexed
+        RETURNING id, classification, category, slug, image, created_at, updated_at, indexed
         "#,
     )
     .bind(id)
     .bind(&req.classification)
     .bind(&req.category)
     .bind(&req.slug)
-    .bind(&req.body)
+    .bind(&req.image)
     .fetch_optional(&mut *tx)
     .await
     .map_err(|e| match e {
@@ -254,19 +254,22 @@ pub async fn upsert(
     classification: &str,
     category: &str,
     slug: &str,
+    image: Option<&str>,
 ) -> Result<PostRow, ApiError> {
     let row = sqlx::query_as::<_, PostRow>(
         r#"
-        INSERT INTO posts (classification, category, slug)
-        VALUES ($1, $2, $3)
+        INSERT INTO posts (classification, category, slug, image)
+        VALUES ($1, $2, $3, $4)
         ON CONFLICT (classification, category, slug) DO UPDATE SET
+            image = COALESCE(EXCLUDED.image, posts.image),
             updated_at = CURRENT_TIMESTAMP
-        RETURNING id, classification, category, slug, body, created_at, updated_at, indexed
+        RETURNING id, classification, category, slug, image, created_at, updated_at, indexed
         "#,
     )
     .bind(classification)
     .bind(category)
     .bind(slug)
+    .bind(image)
     .fetch_one(pool)
     .await?;
 
