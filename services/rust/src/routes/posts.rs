@@ -8,6 +8,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", post(handlers::posts::create))
         .route("/recent", get(handlers::posts::list_posts))
+        .route("/translate", post(handlers::translate::translate))
         .route("/unindexed", get(handlers::posts::list_unindexed))
         .route("/mark-indexed", put(handlers::posts::mark_indexed))
         .route("/{classification}", get(handlers::posts::list_by_classification))
