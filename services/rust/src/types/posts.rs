@@ -13,7 +13,7 @@ pub struct PostRow {
     pub classification: String,
     pub category: String,
     pub slug: String,
-    pub body: Option<String>,
+    pub image: Option<String>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
     pub indexed: bool,
@@ -25,7 +25,7 @@ pub struct PostSummaryRow {
     pub classification: String,
     pub category: String,
     pub slug: String,
-    pub body: Option<String>,
+    pub image: Option<String>,
     pub created_at: NaiveDateTime,
     pub title: Option<String>,
 }
@@ -37,7 +37,7 @@ pub struct CreatePostRequest {
     pub classification: String,
     pub category: String,
     pub slug: String,
-    pub body: Option<String>,
+    pub image: Option<String>,
     #[serde(default)]
     pub contents: Vec<ContentPayload>,
 }
@@ -47,7 +47,7 @@ pub struct UpdatePostRequest {
     pub classification: Option<String>,
     pub category: Option<String>,
     pub slug: Option<String>,
-    pub body: Option<String>,
+    pub image: Option<String>,
     #[serde(default)]
     pub contents: Vec<ContentPayload>,
 }
@@ -77,7 +77,7 @@ pub struct PostResponse {
     pub classification: String,
     pub category: String,
     pub slug: String,
-    pub body: Option<String>,
+    pub image: Option<String>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
     pub indexed: bool,
@@ -92,7 +92,7 @@ impl From<&PostRow> for PostResponse {
             classification: row.classification.clone(),
             category: row.category.clone(),
             slug: row.slug.clone(),
-            body: row.body.clone(),
+            image: row.image.clone(),
             created_at: row.created_at,
             updated_at: row.updated_at,
             indexed: row.indexed,
@@ -120,7 +120,7 @@ impl From<&PostSummaryRow> for PostSummaryResponse {
             classification: row.classification.clone(),
             category: row.category.clone(),
             slug: row.slug.clone(),
-            image: row.body.clone(),
+            image: row.image.clone(),
             created_at: row.created_at,
             title: row.title.clone(),
         }
