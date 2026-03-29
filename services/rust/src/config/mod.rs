@@ -18,6 +18,7 @@ pub struct AppConfig {
     pub max_upload_size: usize,
     pub import_secret: String,
     pub github_token: Option<String>,
+    pub openai_api_key: String,
 }
 
 impl AppConfig {
@@ -35,6 +36,7 @@ impl AppConfig {
                 .unwrap_or(50 * 1024 * 1024), // 50 MB
             import_secret: env::var("IMPORT_SECRET").expect("IMPORT_SECRET required"),
             github_token: env::var("GITHUB_TOKEN").ok(),
+            openai_api_key: env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY required"),
         }
     }
 }
