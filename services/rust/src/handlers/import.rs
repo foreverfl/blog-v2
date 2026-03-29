@@ -1,4 +1,4 @@
-use axum::extract::State;
+use axum::extract::{Query, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::Json;
@@ -306,11 +306,44 @@ fn strip_quotes(s: &str) -> String {
     s.trim_matches('"').trim_matches('\'').to_string()
 }
 
-/// POST /import/json — placeholder for JSON-based import (not yet implemented)
+const HN_JSON_BASE: &str = "https://blog_workers.forever-fl.workers.dev/hackernews";
+const HN_IMAGE_BASE: &str = "https://blog_workers.forever-fl.workers.dev/hackernews-images";
+
+#[derive(Debug, Deserialize)]
+pub struct ImportJsonQuery {
+    /// Start date in YYMMDD format, e.g. 250324. Imports from this date to today.
+    pub from: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct HnItem {
+    id: String,
+    #[serde(rename = "hnId")]
+    hn_id: Option<u64>,
+    title: HnI18n,
+    url: Option<String>,
+    score: Option<i64>,
+    by: Option<String>,
+    time: Option<i64>,
+    content: Option<String>,
+    summary: HnI18n,
+}
+
+#[derive(Debug, Deserialize)]
+struct HnI18n {
+    en: Option<String>,
+    ko: Option<String>,
+    ja: Option<String>,
+}
+
+/// POST /import/json?from=250324 — import HN items from Cloudflare R2, from date to today
 pub async fn import_json(
     State(state): State<AppState>,
     headers: HeaderMap,
+    Query(query): Query<ImportJsonQuery>,
 ) -> Result<impl IntoResponse, ApiError> {
+    use futures::stream::{self, StreamExt};
+
     let secret = headers
         .get("X-Import-Secret")
         .and_then(|v| v.to_str().ok())
@@ -324,8 +357,194 @@ pub async fn import_json(
         return Err(ApiError::InvalidToken);
     }
 
-    Ok((
-        StatusCode::NOT_IMPLEMENTED,
-        Json(serde_json::json!({"error": "import/json is not yet implemented"})),
-    ))
+    // Parse YYMMDD → NaiveDate
+    let from_date = chrono::NaiveDate::parse_from_str(&query.from, "%y%m%d")
+        .map_err(|e| ApiError::BadRequest(format!("invalid date format (expected YYMMDD): {e}")))?;
+    let today = chrono::Utc::now().date_naive();
+
+    if from_date > today {
+        return Err(ApiError::BadRequest("from date is in the future".into()));
+    }
+
+    let client = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(30))
+        .connect_timeout(std::time::Duration::from_secs(10))
+        .build()
+        .map_err(|e| ApiError::Internal(format!("failed to build http client: {e}")))?;
+
+    // Build list of dates
+    let mut dates = vec![];
+    let mut current = from_date;
+    while current <= today {
+        dates.push(current);
+        current += chrono::Duration::days(1);
+    }
+
+    // Fetch all dates in parallel (10 concurrent)
+    let batch_results: Vec<BatchResult> = stream::iter(dates)
+        .map(|date| {
+            let client = client.clone();
+            async move {
+                let batch_id = date.format("%y%m%d").to_string();
+                fetch_batch(&client, &batch_id).await
+            }
+        })
+        .buffer_unordered(10)
+        .collect()
+        .await;
+
+    // Process fetched batches sequentially (DB writes)
+    let mut result = ImportResult {
+        imported: 0,
+        skipped: 0,
+        errors: vec![],
+    };
+
+    for batch in batch_results {
+        match batch {
+            BatchResult::Items(batch_id, items) => {
+                import_hn_batch(&state.db, &batch_id, &items, &mut result).await;
+                tracing::info!(batch_id = %batch_id, items = items.len(), "batch processed");
+            }
+            BatchResult::Skip => {}
+            BatchResult::Error(msg) => {
+                result.errors.push(msg);
+            }
+        }
+    }
+
+    tracing::info!(
+        imported = result.imported,
+        skipped = result.skipped,
+        errors = result.errors.len(),
+        from = %query.from,
+        "json import complete"
+    );
+
+    Ok((StatusCode::OK, Json(result)))
+}
+
+enum BatchResult {
+    Items(String, Vec<HnItem>),
+    Skip,
+    Error(String),
+}
+
+async fn fetch_batch(client: &reqwest::Client, batch_id: &str) -> BatchResult {
+    let json_url = format!("{}/{}.json", HN_JSON_BASE, batch_id);
+
+    let resp = match client.get(&json_url).send().await {
+        Ok(r) => r,
+        Err(e) => {
+            tracing::warn!(batch_id = %batch_id, "failed to fetch: {e:?}");
+            return BatchResult::Error(format!("{batch_id}: fetch failed: {e:?}"));
+        }
+    };
+
+    if resp.status() == reqwest::StatusCode::NOT_FOUND {
+        tracing::debug!(batch_id = %batch_id, "no data, skipping");
+        return BatchResult::Skip;
+    }
+
+    if !resp.status().is_success() {
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
+        return BatchResult::Error(format!("{batch_id}: fetch returned {status}: {body}"));
+    }
+
+    match resp.json::<Vec<HnItem>>().await {
+        Ok(items) => BatchResult::Items(batch_id.to_string(), items),
+        Err(e) => BatchResult::Error(format!("{batch_id}: failed to parse json: {e}")),
+    }
+}
+
+/// Strip null bytes that PostgreSQL text columns reject.
+fn sanitize_json(value: &serde_json::Value) -> serde_json::Value {
+    match value {
+        serde_json::Value::String(s) => serde_json::Value::String(s.replace('\0', "")),
+        serde_json::Value::Array(arr) => {
+            serde_json::Value::Array(arr.iter().map(sanitize_json).collect())
+        }
+        serde_json::Value::Object(map) => {
+            serde_json::Value::Object(map.iter().map(|(k, v)| (k.clone(), sanitize_json(v))).collect())
+        }
+        other => other.clone(),
+    }
+}
+
+/// Import one batch (date) as a single post with items in body_json per language.
+async fn import_hn_batch(
+    db: &sqlx::PgPool,
+    batch_id: &str,
+    items: &[HnItem],
+    result: &mut ImportResult,
+) {
+    // slug = date (e.g. "260313")
+    let post = match post_store::upsert(db, "trends", "hackernews", batch_id, None).await {
+        Ok(p) => p,
+        Err(e) => {
+            result
+                .errors
+                .push(format!("{batch_id}: failed to upsert post: {e}"));
+            return;
+        }
+    };
+
+    // Build per-language item arrays
+    for lang in &["en", "ko", "ja"] {
+        let lang_items: Vec<serde_json::Value> = items
+            .iter()
+            .filter_map(|item| {
+                let title = match lang {
+                    &"en" => item.title.en.as_deref(),
+                    &"ko" => item.title.ko.as_deref(),
+                    &"ja" => item.title.ja.as_deref(),
+                    _ => None,
+                }?;
+
+                let summary = match lang {
+                    &"en" => item.summary.en.as_deref(),
+                    &"ko" => item.summary.ko.as_deref(),
+                    &"ja" => item.summary.ja.as_deref(),
+                    _ => None,
+                };
+
+                let hn_id = item.hn_id.map(|id| id.to_string()).unwrap_or_else(|| item.id.clone());
+                let image = item.hn_id.map(|id| format!("{}/{}.webp", HN_IMAGE_BASE, id));
+
+                Some(serde_json::json!({
+                    "hn_id": hn_id,
+                    "title": title,
+                    "summary": summary,
+                    "content": item.content,
+                    "url": item.url,
+                    "score": item.score,
+                    "by": item.by,
+                    "time": item.time,
+                    "image": image,
+                }))
+            })
+            .collect();
+
+        if lang_items.is_empty() {
+            continue;
+        }
+
+        let body_json = sanitize_json(&serde_json::Value::Array(lang_items));
+
+        if let Err(e) = content_store::upsert_batch_json(
+            db,
+            post.id,
+            lang,
+            &body_json,
+        )
+        .await
+        {
+            result
+                .errors
+                .push(format!("{batch_id}/{lang}: failed to upsert content: {e}"));
+        }
+    }
+
+    result.imported += 1;
 }
