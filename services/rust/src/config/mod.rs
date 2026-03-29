@@ -6,6 +6,7 @@ pub struct AppState {
     pub db: sqlx::PgPool,
     pub config: Arc<AppConfig>,
     pub s3: aws_sdk_s3::Client,
+    pub redis: redis::Client,
 }
 
 #[derive(Clone, Debug)]
@@ -19,6 +20,7 @@ pub struct AppConfig {
     pub import_secret: String,
     pub github_token: Option<String>,
     pub openai_api_key: String,
+    pub redis_url: String,
 }
 
 impl AppConfig {
@@ -37,6 +39,7 @@ impl AppConfig {
             import_secret: env::var("IMPORT_SECRET").expect("IMPORT_SECRET required"),
             github_token: env::var("GITHUB_TOKEN").ok(),
             openai_api_key: env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY required"),
+            redis_url: env::var("REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1:6379".into()),
         }
     }
 }
