@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use subtle::ConstantTimeEq;
 
 use crate::config::AppState;
-use crate::stores::{contents as content_store, posts as post_store};
+use crate::stores::{contents as content_store, jobs as job_store, posts as post_store};
 use crate::types::ApiError;
 
 const GITHUB_REPO: &str = "foreverfl/blog";
@@ -46,7 +46,8 @@ struct ParsedFrontmatter {
     image: Option<String>,
 }
 
-/// POST /import/mdx — import markdown/mdx files from GitHub and upsert into DB
+/// POST /import/mdx — import markdown/mdx files from GitHub and upsert into DB.
+/// Returns 202 immediately with a job_id. Results stored in Redis (TTL 24h).
 pub async fn import_mdx_from_github(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -64,11 +65,78 @@ pub async fn import_mdx_from_github(
         return Err(ApiError::InvalidToken);
     }
 
-    let client = reqwest::Client::builder()
+    let job_id = uuid::Uuid::new_v4().to_string();
+
+    job_store::set(&state.redis, "mdx", &job_id, &serde_json::json!({"status": "processing"})).await?;
+
+    // Spawn background task
+    let bg_state = state.clone();
+    let bg_job_id = job_id.clone();
+    tokio::spawn(async move {
+        let result = run_mdx_import(&bg_state).await;
+
+        tracing::info!(
+            imported = result.imported,
+            skipped = result.skipped,
+            errors = result.errors.len(),
+            "mdx import complete"
+        );
+
+        let error_count = result.errors.len();
+        let errors_preview: Vec<&str> = result.errors.iter().take(50).map(|s| s.as_str()).collect();
+        let payload = serde_json::json!({
+            "status": "completed",
+            "imported": result.imported,
+            "skipped": result.skipped,
+            "error_count": error_count,
+            "errors": errors_preview,
+            "files_processed": result.files_processed,
+        });
+        job_store::set_silent(&bg_state.redis, "mdx", &bg_job_id, &payload).await;
+    });
+
+    Ok((
+        StatusCode::ACCEPTED,
+        Json(serde_json::json!({ "job_id": job_id, "status": "processing" })),
+    ))
+}
+
+#[derive(Debug, Serialize)]
+struct MdxFileDetail {
+    path: String,
+    classification: String,
+    category: String,
+    slug: String,
+    lang: String,
+    status: String, // "imported", "skipped", "error"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+struct MdxImportResult {
+    imported: usize,
+    skipped: usize,
+    errors: Vec<String>,
+    files_processed: Vec<MdxFileDetail>,
+}
+
+async fn run_mdx_import(state: &AppState) -> MdxImportResult {
+    let client = match reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(30))
         .connect_timeout(std::time::Duration::from_secs(10))
         .build()
-        .map_err(|e| ApiError::Internal(format!("failed to build http client: {e}")))?;
+    {
+        Ok(c) => c,
+        Err(e) => {
+            return MdxImportResult {
+                imported: 0,
+                skipped: 0,
+                errors: vec![format!("failed to build http client: {e}")],
+                files_processed: vec![],
+            };
+        }
+    };
 
     let github_token = state.config.github_token.as_deref();
 
@@ -83,21 +151,38 @@ pub async fn import_mdx_from_github(
     if let Some(token) = github_token {
         req = req.header("Authorization", format!("Bearer {token}"));
     }
-    let resp = req
-        .send()
-        .await
-        .map_err(|e| ApiError::Internal(format!("failed to fetch github tree: {e}")))?;
+    let resp = match req.send().await {
+        Ok(r) => r,
+        Err(e) => {
+            return MdxImportResult {
+                imported: 0,
+                skipped: 0,
+                errors: vec![format!("failed to fetch github tree: {e}")],
+                files_processed: vec![],
+            };
+        }
+    };
     let status = resp.status();
     if !status.is_success() {
         let body = resp.text().await.unwrap_or_default();
-        return Err(ApiError::Internal(format!(
-            "github tree api returned {status}: {body}"
-        )));
+        return MdxImportResult {
+            imported: 0,
+            skipped: 0,
+            errors: vec![format!("github tree api returned {status}: {body}")],
+            files_processed: vec![],
+        };
     }
-    let tree: GitHubTree = resp
-        .json()
-        .await
-        .map_err(|e| ApiError::Internal(format!("failed to parse github tree: {e}")))?;
+    let tree: GitHubTree = match resp.json().await {
+        Ok(t) => t,
+        Err(e) => {
+            return MdxImportResult {
+                imported: 0,
+                skipped: 0,
+                errors: vec![format!("failed to parse github tree: {e}")],
+                files_processed: vec![],
+            };
+        }
+    };
 
     // 2. Filter markdown/mdx files under contents/
     let content_files: Vec<&GitHubTreeEntry> = tree
@@ -110,10 +195,11 @@ pub async fn import_mdx_from_github(
         })
         .collect();
 
-    let mut result = ImportResult {
+    let mut result = MdxImportResult {
         imported: 0,
         skipped: 0,
         errors: vec![],
+        files_processed: vec![],
     };
 
     // 3. Process each file
@@ -123,8 +209,27 @@ pub async fn import_mdx_from_github(
             None => {
                 tracing::info!(path = %entry.path, "skipped: could not parse file path");
                 result.skipped += 1;
+                result.files_processed.push(MdxFileDetail {
+                    path: entry.path.clone(),
+                    classification: String::new(),
+                    category: String::new(),
+                    slug: String::new(),
+                    lang: String::new(),
+                    status: "skipped".into(),
+                    error: Some("could not parse file path".into()),
+                });
                 continue;
             }
+        };
+
+        let detail_base = |status: &str, error: Option<String>| MdxFileDetail {
+            path: entry.path.clone(),
+            classification: parsed.classification.clone(),
+            category: parsed.category.clone(),
+            slug: parsed.slug.clone(),
+            lang: parsed.lang.clone(),
+            status: status.into(),
+            error,
         };
 
         // Fetch raw file content
@@ -138,23 +243,20 @@ pub async fn import_mdx_from_github(
         if let Some(token) = github_token {
             req = req.header("Authorization", format!("Bearer {token}"));
         }
-        let raw_content = match req
-            .send()
-            .await
-        {
+        let raw_content = match req.send().await {
             Ok(resp) => match resp.text().await {
                 Ok(text) => text,
                 Err(e) => {
-                    result
-                        .errors
-                        .push(format!("{}: failed to read body: {e}", entry.path));
+                    let msg = format!("{}: failed to read body: {e}", entry.path);
+                    result.errors.push(msg.clone());
+                    result.files_processed.push(detail_base("error", Some(msg)));
                     continue;
                 }
             },
             Err(e) => {
-                result
-                    .errors
-                    .push(format!("{}: failed to fetch: {e}", entry.path));
+                let msg = format!("{}: failed to fetch: {e}", entry.path);
+                result.errors.push(msg.clone());
+                result.files_processed.push(detail_base("error", Some(msg)));
                 continue;
             }
         };
@@ -162,7 +264,7 @@ pub async fn import_mdx_from_github(
         // Parse frontmatter and body
         let (frontmatter, body) = parse_frontmatter(&raw_content);
 
-        // Upsert post (store frontmatter image in posts.image)
+        // Upsert post
         let post = match post_store::upsert(
             &state.db,
             &parsed.classification,
@@ -174,9 +276,9 @@ pub async fn import_mdx_from_github(
         {
             Ok(p) => p,
             Err(e) => {
-                result
-                    .errors
-                    .push(format!("{}: failed to upsert post: {e}", entry.path));
+                let msg = format!("{}: failed to upsert post: {e}", entry.path);
+                result.errors.push(msg.clone());
+                result.files_processed.push(detail_base("error", Some(msg)));
                 continue;
             }
         };
@@ -199,23 +301,17 @@ pub async fn import_mdx_from_github(
         )
         .await
         {
-            result
-                .errors
-                .push(format!("{}: failed to upsert content: {e}", entry.path));
+            let msg = format!("{}: failed to upsert content: {e}", entry.path);
+            result.errors.push(msg.clone());
+            result.files_processed.push(detail_base("error", Some(msg)));
             continue;
         }
 
         result.imported += 1;
+        result.files_processed.push(detail_base("imported", None));
     }
 
-    tracing::info!(
-        imported = result.imported,
-        skipped = result.skipped,
-        errors = result.errors.len(),
-        "github import complete"
-    );
-
-    Ok((StatusCode::OK, Json(result)))
+    result
 }
 
 /// Parse a file path like `contents/development/devnotes/001-some-slug-ko.mdx`
@@ -366,25 +462,13 @@ pub async fn import_json(
     }
 
     let job_id = uuid::Uuid::new_v4().to_string();
-    let redis_key = format!("import:json:{}", job_id);
 
-    // Store initial status
-    {
-        let mut conn = state.redis.get_multiplexed_async_connection().await
-            .map_err(|e| ApiError::Internal(format!("redis connection failed: {e}")))?;
-        let _: () = redis::cmd("SETEX")
-            .arg(&redis_key)
-            .arg(86400) // 24h TTL
-            .arg(serde_json::json!({"status": "processing", "from": query.from}).to_string())
-            .query_async(&mut conn)
-            .await
-            .map_err(|e| ApiError::Internal(format!("redis write failed: {e}")))?;
-    }
+    job_store::set(&state.redis, "json", &job_id, &serde_json::json!({"status": "processing", "from": query.from})).await?;
 
     // Spawn background task
     let bg_state = state.clone();
     let bg_from = query.from.clone();
-    let bg_redis_key = redis_key.clone();
+    let bg_job_id = job_id.clone();
     tokio::spawn(async move {
         let result = run_json_import(&bg_state, from_date, today).await;
 
@@ -396,25 +480,17 @@ pub async fn import_json(
             "json import complete"
         );
 
-        // Store result in Redis
-        if let Ok(mut conn) = bg_state.redis.get_multiplexed_async_connection().await {
-            let error_count = result.errors.len();
-            let errors_preview: Vec<&str> = result.errors.iter().take(20).map(|s| s.as_str()).collect();
-            let payload = serde_json::json!({
-                "status": "completed",
-                "from": bg_from,
-                "imported": result.imported,
-                "skipped": result.skipped,
-                "error_count": error_count,
-                "errors": errors_preview,
-            });
-            let _: Result<(), _> = redis::cmd("SETEX")
-                .arg(&bg_redis_key)
-                .arg(86400)
-                .arg(payload.to_string())
-                .query_async(&mut conn)
-                .await;
-        }
+        let error_count = result.errors.len();
+        let errors_preview: Vec<&str> = result.errors.iter().take(20).map(|s| s.as_str()).collect();
+        let payload = serde_json::json!({
+            "status": "completed",
+            "from": bg_from,
+            "imported": result.imported,
+            "skipped": result.skipped,
+            "error_count": error_count,
+            "errors": errors_preview,
+        });
+        job_store::set_silent(&bg_state.redis, "json", &bg_job_id, &payload).await;
     });
 
     Ok((
@@ -491,21 +567,8 @@ pub async fn get_import_job(
     State(state): State<AppState>,
     Path(job_id): Path<String>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let mut conn = state.redis.get_multiplexed_async_connection().await
-        .map_err(|e| ApiError::Internal(format!("redis connection failed: {e}")))?;
-
-    let result: Option<String> = redis::cmd("GET")
-        .arg(format!("import:json:{}", job_id))
-        .query_async(&mut conn)
-        .await
-        .map_err(|e| ApiError::Internal(format!("redis read failed: {e}")))?;
-
-    match result {
-        Some(data) => {
-            let value: serde_json::Value = serde_json::from_str(&data)
-                .map_err(|e| ApiError::Internal(format!("failed to parse job data: {e}")))?;
-            Ok(Json(value))
-        }
+    match job_store::get(&state.redis, &job_id, &["mdx", "json"]).await? {
+        Some(value) => Ok(Json(value)),
         None => Err(ApiError::NotFound),
     }
 }
