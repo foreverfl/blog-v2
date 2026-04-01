@@ -146,6 +146,12 @@ jobs:
               "https://api.github.com/repos/${{ github.repository }}/tarball/${{ env.VERSION }}" \
               | tar xz --strip-components=4 -C migrations/ --wildcards '*/infra/db/migrations/*'
 
+            # Download observability configs from release tag
+            mkdir -p observability
+            curl -sf -L \
+              "https://api.github.com/repos/${{ github.repository }}/tarball/${{ env.VERSION }}" \
+              | tar xz --strip-components=4 -C observability/ --wildcards '*/infra/docker/observability/*'
+
             # Login to GHCR
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
