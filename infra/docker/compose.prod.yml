@@ -57,3 +57,44 @@ services:
     depends_on:
       flyway:
         condition: service_completed_successfully
+
+  # Observability stack
+  loki:
+    image: grafana/loki:3.7.0
+    container_name: blog-loki
+    volumes:
+      - ./observability/loki/loki-config.prod.yml:/etc/loki/config.yaml:ro
+      - loki_data:/loki
+    command: -config.file=/etc/loki/config.yaml
+    restart: unless-stopped
+
+  tempo:
+    image: grafana/tempo:2.10.3
+    container_name: blog-tempo
+    volumes:
+      - ./observability/tempo/tempo-config.prod.yml:/etc/tempo/config.yaml:ro
+      - tempo_data:/var/tempo
+    command: -config.file=/etc/tempo/config.yaml
+    restart: unless-stopped
+
+  alloy:
+    image: grafana/alloy:v1.15.0
+    container_name: blog-alloy
+    environment:
+      GRAFANA_CLOUD_PROM_URL: ${GRAFANA_CLOUD_PROM_URL}
+      GRAFANA_CLOUD_PROM_USER: ${GRAFANA_CLOUD_PROM_USER}
+      GRAFANA_CLOUD_API_KEY: ${GRAFANA_CLOUD_API_KEY}
+      HOST_NAME: ${HOST_NAME}
+      ENVIRONMENT: ${ENVIRONMENT}
+      PROJECT_NAME: ${PROJECT_NAME}
+    volumes:
+      - ./observability/alloy/config.prod.alloy:/etc/alloy/config.alloy:ro
+    command: run /etc/alloy/config.alloy
+    depends_on:
+      - loki
+      - tempo
+    restart: unless-stopped
+
+volumes:
+  loki_data:
+  tempo_data:

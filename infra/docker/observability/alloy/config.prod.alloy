@@ -1,0 +1,80 @@
+// OTLP receiver: accepts logs and traces from application services
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    metrics = [otelcol.processor.batch.default.input]
+    logs    = [otelcol.processor.batch.default.input]
+    traces  = [otelcol.processor.batch.default.input]
+  }
+}
+
+// Batch processor: buffers telemetry for efficient export
+otelcol.processor.batch "default" {
+  timeout = "5s"
+  send_batch_size = 1024
+
+  output {
+    metrics = [otelcol.exporter.prometheus.grafana_cloud.input]
+    logs    = [otelcol.exporter.otlphttp.loki.input]
+    traces  = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
+// Export metrics to Grafana Cloud via Prometheus remote-write
+otelcol.exporter.prometheus "grafana_cloud" {
+  forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+prometheus.remote_write "grafana_cloud" {
+  endpoint {
+    url = env("GRAFANA_CLOUD_PROM_URL")
+
+    basic_auth {
+      username = env("GRAFANA_CLOUD_PROM_USER")
+      password = env("GRAFANA_CLOUD_API_KEY")
+    }
+  }
+
+  external_labels = {
+    host        = env("HOST_NAME"),
+    environment = env("ENVIRONMENT"),
+    project     = env("PROJECT_NAME"),
+  }
+}
+
+// Export logs to Loki via OTLP HTTP
+otelcol.exporter.otlphttp "loki" {
+  client {
+    endpoint = "http://loki:3100/otlp"
+  }
+
+  retry_on_failure {
+    enabled = true
+    initial_interval = "5s"
+    max_interval = "30s"
+    max_elapsed_time = "5m"
+  }
+}
+
+// Export traces to Tempo via OTLP gRPC
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:4317"
+    tls {
+      insecure = true
+    }
+  }
+
+  retry_on_failure {
+    enabled = true
+    initial_interval = "5s"
+    max_interval = "30s"
+    max_elapsed_time = "5m"
+  }
+}
