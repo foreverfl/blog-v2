@@ -1,3 +1,37 @@
+// ---------- Node Exporter scrape ----------
+prometheus.scrape "node_exporter" {
+  targets         = [{"__address__" = "node-exporter:9100"}]
+  forward_to      = [prometheus.relabel.add_labels.receiver]
+  scrape_interval = "60s"
+  job_name        = "node-exporter"
+}
+
+// ---------- cAdvisor scrape ----------
+prometheus.scrape "cadvisor" {
+  targets         = [{"__address__" = "cadvisor:8080"}]
+  forward_to      = [prometheus.relabel.add_labels.receiver]
+  scrape_interval = "60s"
+  job_name        = "cadvisor"
+}
+
+// ---------- Attach common labels ----------
+prometheus.relabel "add_labels" {
+  forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+
+  rule {
+    target_label = "host"
+    replacement  = env("HOST_NAME")
+  }
+  rule {
+    target_label = "env"
+    replacement  = env("ENVIRONMENT")
+  }
+  rule {
+    target_label = "project"
+    replacement  = env("PROJECT_NAME")
+  }
+}
+
 // OTLP receiver: accepts logs and traces from application services
 otelcol.receiver.otlp "default" {
   grpc {

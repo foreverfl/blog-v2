@@ -191,6 +191,42 @@ services:
     depends_on:
       - loki
       - tempo
+      - prometheus
+
+  node-exporter:
+    image: prom/node-exporter:v1.10.2
+    container_name: blog-node-exporter
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9100/metrics"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  cadvisor:
+    image: ghcr.io/google/cadvisor:0.56.2
+    container_name: blog-cadvisor
+    privileged: true
+    volumes:
+      - /var/run:/var/run:ro
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  prometheus:
+    image: prom/prometheus:v3.9.1
+    container_name: blog-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.enable-remote-write-receiver
 
   grafana:
     image: grafana/grafana:12.4.0
@@ -224,3 +260,4 @@ volumes:
   loki_data:
   tempo_data:
   grafana_data:
+  prometheus_data:
