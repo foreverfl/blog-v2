@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"blog-go-api/internal/common"
 	"blog-go-api/internal/config"
@@ -53,7 +54,8 @@ func ArticlesHandler(cfg *config.Config, r2c *r2.Client) http.HandlerFunc {
 
 		// Fetch top 100 story IDs from HN
 		log.Println("Fetching new data from HackerNews API...")
-		resp, err := http.Get(hnAPIBase + "/topstories.json")
+		httpClient := &http.Client{Timeout: 30 * time.Second}
+		resp, err := httpClient.Get(hnAPIBase + "/topstories.json")
 		if err != nil {
 			common.WriteJSON(w, 500, map[string]string{"error": "Failed to fetch top stories"})
 			return
@@ -89,7 +91,7 @@ func ArticlesHandler(cfg *config.Config, r2c *r2.Client) http.HandlerFunc {
 			go func(idx, id int) {
 				defer wg.Done()
 				url := fmt.Sprintf("%s/item/%d.json", hnAPIBase, id)
-				resp, err := http.Get(url)
+				resp, err := httpClient.Get(url)
 				if err != nil {
 					log.Printf("Failed to fetch item %d: %v", id, err)
 					return

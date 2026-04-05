@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"io"
 	"log"
 	"net/http"
@@ -54,7 +55,7 @@ func DrawHandler(cfg *config.Config, r2c *r2.Client, oai *oaiservice.Service) ht
 		}
 
 		drawPool.Submit(func() {
-			ctx := r.Context()
+			ctx := context.Background()
 			imageURL, err := oai.Draw(ctx, r2c, date)
 			if err != nil {
 				log.Printf("Failed to generate image: %v", err)
@@ -76,8 +77,8 @@ func DrawHandler(cfg *config.Config, r2c *r2.Client, oai *oaiservice.Service) ht
 				return
 			}
 
-			// Upload to R2 (as PNG; WebP conversion can be added later)
-			imgKey := date + ".webp"
+			// Upload to R2 as PNG
+			imgKey := date + ".png"
 			if err := r2c.PutBytes("hackernews-images", imgKey, imgData, "image/png"); err != nil {
 				log.Printf("Failed to upload image to R2: %v", err)
 				return

@@ -122,7 +122,7 @@ services:
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_REGION: ${AWS_REGION:-auto}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
-      HACKERNEWS_SECRET: ${HACKERNEWS_SECRET:-}
+      HACKERNEWS_SECRET: ${HACKERNEWS_SECRET:?HACKERNEWS_SECRET is required}
     volumes:
       - ../../services/go:/app
       - go_mod_cache:/go/pkg/mod
