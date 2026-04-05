@@ -51,11 +51,19 @@ func FetchHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Client,
 			log.Printf("Cleared %d existing content:* keys", deleted)
 		}
 
-		// Filter articles that have URL but no content
+		// Filter articles that have URL but no content (fresh=true skips content check)
+		fresh := r.URL.Query().Get("fresh") == "true"
 		var toFetch []map[string]any
 		for _, item := range articles {
-			if common.IsEmpty(item, "content") && !common.IsEmpty(item, "url") {
-				toFetch = append(toFetch, item)
+			hasURL := !common.IsEmpty(item, "url")
+			if fresh {
+				if hasURL {
+					toFetch = append(toFetch, item)
+				}
+			} else {
+				if common.IsEmpty(item, "content") && hasURL {
+					toFetch = append(toFetch, item)
+				}
 			}
 		}
 

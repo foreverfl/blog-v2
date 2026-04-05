@@ -57,11 +57,19 @@ func TranslateHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Cli
 			log.Printf("Cleared %d existing %s:* keys", deleted1+deleted2, lang)
 		}
 
-		// Filter articles with summary.en but missing target lang summary
+		// Filter articles with summary.en but missing target lang summary (fresh=true skips lang check)
+		fresh := r.URL.Query().Get("fresh") == "true"
 		var toTranslate []map[string]any
 		for _, item := range articles {
-			if !common.IsSummaryEmpty(item, "en") && common.IsSummaryEmpty(item, lang) {
-				toTranslate = append(toTranslate, item)
+			hasSummaryEn := !common.IsSummaryEmpty(item, "en")
+			if fresh {
+				if hasSummaryEn {
+					toTranslate = append(toTranslate, item)
+				}
+			} else {
+				if hasSummaryEn && common.IsSummaryEmpty(item, lang) {
+					toTranslate = append(toTranslate, item)
+				}
 			}
 		}
 
@@ -78,7 +86,8 @@ func TranslateHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Cli
 				titleMap, _ := item["title"].(map[string]any)
 				if titleMap != nil {
 					if titleEn, ok := titleMap["en"].(string); ok && titleEn != "" {
-						if existing, _ := titleMap[lang].(string); existing == "" {
+						existing, _ := titleMap[lang].(string)
+						if fresh || existing == "" {
 							log.Printf("[%s][title][%d/%d] Translating title: %s...", lang, idx+1, total, id)
 							translated, err := oai.Translate(ctx, titleEn, lang, "title")
 							if err != nil {
@@ -95,7 +104,8 @@ func TranslateHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Cli
 				summaryMap, _ := item["summary"].(map[string]any)
 				if summaryMap != nil {
 					if summaryEn, ok := summaryMap["en"].(string); ok && summaryEn != "" {
-						if existing, _ := summaryMap[lang].(string); existing == "" {
+						existing, _ := summaryMap[lang].(string)
+						if fresh || existing == "" {
 							log.Printf("[%s][summary][%d/%d] Translating summary: %s...", lang, idx+1, total, id)
 							translated, err := oai.Translate(ctx, summaryEn, lang, "content")
 							if err != nil {
@@ -129,7 +139,7 @@ func TranslateHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Cli
 				id, _ := item["id"].(string)
 
 				summaryKey := fmt.Sprintf("%s:summary:%s", lang, id)
-				if val, _ := redis.Get(ctx, summaryKey); val != "" && common.IsSummaryEmpty(item, lang) {
+				if val, _ := redis.Get(ctx, summaryKey); val != "" && (fresh || common.IsSummaryEmpty(item, lang)) {
 					common.EnsureSummaryMap(articles[i])
 					articles[i]["summary"].(map[string]any)[lang] = val
 					redis.Del(ctx, summaryKey)
@@ -137,7 +147,7 @@ func TranslateHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Cli
 				}
 
 				titleKey := fmt.Sprintf("%s:title:%s", lang, id)
-				if val, _ := redis.Get(ctx, titleKey); val != "" && common.IsTitleEmpty(item, lang) {
+				if val, _ := redis.Get(ctx, titleKey); val != "" && (fresh || common.IsTitleEmpty(item, lang)) {
 					common.EnsureTitleMap(articles[i])
 					articles[i]["title"].(map[string]any)[lang] = val
 					redis.Del(ctx, titleKey)

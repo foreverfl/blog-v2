@@ -50,11 +50,19 @@ func SummarizeHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Cli
 			log.Printf("Cleared %d existing en:* keys", deleted)
 		}
 
-		// Filter articles with content but no summary.en
+		// Filter articles with content but no summary.en (fresh=true skips summary check)
+		fresh := r.URL.Query().Get("fresh") == "true"
 		var toSummarize []map[string]any
 		for _, item := range articles {
-			if !common.IsEmpty(item, "content") && common.IsSummaryEmpty(item, "en") {
-				toSummarize = append(toSummarize, item)
+			hasContent := !common.IsEmpty(item, "content")
+			if fresh {
+				if hasContent {
+					toSummarize = append(toSummarize, item)
+				}
+			} else {
+				if hasContent && common.IsSummaryEmpty(item, "en") {
+					toSummarize = append(toSummarize, item)
+				}
 			}
 		}
 
@@ -99,7 +107,7 @@ func SummarizeHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Cli
 			for i, item := range articles {
 				id, _ := item["id"].(string)
 				val, _ := redis.Get(ctx, "en:"+id)
-				if val != "" && common.IsSummaryEmpty(item, "en") {
+				if val != "" && (fresh || common.IsSummaryEmpty(item, "en")) {
 					common.EnsureSummaryMap(articles[i])
 					articles[i]["summary"].(map[string]any)["en"] = val
 					redis.Del(ctx, "en:"+id)
