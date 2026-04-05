@@ -33,6 +33,11 @@ func TranslateHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Cli
 		key := date + ".json"
 		statusKey := common.StatusKey("translate", lang, date)
 
+		if sm.IsRunning(statusKey) {
+			common.WriteJSON(w, http.StatusConflict, map[string]any{"ok": false, "error": "Translate (" + lang + ") is already running for " + date})
+			return
+		}
+
 		articles, err := r2c.GetArticles("hackernews", key)
 		if err != nil || articles == nil {
 			common.WriteJSON(w, 200, map[string]any{"ok": false, "error": "File not found"})

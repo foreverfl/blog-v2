@@ -15,7 +15,7 @@ import (
 	"blog-go-api/internal/worker"
 )
 
-func DrawHandler(cfg *config.Config, r2c *r2.Client, oai *oaiservice.Service) http.HandlerFunc {
+func DrawHandler(cfg *config.Config, r2c *r2.Client, oai *oaiservice.Service, sm *common.StatusManager) http.HandlerFunc {
 	drawPool := worker.NewPool(1) // concurrency 1
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -26,6 +26,12 @@ func DrawHandler(cfg *config.Config, r2c *r2.Client, oai *oaiservice.Service) ht
 
 		date := dateutil.ResolveDate(r.PathValue("date"))
 		key := date + ".json"
+		statusKey := common.StatusKey("draw", date)
+
+		if sm.IsRunning(statusKey) {
+			common.WriteJSON(w, http.StatusConflict, map[string]any{"ok": false, "error": "Draw is already running for " + date})
+			return
+		}
 
 		articles, err := r2c.GetArticles("hackernews", key)
 		if err != nil || articles == nil {
@@ -54,11 +60,14 @@ func DrawHandler(cfg *config.Config, r2c *r2.Client, oai *oaiservice.Service) ht
 			return
 		}
 
+		sm.Set(statusKey, common.Processing, 1, 0, 0, "Generating image")
+
 		drawPool.Submit(func() {
 			ctx := context.Background()
 			imageURL, err := oai.Draw(ctx, r2c, date)
 			if err != nil {
 				log.Printf("Failed to generate image: %v", err)
+				sm.Set(statusKey, common.Error, 1, 1, 0, err.Error())
 				return
 			}
 
@@ -67,6 +76,7 @@ func DrawHandler(cfg *config.Config, r2c *r2.Client, oai *oaiservice.Service) ht
 			resp, err := client.Get(imageURL)
 			if err != nil {
 				log.Printf("Failed to download image: %v", err)
+				sm.Set(statusKey, common.Error, 1, 1, 0, err.Error())
 				return
 			}
 			defer resp.Body.Close()
@@ -74,6 +84,7 @@ func DrawHandler(cfg *config.Config, r2c *r2.Client, oai *oaiservice.Service) ht
 			imgData, err := io.ReadAll(resp.Body)
 			if err != nil {
 				log.Printf("Failed to read image data: %v", err)
+				sm.Set(statusKey, common.Error, 1, 1, 0, err.Error())
 				return
 			}
 
@@ -81,9 +92,11 @@ func DrawHandler(cfg *config.Config, r2c *r2.Client, oai *oaiservice.Service) ht
 			imgKey := date + ".png"
 			if err := r2c.PutBytes("hackernews-images", imgKey, imgData, "image/png"); err != nil {
 				log.Printf("Failed to upload image to R2: %v", err)
+				sm.Set(statusKey, common.Error, 1, 1, 0, err.Error())
 				return
 			}
 			log.Printf("Uploaded image to R2: hackernews-images/%s", imgKey)
+			sm.Set(statusKey, common.Done, 1, 1, 1, "Image uploaded")
 		})
 
 		common.WriteJSON(w, 200, map[string]any{

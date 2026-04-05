@@ -25,7 +25,7 @@ func main() {
 	defer redis.Close()
 
 	openai := oaiservice.NewService(cfg.OpenAIAPIKey)
-	sm := common.NewStatusManager()
+	statusManager := common.NewStatusManager()
 
 	mux := http.NewServeMux()
 
@@ -45,34 +45,34 @@ func main() {
 	mux.HandleFunc("GET /hackernews/status/{date}", pipelineStatus)
 
 	// Fetch content
-	fetch := handler.FetchHandler(cfg, r2c, redis, sm)
+	fetch := handler.FetchHandler(cfg, r2c, redis, statusManager)
 	mux.HandleFunc("POST /hackernews/fetch", fetch)
 	mux.HandleFunc("POST /hackernews/fetch/{date}", fetch)
 
-	fetchStatus := handler.FetchStatusHandler(cfg, sm)
+	fetchStatus := handler.FetchStatusHandler(cfg, statusManager)
 	mux.HandleFunc("GET /hackernews/fetch/status", fetchStatus)
 	mux.HandleFunc("GET /hackernews/fetch/status/{date}", fetchStatus)
 
 	// Summarize
-	summarize := handler.SummarizeHandler(cfg, r2c, redis, openai, sm)
+	summarize := handler.SummarizeHandler(cfg, r2c, redis, openai, statusManager)
 	mux.HandleFunc("POST /hackernews/summarize", summarize)
 	mux.HandleFunc("POST /hackernews/summarize/{date}", summarize)
 
-	summarizeStatus := handler.SummarizeStatusHandler(cfg, sm)
+	summarizeStatus := handler.SummarizeStatusHandler(cfg, statusManager)
 	mux.HandleFunc("GET /hackernews/summarize/status", summarizeStatus)
 	mux.HandleFunc("GET /hackernews/summarize/status/{date}", summarizeStatus)
 
 	// Translate
-	translate := handler.TranslateHandler(cfg, r2c, redis, openai, sm)
+	translate := handler.TranslateHandler(cfg, r2c, redis, openai, statusManager)
 	mux.HandleFunc("POST /hackernews/translate", translate)
 	mux.HandleFunc("POST /hackernews/translate/{date}", translate)
 
-	translateStatus := handler.TranslateStatusHandler(cfg, sm)
+	translateStatus := handler.TranslateStatusHandler(cfg, statusManager)
 	mux.HandleFunc("GET /hackernews/translate/status", translateStatus)
 	mux.HandleFunc("GET /hackernews/translate/status/{date}", translateStatus)
 
 	// Draw
-	draw := handler.DrawHandler(cfg, r2c, openai)
+	draw := handler.DrawHandler(cfg, r2c, openai, statusManager)
 	mux.HandleFunc("POST /hackernews/draw", draw)
 	mux.HandleFunc("POST /hackernews/draw/{date}", draw)
 
