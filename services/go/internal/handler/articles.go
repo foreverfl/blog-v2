@@ -39,17 +39,22 @@ func ArticlesHandler(cfg *config.Config, r2c *r2.Client) http.HandlerFunc {
 
 		date := dateutil.ResolveDate(r.PathValue("date"))
 		key := date + ".json"
+		fresh := r.URL.Query().Get("fresh") == "true"
 
-		existing, err := r2c.Get("hackernews", key)
-		if err != nil {
-			common.WriteJSON(w, 500, map[string]string{"error": "Failed to fetch from R2"})
-			return
-		}
-		if existing != nil {
-			log.Printf("Skipping fetch: hackernews/%s already exists in R2", key)
-			w.Header().Set("Content-Type", "application/json")
-			w.Write(existing)
-			return
+		if !fresh {
+			existing, err := r2c.Get("hackernews", key)
+			if err != nil {
+				common.WriteJSON(w, 500, map[string]string{"error": "Failed to fetch from R2"})
+				return
+			}
+			if existing != nil {
+				log.Printf("Skipping fetch: hackernews/%s already exists in R2", key)
+				w.Header().Set("Content-Type", "application/json")
+				w.Write(existing)
+				return
+			}
+		} else {
+			log.Printf("Fresh mode: overwriting hackernews/%s", key)
 		}
 
 		// Fetch top 100 story IDs from HN
