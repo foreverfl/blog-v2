@@ -75,6 +75,10 @@ func (s *Service) ExtractKeywords(ctx context.Context, r2Client *r2.Client, date
 		return nil, fmt.Errorf("openai keywords: %w", err)
 	}
 
+	if len(resp.Choices) == 0 || resp.Choices[0].Message.Content == "" {
+		return nil, fmt.Errorf("openai keywords: empty response")
+	}
+
 	content := resp.Choices[0].Message.Content
 	log.Printf("OpenAI keywords response: %s", content)
 

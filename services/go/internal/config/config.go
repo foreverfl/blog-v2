@@ -1,6 +1,9 @@
 package config
 
-import "os"
+import (
+	"log"
+	"os"
+)
 
 type Config struct {
 	// S3-compatible (Cloudflare R2)
@@ -22,7 +25,7 @@ type Config struct {
 }
 
 func Load() *Config {
-	return &Config{
+	cfg := &Config{
 		S3Endpoint:         getEnv("S3_ENDPOINT", ""),
 		S3Bucket:           getEnv("S3_BUCKET", ""),
 		S3Prefix:           getEnv("S3_PREFIX", ""),
@@ -33,6 +36,18 @@ func Load() *Config {
 		OpenAIAPIKey:       getEnv("OPENAI_API_KEY", ""),
 		HackernewsSecret:   getEnv("HACKERNEWS_SECRET", ""),
 	}
+
+	required := map[string]string{
+		"HACKERNEWS_SECRET": cfg.HackernewsSecret,
+		"OPENAI_API_KEY":    cfg.OpenAIAPIKey,
+	}
+	for name, val := range required {
+		if val == "" {
+			log.Fatalf("Required environment variable %s is not set", name)
+		}
+	}
+
+	return cfg
 }
 
 func getEnv(key, fallback string) string {
