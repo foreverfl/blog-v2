@@ -26,7 +26,7 @@ type StatusEntry struct {
 }
 
 type StatusManager struct {
-	mu      sync.Mutex
+	mutex      sync.Mutex
 	entries map[string]*StatusEntry
 }
 
@@ -43,10 +43,10 @@ func StatusKey(parts ...string) string {
 	return k
 }
 
-func (m *StatusManager) Set(key string, phase Phase, total, processed, flushed int, msg string) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.entries[key] = &StatusEntry{
+func (manager *StatusManager) Set(key string, phase Phase, total, processed, flushed int, msg string) {
+	manager.mutex.Lock()
+	defer manager.mutex.Unlock()
+	manager.entries[key] = &StatusEntry{
 		Phase:     phase,
 		Total:     total,
 		Processed: processed,
@@ -56,20 +56,29 @@ func (m *StatusManager) Set(key string, phase Phase, total, processed, flushed i
 	}
 }
 
-func (m *StatusManager) Get(key string) StatusEntry {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if e, ok := m.entries[key]; ok {
+func (manager *StatusManager) Get(key string) StatusEntry {
+	manager.mutex.Lock()
+	defer manager.mutex.Unlock()
+	if e, ok := manager.entries[key]; ok {
 		return *e
 	}
 	return StatusEntry{Phase: Idle, Message: fmt.Sprintf("No task found for key: %s", key)}
 }
 
-func (m *StatusManager) IncrProcessed(key string) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	if e, ok := m.entries[key]; ok {
-		e.Processed++
-		e.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+func (manager *StatusManager) IsRunning(key string) bool {
+	manager.mutex.Lock()
+	defer manager.mutex.Unlock()
+	if entry, ok := manager.entries[key]; ok {
+		return entry.Phase == Processing || entry.Phase == Flushing
+	}
+	return false
+}
+
+func (manager *StatusManager) IncrProcessed(key string) {
+	manager.mutex.Lock()
+	defer manager.mutex.Unlock()
+	if entry, ok := manager.entries[key]; ok {
+		entry.Processed++
+		entry.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
 	}
 }

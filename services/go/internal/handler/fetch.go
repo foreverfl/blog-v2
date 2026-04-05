@@ -17,7 +17,7 @@ import (
 	"blog-go-api/internal/worker"
 )
 
-func FetchHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Client, sm *common.StatusManager) http.HandlerFunc {
+func FetchHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Client, statusManager *common.StatusManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !common.CheckAuth(r, cfg.HackernewsSecret) {
 			common.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
@@ -27,6 +27,11 @@ func FetchHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Client,
 		date := dateutil.ResolveDate(r.PathValue("date"))
 		key := date + ".json"
 		statusKey := common.StatusKey("fetch", date)
+
+		if statusManager.IsRunning(statusKey) {
+			common.WriteJSON(w, http.StatusConflict, map[string]any{"ok": false, "error": "Fetch is already running for " + date})
+			return
+		}
 
 		articles, err := r2c.GetArticles("hackernews", key)
 		if err != nil || articles == nil {
@@ -56,7 +61,7 @@ func FetchHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Client,
 
 		total := len(toFetch)
 		log.Printf("toFetch.length: %d", total)
-		sm.Set(statusKey, common.Processing, total, 0, 0, "Fetching content")
+		statusManager.Set(statusKey, common.Processing, total, 0, 0, "Fetching content")
 
 		pool := worker.NewPool(10)
 		for idx, item := range toFetch {
@@ -82,7 +87,7 @@ func FetchHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Client,
 
 				if fetchErr != nil {
 					log.Printf("[%d/%d] Error: %s (%v)", idx+1, total, id, fetchErr)
-					sm.IncrProcessed(statusKey)
+					statusManager.IncrProcessed(statusKey)
 					return
 				}
 
@@ -92,7 +97,7 @@ func FetchHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Client,
 						log.Printf("Redis set error: %v", err)
 					}
 				}
-				sm.IncrProcessed(statusKey)
+				statusManager.IncrProcessed(statusKey)
 				log.Printf("[%d/%d] Done: %s", idx+1, total, id)
 			})
 		}
@@ -107,7 +112,7 @@ func FetchHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Client,
 
 		go func() {
 			pool.Wait()
-			sm.Set(statusKey, common.Flushing, total, total, 0, "Flushing to R2")
+			statusManager.Set(statusKey, common.Flushing, total, total, 0, "Flushing to R2")
 
 			flushed := 0
 			for i, item := range articles {
@@ -123,12 +128,12 @@ func FetchHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Client,
 			if flushed > 0 {
 				if err := r2c.PutJSON("hackernews", key, articles); err != nil {
 					log.Printf("Failed to write back to R2: %v", err)
-					sm.Set(statusKey, common.Error, total, total, flushed, fmt.Sprintf("R2 write failed: %v", err))
+					statusManager.Set(statusKey, common.Error, total, total, flushed, fmt.Sprintf("R2 write failed: %v", err))
 					return
 				}
 			}
 
-			sm.Set(statusKey, common.Done, total, total, flushed, fmt.Sprintf("Flushed %d items to R2.", flushed))
+			statusManager.Set(statusKey, common.Done, total, total, flushed, fmt.Sprintf("Flushed %d items to R2.", flushed))
 			log.Printf("[fetch] Auto-flush complete: %d items flushed for %s", flushed, date)
 		}()
 	}
