@@ -39,6 +39,11 @@ func main() {
 	mux.HandleFunc("GET /hackernews", articles)
 	mux.HandleFunc("GET /hackernews/{date}", articles)
 
+	// Pipeline status (R2-based)
+	pipelineStatus := handler.PipelineStatusHandler(cfg, r2c)
+	mux.HandleFunc("GET /hackernews/status", pipelineStatus)
+	mux.HandleFunc("GET /hackernews/status/{date}", pipelineStatus)
+
 	// Fetch content
 	fetch := handler.FetchHandler(cfg, r2c, redis, sm)
 	mux.HandleFunc("POST /hackernews/fetch", fetch)
