@@ -99,7 +99,7 @@ grpcurl -plaintext -d '{"id":"123"}' localhost:50051 blog.v1.PostService/GetPost
 | `ACCESS_TOKEN_TTL` | No | Access token lifetime in seconds (default: `900`) |
 | `REFRESH_TOKEN_TTL` | No | Refresh token lifetime in seconds (default: `604800`) |
 | `FRONTEND_URL` | No | Frontend origin URL (default: `http://localhost:3000`) |
-| `SERVER_URL` | No | Auth server URL (default: `http://localhost:8001`) |
+| `BACKEND_AUTH_URL` | No | Auth server URL (default: `http://localhost:8001`) |
 | `{PROVIDER}_CLIENT_ID` | No | OAuth client ID (`GOOGLE`, `GITHUB`, `APPLE`, `LINE`, `KAKAO`) |
 | `{PROVIDER}_CLIENT_SECRET` | No | OAuth client secret |
 
