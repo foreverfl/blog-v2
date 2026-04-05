@@ -114,8 +114,15 @@ services:
     ports:
       - "8003:8003"
     environment:
-      DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
+      S3_ENDPOINT: ${S3_ENDPOINT}
+      S3_BUCKET: ${S3_BUCKET}
+      S3_PREFIX: ${S3_PREFIX}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION:-auto}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      HACKERNEWS_SECRET: ${HACKERNEWS_SECRET:-}
     volumes:
       - ../../services/go:/app
       - go_mod_cache:/go/pkg/mod

@@ -17,7 +17,7 @@ pub struct AppConfig {
     pub access_token_ttl: i64,
     pub refresh_token_ttl: u64,
     pub frontend_url: String,
-    pub server_url: String,
+    pub backend_auth_url: String,
     pub providers: ProviderConfigs,
 }
 
@@ -53,7 +53,7 @@ impl AppConfig {
                 .unwrap_or(604_800), // 7 days
             frontend_url: env::var("FRONTEND_URL")
                 .unwrap_or_else(|_| "http://localhost:3000".into()),
-            server_url: env::var("SERVER_URL")
+            backend_auth_url: env::var("BACKEND_AUTH_URL")
                 .unwrap_or_else(|_| "http://localhost:8001".into()),
             providers: ProviderConfigs {
                 google: Self::load_provider("GOOGLE"),
@@ -75,6 +75,6 @@ impl AppConfig {
     }
 
     pub fn redirect_uri(&self, provider: &str) -> String {
-        format!("{}/auth/callback/{}", self.server_url, provider)
+        format!("{}/auth/callback/{}", self.backend_auth_url, provider)
     }
 }
