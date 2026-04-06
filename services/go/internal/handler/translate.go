@@ -134,7 +134,7 @@ func TranslateHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Cli
 			pool.Wait()
 			sm.Set(statusKey, common.Flushing, total, total, 0, "Flushing to R2")
 
-			flushed := 0
+			flushedTitles, flushedSummaries := 0, 0
 			for i, item := range articles {
 				id, _ := item["id"].(string)
 
@@ -143,7 +143,7 @@ func TranslateHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Cli
 					common.EnsureSummaryMap(articles[i])
 					articles[i]["summary"].(map[string]any)[lang] = val
 					redis.Del(ctx, summaryKey)
-					flushed++
+					flushedSummaries++
 				}
 
 				titleKey := fmt.Sprintf("%s:title:%s", lang, id)
@@ -151,10 +151,11 @@ func TranslateHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Cli
 					common.EnsureTitleMap(articles[i])
 					articles[i]["title"].(map[string]any)[lang] = val
 					redis.Del(ctx, titleKey)
-					flushed++
+					flushedTitles++
 				}
 			}
 
+			flushed := flushedTitles + flushedSummaries
 			if flushed > 0 {
 				if err := r2c.PutJSON("hackernews", key, articles); err != nil {
 					log.Printf("Failed to write back to R2: %v", err)
@@ -163,8 +164,14 @@ func TranslateHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Cli
 				}
 			}
 
-			sm.Set(statusKey, common.Done, total, total, flushed, fmt.Sprintf("Flushed %d items to R2.", flushed))
-			log.Printf("[translate:%s] Auto-flush complete: %d items flushed for %s", lang, flushed, date)
+			detail := map[string]int{"titles": flushedTitles, "summaries": flushedSummaries}
+			entry := sm.Get(statusKey)
+			entry.Phase = common.Done
+			entry.Flushed = flushed
+			entry.FlushedDetail = detail
+			entry.Message = fmt.Sprintf("Flushed %d titles + %d summaries to R2.", flushedTitles, flushedSummaries)
+			sm.SetEntry(statusKey, &entry)
+			log.Printf("[translate:%s] Auto-flush complete: %d titles + %d summaries flushed for %s", lang, flushedTitles, flushedSummaries, date)
 		}()
 	}
 }

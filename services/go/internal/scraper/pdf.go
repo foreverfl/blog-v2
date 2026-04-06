@@ -3,6 +3,7 @@ package scraper
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"regexp"
@@ -43,7 +44,13 @@ func FetchPDFContent(url string) (string, error) {
 	}
 	tmp.Close()
 
-	return extractPDFText(tmp.Name())
+	text, err := extractPDFText(tmp.Name())
+	if err != nil {
+		log.Printf("[scraper-pdf] FAIL url=%s err=%v", url, err)
+		return "", err
+	}
+	log.Printf("[scraper-pdf] OK url=%s chars=%d", url, len(text))
+	return text, nil
 }
 
 func extractPDFText(path string) (string, error) {

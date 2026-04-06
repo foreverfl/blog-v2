@@ -1,20 +1,83 @@
 package scraper
 
 import (
+	_ "embed"
+	"encoding/json"
 	"fmt"
-	"net/http"
+	"log"
+	"net/url"
 	"regexp"
 	"strings"
-	"time"
-
-	"github.com/PuerkitoBio/goquery"
 )
 
+//go:embed config/static.json
+var staticJSON []byte
+
+//go:embed config/blocked.json
+var blockedJSON []byte
+
+//go:embed config/dynamic.json
+var dynamicJSON []byte
+
+// --- Config types ---
+
+type siteSelector struct {
+	Domain    string   `json:"domain"`
+	Selectors []string `json:"selectors"`
+	Join      bool     `json:"join"`
+}
+
+type staticConfig struct {
+	Sites    []siteSelector `json:"sites"`
+	General  []string       `json:"general"`
+	Fallback string         `json:"fallback"`
+}
+
+type blockedSite struct {
+	Domain string `json:"domain"`
+	Reason string `json:"reason"`
+}
+
+type dynamicSite struct {
+	Domain    string   `json:"domain"`
+	Selectors []string `json:"selectors"`
+	Note      string   `json:"note"`
+}
+
+// --- Global state ---
+
 var (
+	staticCfg    staticConfig
+	blockedCfg   []blockedSite
+	dynamicCfg   []dynamicSite
 	zeroWidthRe  = regexp.MustCompile("[\u200B\u00A0]")
 	trailingWsRe = regexp.MustCompile(`[ \t]+(\n)`)
 	multiNewline = regexp.MustCompile(`\n{2,}`)
 )
+
+func init() {
+	if err := json.Unmarshal(staticJSON, &staticCfg); err != nil {
+		log.Fatalf("Failed to parse static.json: %v", err)
+	}
+	if err := json.Unmarshal(blockedJSON, &blockedCfg); err != nil {
+		log.Fatalf("Failed to parse blocked.json: %v", err)
+	}
+	if err := json.Unmarshal(dynamicJSON, &dynamicCfg); err != nil {
+		log.Fatalf("Failed to parse dynamic.json: %v", err)
+	}
+}
+
+// --- Shared helpers ---
+
+func extractDomain(rawURL string) string {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return ""
+	}
+	host := strings.ToLower(u.Hostname())
+	host = strings.TrimPrefix(host, "www.")
+	return host
+}
 
 func cleanText(s string) string {
 	s = zeroWidthRe.ReplaceAllString(s, "")
@@ -23,88 +86,82 @@ func cleanText(s string) string {
 	return strings.TrimSpace(s)
 }
 
-// FetchContent retrieves the main text content from a URL using HTTP + goquery.
-func FetchContent(url string) (string, error) {
-	client := &http.Client{Timeout: 15 * time.Second}
+func isBlocked(domain string) (string, bool) {
+	for _, b := range blockedCfg {
+		if domain == b.Domain || strings.HasSuffix(domain, "."+b.Domain) {
+			return b.Reason, true
+		}
+	}
+	return "", false
+}
 
-	req, err := http.NewRequest("GET", url, nil)
+func findDynamic(domain string) *dynamicSite {
+	for i, d := range dynamicCfg {
+		if domain == d.Domain || strings.HasSuffix(domain, "."+d.Domain) {
+			return &dynamicCfg[i]
+		}
+	}
+	return nil
+}
+
+func findSiteSelectors(domain string) *siteSelector {
+	for _, s := range staticCfg.Sites {
+		if domain == s.Domain || strings.HasSuffix(domain, "."+s.Domain) {
+			return &s
+		}
+	}
+	return nil
+}
+
+// --- Strategy orchestrator ---
+
+// FetchContent retrieves the main text content from a URL.
+// Strategy: blocked check → PDF → dynamic (if configured) → static → dynamic fallback
+func FetchContent(rawURL string) (string, error) {
+	domain := extractDomain(rawURL)
+
+	// 1. Blocked check
+	if reason, blocked := isBlocked(domain); blocked {
+		return "", fmt.Errorf("blocked site (%s): %s", domain, reason)
+	}
+
+	// 2. PDF strategy
+	if strings.HasSuffix(strings.ToLower(rawURL), ".pdf") {
+		log.Printf("[scraper] PDF detected: url=%s", rawURL)
+		return FetchPDFContent(rawURL)
+	}
+
+	// 3. Dynamic strategy (configured SPA sites)
+	if dyn := findDynamic(domain); dyn != nil {
+		log.Printf("[scraper] dynamic site detected: domain=%s note=%s", domain, dyn.Note)
+		return FetchDynamic(rawURL, dyn.Selectors)
+	}
+
+	// 4. Static strategy
+	content, err := FetchStatic(rawURL, domain)
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("HTTP %d for %s", resp.StatusCode, url)
+	if content != "" {
+		return content, nil
 	}
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
-	if err != nil {
-		return "", err
+	// 5. Dynamic fallback (static returned empty)
+	log.Printf("[scraper] static empty, trying dynamic fallback: url=%s", rawURL)
+	dynContent, dynErr := FetchDynamic(rawURL, nil)
+	if dynErr != nil {
+		log.Printf("[scraper] dynamic fallback also failed: url=%s err=%v", rawURL, dynErr)
+		return "", nil
 	}
-
-	// Arxiv abstract
-	if text := doc.Find("blockquote.abstract").Text(); text != "" {
-		text = strings.Replace(text, "Abstract:", "", 1)
-		return cleanText(text), nil
-	}
-
-	// Economist paragraphs
-	var econParts []string
-	doc.Find(`p[data-component="paragraph"]`).Each(func(_ int, s *goquery.Selection) {
-		if t := strings.TrimSpace(s.Text()); t != "" {
-			econParts = append(econParts, t)
-		}
-	})
-	if len(econParts) > 0 {
-		return cleanText(strings.Join(econParts, "\n\n")), nil
-	}
-
-	// General selectors
-	selectors := []string{
-		"article",
-		"div#content", "div.content",
-		"div#post-content", "div.content-area",
-		"div#main", "div.main",
-		"div.prose", "div.entry",
-		"div.bodycopy", "div.node__content",
-		"div.essay__content",
-		"main",
-	}
-	for _, sel := range selectors {
-		if el := doc.Find(sel).First(); el.Length() > 0 {
-			return cleanText(el.Text()), nil
-		}
-	}
-
-	// Section fallback
-	var sectionParts []string
-	doc.Find("section").Each(func(_ int, s *goquery.Selection) {
-		if t := strings.TrimSpace(s.Text()); t != "" {
-			sectionParts = append(sectionParts, t)
-		}
-	})
-	if len(sectionParts) > 0 {
-		return cleanText(strings.Join(sectionParts, "\n\n")), nil
-	}
-
-	return "", nil
+	return dynContent, nil
 }
 
 // SliceByTokens truncates text to approximately maxTokens tokens.
-// Uses a rough heuristic of ~4 characters per token.
 func SliceByTokens(text string, maxTokens int) string {
 	maxChars := maxTokens * 4
 	if len(text) <= maxChars {
 		return text
 	}
-	// Slice at word boundary
 	sliced := text[:maxChars]
 	if idx := strings.LastIndex(sliced, " "); idx > 0 {
 		sliced = sliced[:idx]

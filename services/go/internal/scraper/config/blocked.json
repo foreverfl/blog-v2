@@ -1,0 +1,30 @@
+[
+  {
+    "domain": "twitter.com",
+    "reason": "requires auth"
+  },
+  {
+    "domain": "x.com",
+    "reason": "requires auth"
+  },
+  {
+    "domain": "wsj.com",
+    "reason": "paywall, returns 401"
+  },
+  {
+    "domain": "thetimes.com",
+    "reason": "paywall, blocks bots"
+  },
+  {
+    "domain": "instagram.com",
+    "reason": "requires auth"
+  },
+  {
+    "domain": "facebook.com",
+    "reason": "requires auth"
+  },
+  {
+    "domain": "linkedin.com",
+    "reason": "requires auth"
+  }
+]

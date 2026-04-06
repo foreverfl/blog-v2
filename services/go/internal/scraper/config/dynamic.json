@@ -1,0 +1,22 @@
+[
+  {
+    "domain": "youtube.com",
+    "selectors": ["#description-inline-expander .attribution-link + span", "#plain-snippet-text"],
+    "note": "video description"
+  },
+  {
+    "domain": "youtu.be",
+    "selectors": ["#description-inline-expander .attribution-link + span", "#plain-snippet-text"],
+    "note": "YouTube short URL"
+  },
+  {
+    "domain": "iii.social",
+    "selectors": ["main", "#root"],
+    "note": "React SPA"
+  },
+  {
+    "domain": "codeberg.org",
+    "selectors": ["#readme .markup"],
+    "note": "fallback if static fails"
+  }
+]
