@@ -77,6 +77,11 @@ func main() {
 	mux.HandleFunc("POST /hackernews/draw", draw)
 	mux.HandleFunc("POST /hackernews/draw/{date}", draw)
 
+	// Inspect
+	mux.HandleFunc("GET /hackernews/inspect/json", handler.InspectJSONHandler(cfg, hackernewsClient))
+	mux.HandleFunc("GET /hackernews/inspect/webp", handler.InspectWebpHandler(cfg, hackernewsImagesClient))
+	mux.HandleFunc("GET /hackernews/inspect/db", handler.InspectDBHandler(cfg))
+
 	log.Println("go-api listening on :8003")
 	log.Fatal(http.ListenAndServe(":8003", mux))
 }

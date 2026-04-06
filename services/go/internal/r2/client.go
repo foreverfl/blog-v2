@@ -97,6 +97,27 @@ func (c *Client) Put(key string, data []byte, contentType string) error {
 	})
 }
 
+func (c *Client) Exists(key string) (bool, error) {
+	_, err := c.s3.HeadObject(context.TODO(), &s3.HeadObjectInput{
+		Bucket: aws.String(c.bucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		var noSuchKey *types.NoSuchKey
+		var notFound *types.NotFound
+		if errors.As(err, &noSuchKey) || errors.As(err, &notFound) {
+			return false, nil
+		}
+		// HeadObject returns 404 as a generic smithy error; check HTTP status
+		var respErr interface{ HTTPStatusCode() int }
+		if errors.As(err, &respErr) && respErr.HTTPStatusCode() == 404 {
+			return false, nil
+		}
+		return false, fmt.Errorf("S3 HEAD %s/%s: %w", c.bucket, key, err)
+	}
+	return true, nil
+}
+
 func (c *Client) PutJSON(key string, v any) error {
 	data, err := json.Marshal(v)
 	if err != nil {
