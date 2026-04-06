@@ -1,0 +1,88 @@
+{
+  "sites": [
+    {
+      "domain": "arxiv.org",
+      "selectors": ["blockquote.abstract"]
+    },
+    {
+      "domain": "economist.com",
+      "selectors": ["p[data-component=\"paragraph\"]"],
+      "join": true
+    },
+    {
+      "domain": "codeberg.org",
+      "selectors": ["#readme .markup"]
+    },
+    {
+      "domain": "github.com",
+      "selectors": ["#readme .markdown-body", "article.markdown-body"]
+    },
+    {
+      "domain": "gitlab.com",
+      "selectors": ["#readme .md", "article.md"]
+    },
+    {
+      "domain": "transformer-circuits.pub",
+      "selectors": ["d-article"]
+    },
+    {
+      "domain": "distill.pub",
+      "selectors": ["d-article"]
+    },
+    {
+      "domain": "tinygo.org",
+      "selectors": ["main.td-main"]
+    },
+    {
+      "domain": "inaturalist.org",
+      "selectors": ["#wrapper"]
+    },
+    {
+      "domain": "medium.com",
+      "selectors": ["article"]
+    },
+    {
+      "domain": "substack.com",
+      "selectors": ["div.body.markup"]
+    },
+    {
+      "domain": "blogspot.com",
+      "selectors": ["div.post-body"]
+    },
+    {
+      "domain": "wordpress.com",
+      "selectors": ["div.entry-content"]
+    },
+    {
+      "domain": "dev.to",
+      "selectors": ["div#article-body"]
+    },
+    {
+      "domain": "nytimes.com",
+      "selectors": ["section[name=\"articleBody\"]", "article#story"]
+    },
+    {
+      "domain": "bbc.com",
+      "selectors": ["article[role=\"main\"]", "div.ssrcss-rgov1k-MainColumn"]
+    },
+    {
+      "domain": "reuters.com",
+      "selectors": ["div.article-body__content"]
+    }
+  ],
+  "general": [
+    "article",
+    "div#content", "div.content",
+    "div#post-content", "div.post-content",
+    "div.content-area",
+    "div#main", "div.main",
+    "div.prose", "div.entry",
+    "div.bodycopy", "div.node__content",
+    "div.essay__content",
+    "div.entry-content", "div.article-content",
+    "div.post-body", "div.story-body",
+    "main",
+    "section"
+  ],
+  "fallback": "body"
+}

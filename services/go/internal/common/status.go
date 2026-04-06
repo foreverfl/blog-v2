@@ -17,12 +17,13 @@ const (
 )
 
 type StatusEntry struct {
-	Phase     Phase  `json:"phase"`
-	Total     int    `json:"total"`
-	Processed int    `json:"processed"`
-	Flushed   int    `json:"flushed"`
-	Message   string `json:"message,omitempty"`
-	UpdatedAt string `json:"updatedAt"`
+	Phase         Phase            `json:"phase"`
+	Total         int              `json:"total"`
+	Processed     int              `json:"processed"`
+	Flushed       int              `json:"flushed"`
+	FlushedDetail map[string]int   `json:"flushedDetail,omitempty"`
+	Message       string           `json:"message,omitempty"`
+	UpdatedAt     string           `json:"updatedAt"`
 }
 
 type StatusManager struct {
@@ -72,6 +73,13 @@ func (manager *StatusManager) IsRunning(key string) bool {
 		return entry.Phase == Processing || entry.Phase == Flushing
 	}
 	return false
+}
+
+func (manager *StatusManager) SetEntry(key string, entry *StatusEntry) {
+	manager.mutex.Lock()
+	defer manager.mutex.Unlock()
+	entry.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
+	manager.entries[key] = entry
 }
 
 func (manager *StatusManager) IncrProcessed(key string) {

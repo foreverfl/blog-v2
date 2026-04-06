@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	"blog-go-api/internal/common"
@@ -78,7 +77,6 @@ func FetchHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Client,
 			len(articles), len(toFetch), skippedNoURL, skippedHasContent, fresh)
 
 		total := len(toFetch)
-		log.Printf("toFetch.length: %d", total)
 		statusManager.Set(statusKey, common.Processing, total, 0, 0, "Fetching content")
 
 		pool := worker.NewPool(10)
@@ -86,31 +84,17 @@ func FetchHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Client,
 			pool.Submit(func() {
 				id, _ := item["id"].(string)
 				url, _ := item["url"].(string)
-				log.Printf("[%d/%d] Fetching: %s...", idx+1, total, id)
 
-				var content string
-				var fetchErr error
-
-				if strings.HasSuffix(strings.ToLower(url), ".pdf") {
-					content, fetchErr = scraper.FetchPDFContent(url)
-					if fetchErr == nil {
-						log.Printf("PDF content extracted for %s", url)
-					}
-				} else {
-					content, fetchErr = scraper.FetchContent(url)
-					if fetchErr == nil {
-						log.Printf("Smart content fetched for %s", url)
-					}
-				}
+				content, fetchErr := scraper.FetchContent(url)
 
 				if fetchErr != nil {
-					log.Printf("[%d/%d] FAIL fetch error: id=%s url=%s err=%v", idx+1, total, id, url, fetchErr)
+					log.Printf("[fetch %d/%d] FAIL id=%s url=%s err=%v", idx+1, total, id, url, fetchErr)
 					statusManager.IncrProcessed(statusKey)
 					return
 				}
 
 				if content == "" {
-					log.Printf("[%d/%d] FAIL empty content: id=%s url=%s (no selector matched)", idx+1, total, id, url)
+					log.Printf("[fetch %d/%d] FAIL id=%s url=%s reason=empty", idx+1, total, id, url)
 					statusManager.IncrProcessed(statusKey)
 					return
 				}
@@ -118,9 +102,9 @@ func FetchHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Client,
 				contentLen := len(content)
 				content = scraper.SliceByTokens(content, 15000)
 				if err := redis.Set(ctx, "content:"+id, content, 24*time.Hour); err != nil {
-					log.Printf("[%d/%d] FAIL redis set: id=%s err=%v", idx+1, total, id, err)
+					log.Printf("[fetch %d/%d] FAIL id=%s reason=redis err=%v", idx+1, total, id, err)
 				} else {
-					log.Printf("[%d/%d] OK: id=%s url=%s chars=%d", idx+1, total, id, url, contentLen)
+					log.Printf("[fetch %d/%d] OK id=%s chars=%d", idx+1, total, id, contentLen)
 				}
 				statusManager.IncrProcessed(statusKey)
 			})
@@ -139,7 +123,6 @@ func FetchHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Client,
 			statusManager.Set(statusKey, common.Flushing, total, total, 0, "Flushing to R2")
 
 			flushed := 0
-			missingContent := 0
 			for i, item := range articles {
 				id, _ := item["id"].(string)
 				val, _ := redis.Get(ctx, "content:"+id)
@@ -147,12 +130,8 @@ func FetchHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Client,
 					articles[i]["content"] = val
 					redis.Del(ctx, "content:"+id)
 					flushed++
-				} else if !common.IsEmpty(item, "url") && common.IsEmpty(item, "content") {
-					missingContent++
-					log.Printf("[fetch-flush] NO CONTENT after fetch: id=%s url=%v", id, item["url"])
 				}
 			}
-			log.Printf("[fetch-flush] flushed=%d missingContent=%d total=%d", flushed, missingContent, len(articles))
 
 			if flushed > 0 {
 				if err := r2c.PutJSON("hackernews", key, articles); err != nil {
