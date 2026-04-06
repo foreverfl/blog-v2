@@ -1,0 +1,188 @@
+name: Hacker News Pipeline
+
+on:
+  schedule:
+    - cron: "0 19 * * *" # daily at 04:00 JST (19:00 UTC)
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Target date (YYMMDD format, e.g. 260406). Defaults to today."
+        required: false
+
+permissions:
+  contents: read
+
+env:
+  BACKEND_GO_URL: ${{ secrets.BACKEND_GO_URL }}
+  BACKEND_RUST_URL: ${{ secrets.BACKEND_RUST_URL }}
+  HACKERNEWS_SECRET: ${{ secrets.HACKERNEWS_SECRET }}
+  IMPORT_SECRET: ${{ secrets.IMPORT_SECRET }}
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Resolve target date
+        id: date
+        run: |
+          if [ -n "${{ github.event.inputs.date }}" ]; then
+            echo "value=${{ github.event.inputs.date }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=$(TZ=Asia/Tokyo date +'%y%m%d')" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check if posts already exist
+        id: check
+        run: |
+          DATE="${{ steps.date.outputs.value }}"
+          RESP=$(curl -sf "${BACKEND_RUST_URL}/posts/trends/hackernews?lang=ko&page=1&per_page=100" || echo '{"posts":[]}')
+          EXISTS=$(echo "$RESP" | jq -r --arg d "$DATE" '.posts[]? | select(.slug == $d) | .slug')
+          if [ -n "$EXISTS" ]; then
+            echo "Posts for $DATE already exist — skipping pipeline."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No posts found for $DATE — proceeding."
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fetch articles
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          DATE="${{ steps.date.outputs.value }}"
+          echo "==> POST /hackernews/fetch/${DATE}"
+          curl -sf -X POST "${BACKEND_GO_URL}/hackernews/fetch/${DATE}" \
+            -H "Authorization: Bearer ${HACKERNEWS_SECRET}"
+
+          for i in $(seq 1 60); do
+            sleep 30
+            STATUS=$(curl -sf "${BACKEND_GO_URL}/hackernews/fetch/status/${DATE}" \
+              -H "Authorization: Bearer ${HACKERNEWS_SECRET}")
+            PHASE=$(echo "$STATUS" | jq -r '.phase')
+            echo "  [$i] phase=${PHASE}"
+            if [ "$PHASE" = "done" ]; then
+              echo "Fetch complete."
+              break
+            elif [ "$PHASE" = "error" ]; then
+              echo "Fetch failed: $(echo "$STATUS" | jq -r '.message')"
+              exit 1
+            fi
+          done
+
+      - name: Summarize articles
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          DATE="${{ steps.date.outputs.value }}"
+          echo "==> POST /hackernews/summarize/${DATE}"
+          curl -sf -X POST "${BACKEND_GO_URL}/hackernews/summarize/${DATE}" \
+            -H "Authorization: Bearer ${HACKERNEWS_SECRET}"
+
+          for i in $(seq 1 60); do
+            sleep 20
+            STATUS=$(curl -sf "${BACKEND_GO_URL}/hackernews/summarize/status/${DATE}" \
+              -H "Authorization: Bearer ${HACKERNEWS_SECRET}")
+            PHASE=$(echo "$STATUS" | jq -r '.phase')
+            echo "  [$i] phase=${PHASE}"
+            if [ "$PHASE" = "done" ]; then
+              echo "Summarize complete."
+              break
+            elif [ "$PHASE" = "error" ]; then
+              echo "Summarize failed: $(echo "$STATUS" | jq -r '.message')"
+              exit 1
+            fi
+          done
+
+      - name: Translate to Korean
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          DATE="${{ steps.date.outputs.value }}"
+          echo "==> POST /hackernews/translate/${DATE}?lang=ko"
+          curl -sf -X POST "${BACKEND_GO_URL}/hackernews/translate/${DATE}?lang=ko" \
+            -H "Authorization: Bearer ${HACKERNEWS_SECRET}"
+
+          for i in $(seq 1 60); do
+            sleep 20
+            STATUS=$(curl -sf "${BACKEND_GO_URL}/hackernews/translate/status/${DATE}?lang=ko" \
+              -H "Authorization: Bearer ${HACKERNEWS_SECRET}")
+            PHASE=$(echo "$STATUS" | jq -r '.phase')
+            echo "  [$i] phase=${PHASE}"
+            if [ "$PHASE" = "done" ]; then
+              echo "Translate (ko) complete."
+              break
+            elif [ "$PHASE" = "error" ]; then
+              echo "Translate (ko) failed: $(echo "$STATUS" | jq -r '.message')"
+              exit 1
+            fi
+          done
+
+      - name: Translate to Japanese
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          DATE="${{ steps.date.outputs.value }}"
+          echo "==> POST /hackernews/translate/${DATE}?lang=ja"
+          curl -sf -X POST "${BACKEND_GO_URL}/hackernews/translate/${DATE}?lang=ja" \
+            -H "Authorization: Bearer ${HACKERNEWS_SECRET}"
+
+          for i in $(seq 1 60); do
+            sleep 20
+            STATUS=$(curl -sf "${BACKEND_GO_URL}/hackernews/translate/status/${DATE}?lang=ja" \
+              -H "Authorization: Bearer ${HACKERNEWS_SECRET}")
+            PHASE=$(echo "$STATUS" | jq -r '.phase')
+            echo "  [$i] phase=${PHASE}"
+            if [ "$PHASE" = "done" ]; then
+              echo "Translate (ja) complete."
+              break
+            elif [ "$PHASE" = "error" ]; then
+              echo "Translate (ja) failed: $(echo "$STATUS" | jq -r '.message')"
+              exit 1
+            fi
+          done
+
+      - name: Generate cover image
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          DATE="${{ steps.date.outputs.value }}"
+          echo "==> POST /hackernews/draw/${DATE}"
+          curl -sf -X POST "${BACKEND_GO_URL}/hackernews/draw/${DATE}" \
+            -H "Authorization: Bearer ${HACKERNEWS_SECRET}"
+
+          for i in $(seq 1 20); do
+            sleep 15
+            STATUS=$(curl -sf "${BACKEND_GO_URL}/hackernews/status/${DATE}" \
+              -H "Authorization: Bearer ${HACKERNEWS_SECRET}")
+            echo "  [$i] $(echo "$STATUS" | jq -c '.')"
+
+            # draw has no dedicated status endpoint; check pipeline status
+            # draw is done quickly (single image), give it time then move on
+            if [ "$i" -ge 4 ]; then
+              echo "Draw step waited 60s — proceeding."
+              break
+            fi
+          done
+
+      - name: Import to database
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          DATE="${{ steps.date.outputs.value }}"
+          echo "==> POST /import/json?from=${DATE}"
+          RESP=$(curl -sf -X POST "${BACKEND_RUST_URL}/import/json?from=${DATE}" \
+            -H "X-Import-Secret: ${IMPORT_SECRET}")
+          JOB_ID=$(echo "$RESP" | jq -r '.job_id')
+          echo "Import job started: ${JOB_ID}"
+
+          for i in $(seq 1 30); do
+            sleep 10
+            STATUS=$(curl -sf "${BACKEND_RUST_URL}/import/jobs/${JOB_ID}")
+            STATE=$(echo "$STATUS" | jq -r '.status')
+            echo "  [$i] status=${STATE}"
+            if [ "$STATE" = "completed" ]; then
+              echo "Import complete:"
+              echo "$STATUS" | jq '.'
+              break
+            elif [ "$STATE" = "failed" ]; then
+              echo "Import failed:"
+              echo "$STATUS" | jq '.'
+              exit 1
+            fi
+          done
