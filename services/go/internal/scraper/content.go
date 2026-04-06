@@ -105,9 +105,9 @@ func findDynamic(domain string) *dynamicSite {
 }
 
 func findSiteSelectors(domain string) *siteSelector {
-	for _, s := range staticCfg.Sites {
-		if domain == s.Domain || strings.HasSuffix(domain, "."+s.Domain) {
-			return &s
+	for i := range staticCfg.Sites {
+		if domain == staticCfg.Sites[i].Domain || strings.HasSuffix(domain, "."+staticCfg.Sites[i].Domain) {
+			return &staticCfg.Sites[i]
 		}
 	}
 	return nil

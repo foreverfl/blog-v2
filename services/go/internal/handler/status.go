@@ -70,10 +70,10 @@ func PipelineStatusHandler(cfg *config.Config, r2c *r2.Client) http.HandlerFunc 
 		common.WriteJSON(w, 200, map[string]any{
 			"date":  date,
 			"total": total,
-			"fetch":        map[string]any{"done": fetched, "remaining": total - fetched},
-			"summarize":    map[string]any{"done": summarized, "remaining": fetched - summarized},
-			"translate_ko": map[string]any{"done": translatedKo, "remaining": summarized - translatedKo},
-			"translate_ja": map[string]any{"done": translatedJa, "remaining": summarized - translatedJa},
+			"fetch":        map[string]any{"done": fetched, "remaining": max(0, total-fetched)},
+			"summarize":    map[string]any{"done": summarized, "remaining": max(0, fetched-summarized)},
+			"translate_ko": map[string]any{"done": translatedKo, "remaining": max(0, summarized-translatedKo)},
+			"translate_ja": map[string]any{"done": translatedJa, "remaining": max(0, summarized-translatedJa)},
 		})
 	}
 }
