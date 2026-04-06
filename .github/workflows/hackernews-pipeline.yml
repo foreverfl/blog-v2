@@ -56,6 +56,15 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Collect articles from HN
+        if: steps.check.outputs.skip == 'false'
+        run: |
+          DATE="${{ steps.date.outputs.value }}"
+          echo "==> GET /hackernews/${DATE}"
+          curl -sf "${BACKEND_GO_URL}/hackernews/${DATE}" \
+            -H "Authorization: Bearer ${HACKERNEWS_SECRET}" \
+            | jq 'length' | xargs -I{} echo "Collected {} articles."
+
       - name: Fetch articles
         if: steps.check.outputs.skip == 'false'
         run: |
