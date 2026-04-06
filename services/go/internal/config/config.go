@@ -7,12 +7,12 @@ import (
 
 type Config struct {
 	// S3-compatible (Cloudflare R2)
-	S3Endpoint              string
+	S3Endpoint                   string
 	S3BucketBlogHackernews       string
 	S3BucketBlogHackernewsImages string
-	AWSAccessKeyID     string
-	AWSSecretAccessKey string
-	AWSRegion          string
+	AWSAccessKeyID               string
+	AWSSecretAccessKey           string
+	AWSRegion                    string
 
 	// Redis
 	RedisURL string
@@ -22,6 +22,7 @@ type Config struct {
 
 	// App
 	HackernewsSecret string
+	RustAPIURL       string
 }
 
 func Load() *Config {
@@ -35,6 +36,7 @@ func Load() *Config {
 		RedisURL:                     getEnv("REDIS_URL", "redis://localhost:6379"),
 		OpenAIAPIKey:                 getEnv("OPENAI_API_KEY", ""),
 		HackernewsSecret:             getEnv("HACKERNEWS_SECRET", ""),
+		RustAPIURL:                   getEnv("RUST_API_URL", "http://localhost:8002"),
 	}
 
 	required := map[string]string{
