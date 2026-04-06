@@ -26,9 +26,15 @@ jobs:
     steps:
       - name: Resolve target date
         id: date
+        env:
+          INPUT_DATE: ${{ github.event.inputs.date }}
         run: |
-          if [ -n "${{ github.event.inputs.date }}" ]; then
-            echo "value=${{ github.event.inputs.date }}" >> "$GITHUB_OUTPUT"
+          if [ -n "$INPUT_DATE" ]; then
+            if [[ ! "$INPUT_DATE" =~ ^[0-9]{6}$ ]]; then
+              echo "Invalid date format: expected YYMMDD (6 digits), got '$INPUT_DATE'" >&2
+              exit 1
+            fi
+            echo "value=$INPUT_DATE" >> "$GITHUB_OUTPUT"
           else
             echo "value=$(TZ=Asia/Tokyo date +'%y%m%d')" >> "$GITHUB_OUTPUT"
           fi
@@ -69,6 +75,10 @@ jobs:
               exit 1
             fi
           done
+          if [ "$PHASE" != "done" ]; then
+            echo "Fetch timed out. Last phase=${PHASE}"
+            exit 1
+          fi
 
       - name: Summarize articles
         if: steps.check.outputs.skip == 'false'
@@ -92,6 +102,10 @@ jobs:
               exit 1
             fi
           done
+          if [ "$PHASE" != "done" ]; then
+            echo "Summarize timed out. Last phase=${PHASE}"
+            exit 1
+          fi
 
       - name: Translate to Korean
         if: steps.check.outputs.skip == 'false'
@@ -115,6 +129,10 @@ jobs:
               exit 1
             fi
           done
+          if [ "$PHASE" != "done" ]; then
+            echo "Translate (ko) timed out. Last phase=${PHASE}"
+            exit 1
+          fi
 
       - name: Translate to Japanese
         if: steps.check.outputs.skip == 'false'
@@ -138,6 +156,10 @@ jobs:
               exit 1
             fi
           done
+          if [ "$PHASE" != "done" ]; then
+            echo "Translate (ja) timed out. Last phase=${PHASE}"
+            exit 1
+          fi
 
       - name: Generate cover image
         if: steps.check.outputs.skip == 'false'
@@ -186,3 +208,7 @@ jobs:
               exit 1
             fi
           done
+          if [ "$STATE" != "completed" ]; then
+            echo "Import timed out. Last status=${STATE}"
+            exit 1
+          fi
