@@ -21,7 +21,10 @@ env:
 jobs:
   pipeline:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 120
+    concurrency:
+      group: hackernews-pipeline
+      cancel-in-progress: false
 
     steps:
       - name: Resolve target date
@@ -166,17 +169,20 @@ jobs:
         run: |
           DATE="${{ steps.date.outputs.value }}"
           echo "==> POST /hackernews/draw/${DATE}"
-          curl -sf -X POST "${BACKEND_GO_URL}/hackernews/draw/${DATE}" \
-            -H "Authorization: Bearer ${HACKERNEWS_SECRET}"
+          DRAW_RESP=$(curl -sf -X POST "${BACKEND_GO_URL}/hackernews/draw/${DATE}" \
+            -H "Authorization: Bearer ${HACKERNEWS_SECRET}")
+          DRAW_OK=$(echo "$DRAW_RESP" | jq -r '.ok')
+          if [ "$DRAW_OK" != "true" ]; then
+            echo "Draw rejected: $(echo "$DRAW_RESP" | jq -r '.error // .message // "unknown"')"
+            exit 1
+          fi
 
+          # draw is a single image generation; wait for it to finish
           for i in $(seq 1 20); do
             sleep 15
             STATUS=$(curl -sf "${BACKEND_GO_URL}/hackernews/status/${DATE}" \
               -H "Authorization: Bearer ${HACKERNEWS_SECRET}")
             echo "  [$i] $(echo "$STATUS" | jq -c '.')"
-
-            # draw has no dedicated status endpoint; check pipeline status
-            # draw is done quickly (single image), give it time then move on
             if [ "$i" -ge 4 ]; then
               echo "Draw step waited 60s — proceeding."
               break
