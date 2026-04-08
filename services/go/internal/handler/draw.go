@@ -15,7 +15,7 @@ import (
 	"blog-go-api/internal/worker"
 )
 
-func DrawHandler(cfg *config.Config, r2c *r2.Client, oai *oaiservice.Service, sm *common.StatusManager) http.HandlerFunc {
+func DrawHandler(cfg *config.Config, hnClient *r2.Client, hnImagesClient *r2.Client, oai *oaiservice.Service, sm *common.StatusManager) http.HandlerFunc {
 	drawPool := worker.NewPool(1) // concurrency 1
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +33,7 @@ func DrawHandler(cfg *config.Config, r2c *r2.Client, oai *oaiservice.Service, sm
 			return
 		}
 
-		articles, err := r2c.GetArticles("hackernews", key)
+		articles, err := hnClient.GetArticles(key)
 		if err != nil || articles == nil {
 			common.WriteJSON(w, 200, map[string]any{"ok": false, "error": "No data found for the given date in R2"})
 			return
@@ -64,7 +64,7 @@ func DrawHandler(cfg *config.Config, r2c *r2.Client, oai *oaiservice.Service, sm
 
 		drawPool.Submit(func() {
 			ctx := context.Background()
-			imageURL, err := oai.Draw(ctx, r2c, date)
+			imageURL, err := oai.Draw(ctx, hnClient, date)
 			if err != nil {
 				log.Printf("Failed to generate image: %v", err)
 				sm.Set(statusKey, common.Error, 1, 1, 0, err.Error())
@@ -90,12 +90,12 @@ func DrawHandler(cfg *config.Config, r2c *r2.Client, oai *oaiservice.Service, sm
 
 			// Upload to R2 as PNG
 			imgKey := date + ".png"
-			if err := r2c.PutBytes("hackernews-images", imgKey, imgData, "image/png"); err != nil {
+			if err := hnImagesClient.PutBytes(imgKey, imgData, "image/png"); err != nil {
 				log.Printf("Failed to upload image to R2: %v", err)
 				sm.Set(statusKey, common.Error, 1, 1, 0, err.Error())
 				return
 			}
-			log.Printf("Uploaded image to R2: hackernews-images/%s", imgKey)
+			log.Printf("Uploaded image to R2: %s/%s", hnImagesClient.Bucket(), imgKey)
 			sm.Set(statusKey, common.Done, 1, 1, 1, "Image uploaded")
 		})
 

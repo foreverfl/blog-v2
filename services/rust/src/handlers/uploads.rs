@@ -65,13 +65,13 @@ pub async fn upload(
             .rsplit('.')
             .next()
             .unwrap_or("bin");
-        let object_key = format!("{}/{}.{}", state.config.s3_prefix, Uuid::new_v4(), ext);
+        let object_key = format!("{}.{}", Uuid::new_v4(), ext);
 
         // Upload to S3
         state
             .s3
             .put_object()
-            .bucket(&state.config.s3_bucket)
+            .bucket(&state.config.s3_bucket_blog_posts_assets)
             .key(&object_key)
             .body(ByteStream::from(data))
             .content_type(&mime_type)
@@ -81,7 +81,7 @@ pub async fn upload(
 
         let row = asset_store::insert(
             &state.db,
-            &state.config.s3_bucket,
+            &state.config.s3_bucket_blog_posts_assets,
             &object_key,
             &file_name,
             &mime_type,

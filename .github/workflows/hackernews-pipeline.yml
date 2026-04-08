@@ -203,9 +203,16 @@ jobs:
         run: |
           DATE="${{ steps.date.outputs.value }}"
           echo "==> POST /import/json?from=${DATE}"
-          RESP=$(curl -sf -X POST "${BACKEND_RUST_URL}/import/json?from=${DATE}" \
+          RESP=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST "${BACKEND_RUST_URL}/import/json?from=${DATE}" \
             -H "X-Import-Secret: ${IMPORT_SECRET}")
-          JOB_ID=$(echo "$RESP" | jq -r '.job_id')
+          HTTP_CODE=$(echo "$RESP" | grep -oP 'HTTP_CODE:\K\d+')
+          BODY=$(echo "$RESP" | sed '/HTTP_CODE:/d')
+          echo "Response (HTTP ${HTTP_CODE}): ${BODY}"
+          if [ "$HTTP_CODE" -ge 400 ]; then
+            echo "Import request failed"
+            exit 1
+          fi
+          JOB_ID=$(echo "$BODY" | jq -r '.job_id')
           echo "Import job started: ${JOB_ID}"
 
           for i in $(seq 1 30); do

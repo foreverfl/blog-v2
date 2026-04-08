@@ -16,7 +16,8 @@ import (
 func main() {
 	cfg := config.Load()
 
-	r2c := r2.NewClient(cfg.S3Endpoint, cfg.S3Bucket, cfg.S3Prefix, cfg.AWSAccessKeyID, cfg.AWSSecretAccessKey, cfg.AWSRegion)
+	hackernewsClient := r2.NewClient(cfg.S3Endpoint, cfg.S3BucketBlogHackernews, cfg.AWSAccessKeyID, cfg.AWSSecretAccessKey, cfg.AWSRegion)
+	hackernewsImagesClient := r2.NewClient(cfg.S3Endpoint, cfg.S3BucketBlogHackernewsImages, cfg.AWSAccessKeyID, cfg.AWSSecretAccessKey, cfg.AWSRegion)
 
 	redis, err := redisclient.New(cfg.RedisURL)
 	if err != nil {
@@ -35,17 +36,17 @@ func main() {
 	})
 
 	// Articles
-	articles := handler.ArticlesHandler(cfg, r2c)
+	articles := handler.ArticlesHandler(cfg, hackernewsClient)
 	mux.HandleFunc("GET /hackernews", articles)
 	mux.HandleFunc("GET /hackernews/{date}", articles)
 
 	// Pipeline status (R2-based)
-	pipelineStatus := handler.PipelineStatusHandler(cfg, r2c)
+	pipelineStatus := handler.PipelineStatusHandler(cfg, hackernewsClient)
 	mux.HandleFunc("GET /hackernews/status", pipelineStatus)
 	mux.HandleFunc("GET /hackernews/status/{date}", pipelineStatus)
 
 	// Fetch content
-	fetch := handler.FetchHandler(cfg, r2c, redis, statusManager)
+	fetch := handler.FetchHandler(cfg, hackernewsClient, redis, statusManager)
 	mux.HandleFunc("POST /hackernews/fetch", fetch)
 	mux.HandleFunc("POST /hackernews/fetch/{date}", fetch)
 
@@ -54,7 +55,7 @@ func main() {
 	mux.HandleFunc("GET /hackernews/fetch/status/{date}", fetchStatus)
 
 	// Summarize
-	summarize := handler.SummarizeHandler(cfg, r2c, redis, openai, statusManager)
+	summarize := handler.SummarizeHandler(cfg, hackernewsClient, redis, openai, statusManager)
 	mux.HandleFunc("POST /hackernews/summarize", summarize)
 	mux.HandleFunc("POST /hackernews/summarize/{date}", summarize)
 
@@ -63,7 +64,7 @@ func main() {
 	mux.HandleFunc("GET /hackernews/summarize/status/{date}", summarizeStatus)
 
 	// Translate
-	translate := handler.TranslateHandler(cfg, r2c, redis, openai, statusManager)
+	translate := handler.TranslateHandler(cfg, hackernewsClient, redis, openai, statusManager)
 	mux.HandleFunc("POST /hackernews/translate", translate)
 	mux.HandleFunc("POST /hackernews/translate/{date}", translate)
 
@@ -72,7 +73,7 @@ func main() {
 	mux.HandleFunc("GET /hackernews/translate/status/{date}", translateStatus)
 
 	// Draw
-	draw := handler.DrawHandler(cfg, r2c, openai, statusManager)
+	draw := handler.DrawHandler(cfg, hackernewsClient, hackernewsImagesClient, openai, statusManager)
 	mux.HandleFunc("POST /hackernews/draw", draw)
 	mux.HandleFunc("POST /hackernews/draw/{date}", draw)
 

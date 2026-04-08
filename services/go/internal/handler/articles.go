@@ -42,19 +42,19 @@ func ArticlesHandler(cfg *config.Config, r2c *r2.Client) http.HandlerFunc {
 		fresh := r.URL.Query().Get("fresh") == "true"
 
 		if !fresh {
-			existing, err := r2c.Get("hackernews", key)
+			existing, err := r2c.Get(key)
 			if err != nil {
 				common.WriteJSON(w, 500, map[string]string{"error": "Failed to fetch from R2"})
 				return
 			}
 			if existing != nil {
-				log.Printf("Skipping fetch: hackernews/%s already exists in R2", key)
+				log.Printf("Skipping fetch: %s/%s already exists in R2", r2c.Bucket(), key)
 				w.Header().Set("Content-Type", "application/json")
 				w.Write(existing)
 				return
 			}
 		} else {
-			log.Printf("Fresh mode: overwriting hackernews/%s", key)
+			log.Printf("Fresh mode: overwriting %s/%s", r2c.Bucket(), key)
 		}
 
 		// Fetch top 100 story IDs from HN
@@ -148,10 +148,10 @@ func ArticlesHandler(cfg *config.Config, r2c *r2.Client) http.HandlerFunc {
 			}
 		}
 
-		if err := r2c.PutJSON("hackernews", key, result); err != nil {
+		if err := r2c.PutJSON(key, result); err != nil {
 			log.Printf("Failed to upload to R2: %v", err)
 		} else {
-			log.Printf("Uploaded to R2: hackernews/%s", key)
+			log.Printf("Uploaded to R2: %s/%s", r2c.Bucket(), key)
 		}
 
 		common.WriteJSON(w, 200, result)
