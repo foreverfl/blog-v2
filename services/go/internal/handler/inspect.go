@@ -98,7 +98,9 @@ func InspectJSONHandler(cfg *config.Config, r2c *r2.Client) http.HandlerFunc {
 	}
 }
 
-// InspectWebpHandler checks R2 for missing hackernews-images/{YYMMDD}.webp files.
+// InspectWebpHandler checks R2 for missing hackernews-images/{YYMMDD}.{webp,png} files.
+// Historical data was stored as .webp; newer uploads from DrawHandler are .png,
+// so a date is considered "found" if either extension exists.
 func InspectWebpHandler(cfg *config.Config, r2c *r2.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !common.CheckAuth(r, cfg.HackernewsSecret) {
@@ -128,6 +130,13 @@ func InspectWebpHandler(cfg *config.Config, r2c *r2.Client) http.HandlerFunc {
 			if err != nil {
 				common.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 				return
+			}
+			if !exists {
+				exists, err = r2c.Exists(d + ".png")
+				if err != nil {
+					common.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+					return
+				}
 			}
 			if !exists {
 				missing = append(missing, d)
