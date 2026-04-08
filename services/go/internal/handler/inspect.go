@@ -173,22 +173,20 @@ func InspectDBHandler(cfg *config.Config) http.HandlerFunc {
 		var missing []string
 		var incomplete []incompleteEntry
 
-		for _, d := range dates {
+		// fetchOne returns (notFound, missingLangs, err). notFound==true means the post is missing.
+		fetchOne := func(d string) (bool, []string, error) {
 			url := fmt.Sprintf("%s/posts/trends/hackernews/%s", cfg.RustAPIURL, d)
 			resp, err := client.Get(url)
 			if err != nil {
-				common.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": fmt.Sprintf("failed to call rust api for %s: %v", d, err)})
-				return
+				return false, nil, fmt.Errorf("failed to call rust api for %s: %v", d, err)
 			}
 			defer resp.Body.Close()
 
 			if resp.StatusCode == http.StatusNotFound {
-				missing = append(missing, d)
-				continue
+				return true, nil, nil
 			}
 			if resp.StatusCode != http.StatusOK {
-				common.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": fmt.Sprintf("rust api returned %d for %s", resp.StatusCode, d)})
-				return
+				return false, nil, fmt.Errorf("rust api returned %d for %s", resp.StatusCode, d)
 			}
 
 			var post struct {
@@ -197,8 +195,7 @@ func InspectDBHandler(cfg *config.Config) http.HandlerFunc {
 				} `json:"contents"`
 			}
 			if err := json.NewDecoder(resp.Body).Decode(&post); err != nil {
-				common.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": fmt.Sprintf("failed to decode response for %s: %v", d, err)})
-				return
+				return false, nil, fmt.Errorf("failed to decode response for %s: %v", d, err)
 			}
 
 			langSet := map[string]bool{}
@@ -211,6 +208,19 @@ func InspectDBHandler(cfg *config.Config) http.HandlerFunc {
 				if !langSet[lang] {
 					missingLangs = append(missingLangs, lang)
 				}
+			}
+			return false, missingLangs, nil
+		}
+
+		for _, d := range dates {
+			notFound, missingLangs, err := fetchOne(d)
+			if err != nil {
+				common.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+				return
+			}
+			if notFound {
+				missing = append(missing, d)
+				continue
 			}
 			if len(missingLangs) > 0 {
 				incomplete = append(incomplete, incompleteEntry{
