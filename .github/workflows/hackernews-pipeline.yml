@@ -38,14 +38,23 @@ jobs:
               exit 1
             fi
             echo "value=$INPUT_DATE" >> "$GITHUB_OUTPUT"
+            echo "manual=true" >> "$GITHUB_OUTPUT"
+            echo "Manual date override: $INPUT_DATE (backfill mode)"
           else
             echo "value=$(TZ=Asia/Tokyo date +'%y%m%d')" >> "$GITHUB_OUTPUT"
+            echo "manual=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Check if posts already exist
         id: check
         run: |
           DATE="${{ steps.date.outputs.value }}"
+          MANUAL="${{ steps.date.outputs.manual }}"
+          if [ "$MANUAL" = "true" ]; then
+            echo "Backfill mode for $DATE — skipping existence check and proceeding."
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           RESP=$(curl -sf "${BACKEND_RUST_URL}/posts/trends/hackernews?lang=ko&page=1&per_page=100" || echo '{"posts":[]}')
           EXISTS=$(echo "$RESP" | jq -r --arg d "$DATE" '.posts[]? | select(.slug == $d) | .slug')
           if [ -n "$EXISTS" ]; then
@@ -57,7 +66,7 @@ jobs:
           fi
 
       - name: Collect articles from HN
-        if: steps.check.outputs.skip == 'false'
+        if: steps.check.outputs.skip == 'false' && steps.date.outputs.manual == 'false'
         run: |
           DATE="${{ steps.date.outputs.value }}"
           echo "==> GET /hackernews/${DATE}"
