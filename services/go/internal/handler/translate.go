@@ -38,7 +38,7 @@ func TranslateHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Cli
 			return
 		}
 
-		articles, err := r2c.GetArticles("hackernews", key)
+		articles, err := r2c.GetArticles(key)
 		if err != nil || articles == nil {
 			common.WriteJSON(w, 200, map[string]any{"ok": false, "error": "File not found"})
 			return
@@ -157,7 +157,7 @@ func TranslateHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Cli
 
 			flushed := flushedTitles + flushedSummaries
 			if flushed > 0 {
-				if err := r2c.PutJSON("hackernews", key, articles); err != nil {
+				if err := r2c.PutJSON(key, articles); err != nil {
 					log.Printf("Failed to write back to R2: %v", err)
 					sm.Set(statusKey, common.Error, total, total, flushed, fmt.Sprintf("R2 write failed: %v", err))
 					return

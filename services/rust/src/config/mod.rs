@@ -14,8 +14,7 @@ pub struct AppConfig {
     pub database_url: String,
     pub jwt_secret: String,
     pub frontend_url: String,
-    pub s3_bucket: String,
-    pub s3_prefix: String,
+    pub s3_bucket_blog_posts_assets: String,
     pub max_upload_size: usize,
     pub import_secret: String,
     pub github_token: Option<String>,
@@ -30,8 +29,8 @@ impl AppConfig {
             jwt_secret: env::var("JWT_SECRET").expect("JWT_SECRET required"),
             frontend_url: env::var("FRONTEND_URL")
                 .unwrap_or_else(|_| "http://localhost:3000".into()),
-            s3_bucket: env::var("S3_BUCKET").unwrap_or_else(|_| "blog-assets".into()),
-            s3_prefix: env::var("S3_PREFIX").unwrap_or_else(|_| "uploads".into()),
+            s3_bucket_blog_posts_assets: env::var("S3_BUCKET_BLOG_POSTS_ASSETS")
+                .expect("S3_BUCKET_BLOG_POSTS_ASSETS required"),
             max_upload_size: env::var("MAX_UPLOAD_SIZE")
                 .ok()
                 .and_then(|v| v.parse().ok())

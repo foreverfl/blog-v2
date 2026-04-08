@@ -19,10 +19,9 @@ import (
 type Client struct {
 	s3     *s3.Client
 	bucket string
-	prefix string
 }
 
-func NewClient(endpoint, bucket, prefix, accessKeyID, secretAccessKey, region string) *Client {
+func NewClient(endpoint, bucket, accessKeyID, secretAccessKey, region string) *Client {
 	s3Client := s3.New(s3.Options{
 		BaseEndpoint: aws.String(endpoint),
 		Region:       region,
@@ -32,25 +31,19 @@ func NewClient(endpoint, bucket, prefix, accessKeyID, secretAccessKey, region st
 	return &Client{
 		s3:     s3Client,
 		bucket: bucket,
-		prefix: prefix,
 	}
 }
 
-func (c *Client) objectKey(bucket, key string) string {
-	if c.prefix != "" {
-		return fmt.Sprintf("%s/%s/%s", c.prefix, bucket, key)
-	}
-	return fmt.Sprintf("%s/%s", bucket, key)
+func (c *Client) Bucket() string {
+	return c.bucket
 }
 
-func (c *Client) Get(bucket, key string) (json.RawMessage, error) {
-	objKey := c.objectKey(bucket, key)
-
+func (c *Client) Get(key string) (json.RawMessage, error) {
 	var raw json.RawMessage
 	err := retry(3, time.Second, func() error {
 		out, err := c.s3.GetObject(context.TODO(), &s3.GetObjectInput{
 			Bucket: aws.String(c.bucket),
-			Key:    aws.String(objKey),
+			Key:    aws.String(key),
 		})
 		if err != nil {
 			var noSuchKey *types.NoSuchKey
@@ -58,7 +51,7 @@ func (c *Client) Get(bucket, key string) (json.RawMessage, error) {
 				raw = nil
 				return nil
 			}
-			return fmt.Errorf("S3 GET %s: %w", objKey, err)
+			return fmt.Errorf("S3 GET %s/%s: %w", c.bucket, key, err)
 		}
 		defer out.Body.Close()
 
@@ -72,8 +65,8 @@ func (c *Client) Get(bucket, key string) (json.RawMessage, error) {
 	return raw, err
 }
 
-func (c *Client) GetArticles(bucket, key string) ([]map[string]any, error) {
-	raw, err := c.Get(bucket, key)
+func (c *Client) GetArticles(key string) ([]map[string]any, error) {
+	raw, err := c.Get(key)
 	if err != nil {
 		return nil, err
 	}
@@ -87,34 +80,33 @@ func (c *Client) GetArticles(bucket, key string) ([]map[string]any, error) {
 	return articles, nil
 }
 
-func (c *Client) Put(bucket, key string, data []byte, contentType string) error {
-	objKey := c.objectKey(bucket, key)
-	log.Printf("[R2 PUT] Uploading: %s (%s)", objKey, contentType)
+func (c *Client) Put(key string, data []byte, contentType string) error {
+	log.Printf("[R2 PUT] Uploading: %s/%s (%s)", c.bucket, key, contentType)
 
 	return retry(3, time.Second, func() error {
 		_, err := c.s3.PutObject(context.TODO(), &s3.PutObjectInput{
 			Bucket:      aws.String(c.bucket),
-			Key:         aws.String(objKey),
+			Key:         aws.String(key),
 			Body:        bytes.NewReader(data),
 			ContentType: aws.String(contentType),
 		})
 		if err != nil {
-			return fmt.Errorf("S3 PUT %s: %w", objKey, err)
+			return fmt.Errorf("S3 PUT %s/%s: %w", c.bucket, key, err)
 		}
 		return nil
 	})
 }
 
-func (c *Client) PutJSON(bucket, key string, v any) error {
+func (c *Client) PutJSON(key string, v any) error {
 	data, err := json.Marshal(v)
 	if err != nil {
 		return fmt.Errorf("marshal: %w", err)
 	}
-	return c.Put(bucket, key, data, "application/json")
+	return c.Put(key, data, "application/json")
 }
 
-func (c *Client) PutBytes(bucket, key string, data []byte, contentType string) error {
-	return c.Put(bucket, key, data, contentType)
+func (c *Client) PutBytes(key string, data []byte, contentType string) error {
+	return c.Put(key, data, contentType)
 }
 
 func retry(attempts int, sleep time.Duration, fn func() error) error {

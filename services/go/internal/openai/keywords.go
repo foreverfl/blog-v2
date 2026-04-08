@@ -15,7 +15,7 @@ import (
 // ExtractKeywords extracts image keywords from the top article's summary.
 func (s *Service) ExtractKeywords(ctx context.Context, r2Client *r2.Client, date string) (*model.ImageKeywords, error) {
 	key := date + ".json"
-	articles, err := r2Client.GetArticles("hackernews", key)
+	articles, err := r2Client.GetArticles(key)
 	if err != nil {
 		return nil, fmt.Errorf("get articles: %w", err)
 	}

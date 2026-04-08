@@ -43,7 +43,7 @@ func PipelineStatusHandler(cfg *config.Config, r2c *r2.Client) http.HandlerFunc 
 		date := dateutil.ResolveDate(r.PathValue("date"))
 		key := date + ".json"
 
-		articles, err := r2c.GetArticles("hackernews", key)
+		articles, err := r2c.GetArticles(key)
 		if err != nil || articles == nil {
 			common.WriteJSON(w, 200, map[string]any{"ok": false, "error": "No data found"})
 			return

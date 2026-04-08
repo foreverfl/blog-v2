@@ -7,9 +7,9 @@ import (
 
 type Config struct {
 	// S3-compatible (Cloudflare R2)
-	S3Endpoint         string
-	S3Bucket           string
-	S3Prefix           string
+	S3Endpoint              string
+	S3BucketBlogHackernews       string
+	S3BucketBlogHackernewsImages string
 	AWSAccessKeyID     string
 	AWSSecretAccessKey string
 	AWSRegion          string
@@ -26,20 +26,22 @@ type Config struct {
 
 func Load() *Config {
 	cfg := &Config{
-		S3Endpoint:         getEnv("S3_ENDPOINT", ""),
-		S3Bucket:           getEnv("S3_BUCKET", ""),
-		S3Prefix:           getEnv("S3_PREFIX", ""),
-		AWSAccessKeyID:     getEnv("AWS_ACCESS_KEY_ID", ""),
-		AWSSecretAccessKey: getEnv("AWS_SECRET_ACCESS_KEY", ""),
-		AWSRegion:          getEnv("AWS_REGION", "auto"),
-		RedisURL:           getEnv("REDIS_URL", "redis://localhost:6379"),
-		OpenAIAPIKey:       getEnv("OPENAI_API_KEY", ""),
-		HackernewsSecret:   getEnv("HACKERNEWS_SECRET", ""),
+		S3Endpoint:                   getEnv("S3_ENDPOINT", ""),
+		S3BucketBlogHackernews:       getEnv("S3_BUCKET_BLOG_HACKERNEWS", ""),
+		S3BucketBlogHackernewsImages: getEnv("S3_BUCKET_BLOG_HACKERNEWS_IMAGES", ""),
+		AWSAccessKeyID:               getEnv("AWS_ACCESS_KEY_ID", ""),
+		AWSSecretAccessKey:           getEnv("AWS_SECRET_ACCESS_KEY", ""),
+		AWSRegion:                    getEnv("AWS_REGION", "auto"),
+		RedisURL:                     getEnv("REDIS_URL", "redis://localhost:6379"),
+		OpenAIAPIKey:                 getEnv("OPENAI_API_KEY", ""),
+		HackernewsSecret:             getEnv("HACKERNEWS_SECRET", ""),
 	}
 
 	required := map[string]string{
-		"HACKERNEWS_SECRET": cfg.HackernewsSecret,
-		"OPENAI_API_KEY":    cfg.OpenAIAPIKey,
+		"HACKERNEWS_SECRET":                cfg.HackernewsSecret,
+		"OPENAI_API_KEY":                   cfg.OpenAIAPIKey,
+		"S3_BUCKET_BLOG_HACKERNEWS":        cfg.S3BucketBlogHackernews,
+		"S3_BUCKET_BLOG_HACKERNEWS_IMAGES": cfg.S3BucketBlogHackernewsImages,
 	}
 	for name, val := range required {
 		if val == "" {

@@ -455,10 +455,15 @@ pub async fn import_json(
     // Parse YYMMDD → NaiveDate
     let from_date = chrono::NaiveDate::parse_from_str(&query.from, "%y%m%d")
         .map_err(|e| ApiError::BadRequest(format!("invalid date format (expected YYMMDD): {e}")))?;
-    let today = chrono::Utc::now().date_naive();
+    // Use JST (UTC+9) to match the pipeline's TZ=Asia/Tokyo date resolution
+    let today = (chrono::Utc::now() + chrono::Duration::hours(9)).date_naive();
+
+    tracing::info!(from = %from_date, today_jst = %today, "import/json date check");
 
     if from_date > today {
-        return Err(ApiError::BadRequest("from date is in the future".into()));
+        return Err(ApiError::BadRequest(format!(
+            "from date {} is in the future (today JST = {})", from_date, today
+        )));
     }
 
     let job_id = uuid::Uuid::new_v4().to_string();
@@ -528,6 +533,8 @@ async fn run_json_import(
         current += chrono::Duration::days(1);
     }
 
+    tracing::info!(from = %from_date, to = %today, count = dates.len(), "importing date range");
+
     let batch_results: Vec<BatchResult> = stream::iter(dates)
         .map(|date| {
             let client = client.clone();
@@ -581,6 +588,7 @@ enum BatchResult {
 
 async fn fetch_batch(client: &reqwest::Client, batch_id: &str) -> BatchResult {
     let json_url = format!("{}/{}.json", HN_JSON_BASE, batch_id);
+    tracing::info!(batch_id = %batch_id, url = %json_url, "fetching batch from R2");
 
     let resp = match client.get(&json_url).send().await {
         Ok(r) => r,
