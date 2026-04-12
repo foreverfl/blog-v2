@@ -23,16 +23,13 @@ pub fn create_router(state: AppState) -> Router {
         ])
         .allow_credentials(true);
 
-    let auth_routes = Router::new()
+    Router::new()
+        .route("/health", get(health))
         .route("/login/{provider}", get(handlers::login))
         .route("/callback/{provider}", get(handlers::callback))
         .route("/refresh", post(handlers::refresh))
         .route("/logout", post(handlers::logout))
-        .route("/me", get(handlers::me));
-
-    Router::new()
-        .route("/health", get(health))
-        .nest("/auth", auth_routes)
+        .route("/me", get(handlers::me))
         .layer(cors)
         .with_state(state)
 }
