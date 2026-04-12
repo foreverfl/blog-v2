@@ -75,6 +75,6 @@ impl AppConfig {
     }
 
     pub fn redirect_uri(&self, provider: &str) -> String {
-        format!("{}/auth/callback/{}", self.backend_auth_url, provider)
+        format!("{}/callback/{}", self.backend_auth_url, provider)
     }
 }
