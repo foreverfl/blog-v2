@@ -2,7 +2,9 @@ package middleware
 
 import (
 	"log"
+	"net"
 	"net/http"
+	"net/netip"
 	"strings"
 	"time"
 )
@@ -33,19 +35,36 @@ func (r *responseRecorder) Flush() {
 	}
 }
 
+func parseIP(s string) (string, bool) {
+	addr, err := netip.ParseAddr(strings.TrimSpace(s))
+	if err != nil {
+		return "", false
+	}
+	return addr.String(), true
+}
+
 func clientIP(r *http.Request) string {
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		if idx := strings.IndexByte(xff, ','); idx >= 0 {
-			xff = xff[:idx]
+		first := xff
+		if idx := strings.IndexByte(first, ','); idx >= 0 {
+			first = first[:idx]
 		}
-		if ip := strings.TrimSpace(xff); ip != "" {
+		if ip, ok := parseIP(first); ok {
 			return ip
 		}
 	}
-	if xrip := strings.TrimSpace(r.Header.Get("X-Real-IP")); xrip != "" {
-		return xrip
+	if ip, ok := parseIP(r.Header.Get("X-Real-IP")); ok {
+		return ip
 	}
-	return r.RemoteAddr
+	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		if ip, ok := parseIP(host); ok {
+			return ip
+		}
+	}
+	if ip, ok := parseIP(r.RemoteAddr); ok {
+		return ip
+	}
+	return "unknown"
 }
 
 func Logging(next http.Handler) http.Handler {
@@ -56,7 +75,7 @@ func Logging(next http.Handler) http.Handler {
 		if rec.status == 0 {
 			rec.status = http.StatusOK
 		}
-		log.Printf("%s %s %d %dB %s ip=%s ua=%q",
+		log.Printf("%s %q %d %dB %s ip=%s ua=%q",
 			r.Method,
 			r.URL.Path,
 			rec.status,
