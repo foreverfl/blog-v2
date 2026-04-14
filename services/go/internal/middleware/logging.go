@@ -3,6 +3,7 @@ package middleware
 import (
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -34,9 +35,14 @@ func (r *responseRecorder) Flush() {
 
 func clientIP(r *http.Request) string {
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
-		return xff
+		if idx := strings.IndexByte(xff, ','); idx >= 0 {
+			xff = xff[:idx]
+		}
+		if ip := strings.TrimSpace(xff); ip != "" {
+			return ip
+		}
 	}
-	if xrip := r.Header.Get("X-Real-IP"); xrip != "" {
+	if xrip := strings.TrimSpace(r.Header.Get("X-Real-IP")); xrip != "" {
 		return xrip
 	}
 	return r.RemoteAddr
@@ -47,10 +53,12 @@ func Logging(next http.Handler) http.Handler {
 		start := time.Now()
 		rec := &responseRecorder{ResponseWriter: w}
 		next.ServeHTTP(rec, r)
-		log.Printf("%s %s %s %d %dB %s ip=%s ua=%q",
+		if rec.status == 0 {
+			rec.status = http.StatusOK
+		}
+		log.Printf("%s %s %d %dB %s ip=%s ua=%q",
 			r.Method,
 			r.URL.Path,
-			r.URL.RawQuery,
 			rec.status,
 			rec.bytes,
 			time.Since(start),
