@@ -8,6 +8,7 @@ import (
 	"blog-go-api/internal/common"
 	"blog-go-api/internal/config"
 	"blog-go-api/internal/handler"
+	"blog-go-api/internal/middleware"
 	oaiservice "blog-go-api/internal/openai"
 	"blog-go-api/internal/r2"
 	"blog-go-api/internal/redisclient"
@@ -83,5 +84,5 @@ func main() {
 	mux.HandleFunc("GET /hackernews/inspect/db", handler.InspectDBHandler(cfg))
 
 	log.Println("go-api listening on :8003")
-	log.Fatal(http.ListenAndServe(":8003", mux))
+	log.Fatal(http.ListenAndServe(":8003", middleware.Logging(mux)))
 }
