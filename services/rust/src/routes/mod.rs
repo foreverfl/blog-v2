@@ -1,5 +1,6 @@
-mod posts;
+mod hackernews;
 mod import;
+mod posts;
 mod uploads;
 
 use axum::http::{header, Method};
@@ -41,6 +42,7 @@ pub fn create_router(state: AppState) -> Router {
         .nest("/posts", posts::router())
         .nest("/uploads", uploads::router(upload_limit))
         .nest("/import", import::router())
+        .nest("/hackernews", hackernews::router())
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(|req: &axum::http::Request<_>| {
