@@ -43,7 +43,19 @@ func parseIP(s string) (string, bool) {
 	return addr.String(), true
 }
 
-func clientIP(r *http.Request) string {
+func remoteIP(r *http.Request) string {
+	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		if ip, ok := parseIP(host); ok {
+			return ip
+		}
+	}
+	if ip, ok := parseIP(r.RemoteAddr); ok {
+		return ip
+	}
+	return "unknown"
+}
+
+func forwardedIP(r *http.Request) string {
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
 		first := xff
 		if idx := strings.IndexByte(first, ','); idx >= 0 {
@@ -56,15 +68,7 @@ func clientIP(r *http.Request) string {
 	if ip, ok := parseIP(r.Header.Get("X-Real-IP")); ok {
 		return ip
 	}
-	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
-		if ip, ok := parseIP(host); ok {
-			return ip
-		}
-	}
-	if ip, ok := parseIP(r.RemoteAddr); ok {
-		return ip
-	}
-	return "unknown"
+	return ""
 }
 
 func Logging(next http.Handler) http.Handler {
@@ -75,13 +79,18 @@ func Logging(next http.Handler) http.Handler {
 		if rec.status == 0 {
 			rec.status = http.StatusOK
 		}
-		log.Printf("%s %q %d %dB %s ip=%s ua=%q",
+		fwd := forwardedIP(r)
+		if fwd == "" {
+			fwd = "-"
+		}
+		log.Printf("%s %q %d %dB %s ip=%s fwd=%s ua=%q",
 			r.Method,
 			r.URL.Path,
 			rec.status,
 			rec.bytes,
 			time.Since(start),
-			clientIP(r),
+			remoteIP(r),
+			fwd,
 			r.UserAgent(),
 		)
 	})
