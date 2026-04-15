@@ -21,6 +21,7 @@ services:
     ports:
       - "8001:8001"
     env_file: .env.prod
+    restart: unless-stopped
     depends_on:
       flyway:
         condition: service_completed_successfully
@@ -32,6 +33,7 @@ services:
     ports:
       - "8002:8002"
     env_file: .env.prod
+    restart: unless-stopped
     depends_on:
       flyway:
         condition: service_completed_successfully
@@ -43,6 +45,7 @@ services:
     ports:
       - "8003:8003"
     env_file: .env.prod
+    restart: unless-stopped
     depends_on:
       flyway:
         condition: service_completed_successfully
@@ -54,6 +57,7 @@ services:
     ports:
       - "8004:8004"
     env_file: .env.prod
+    restart: unless-stopped
     depends_on:
       flyway:
         condition: service_completed_successfully
