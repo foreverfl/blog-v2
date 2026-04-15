@@ -1,6 +1,10 @@
 package worker
 
-import "sync"
+import (
+	"log"
+	"runtime/debug"
+	"sync"
+)
 
 // Pool provides bounded concurrency using a semaphore pattern.
 type Pool struct {
@@ -20,6 +24,9 @@ func (p *Pool) Submit(fn func()) {
 	go func() {
 		p.sem <- struct{}{}
 		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("[worker] task panic: %v\n%s", r, debug.Stack())
+			}
 			<-p.sem
 			p.wg.Done()
 		}()

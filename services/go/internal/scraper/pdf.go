@@ -53,7 +53,15 @@ func FetchPDFContent(url string) (string, error) {
 	return text, nil
 }
 
-func extractPDFText(path string) (string, error) {
+func extractPDFText(path string) (text string, err error) {
+	// rsc.io/pdf panics on malformed PDF streams instead of returning an error.
+	// Contain it here so one bad PDF fails only this task, not the whole process.
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("pdf parse panic: %v", r)
+		}
+	}()
+
 	r, err := pdf.Open(path)
 	if err != nil {
 		return "", fmt.Errorf("open pdf: %w", err)
@@ -75,7 +83,7 @@ func extractPDFText(path string) (string, error) {
 		buf.WriteString("\n\n")
 	}
 
-	text := buf.String()
+	text = buf.String()
 	text = pdfTrailingWs.ReplaceAllString(text, "\n")
 	text = pdfMultiNewline.ReplaceAllString(text, "\n\n")
 	return strings.TrimSpace(text), nil
