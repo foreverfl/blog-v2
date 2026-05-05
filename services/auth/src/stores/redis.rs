@@ -1,9 +1,42 @@
+use std::time::Duration;
+
 use redis::AsyncCommands;
 use uuid::Uuid;
 
 use crate::types::AuthError;
 
-pub type RedisConn = redis::aio::MultiplexedConnection;
+pub type RedisConn = redis::aio::ConnectionManager;
+
+// Background heartbeat: pings Redis on a fixed interval and logs a single
+// line on each transition between healthy and unreachable. ConnectionManager
+// retries internally, so this loop is observability only.
+pub async fn run_health_loop(mut conn: RedisConn, interval: Duration) {
+    let mut healthy = true;
+    let mut ticker = tokio::time::interval(interval);
+    ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+
+    loop {
+        ticker.tick().await;
+        let result = redis::cmd("PING")
+            .query_async::<redis::Value>(&mut conn)
+            .await;
+
+        match result {
+            Ok(_) if !healthy => {
+                tracing::info!("redis connection recovered");
+                healthy = true;
+            }
+            Ok(_) => {}
+            Err(err) if healthy => {
+                tracing::warn!("redis connection lost: {err}");
+                healthy = false;
+            }
+            Err(err) => {
+                tracing::debug!("redis still unreachable: {err}");
+            }
+        }
+    }
+}
 
 // --- Refresh tokens ---
 

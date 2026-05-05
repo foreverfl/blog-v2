@@ -7,6 +7,7 @@ mod stores;
 mod types;
 
 use std::sync::Arc;
+use std::time::Duration;
 
 use tokio::net::TcpListener;
 use tokio::signal;
@@ -45,10 +46,14 @@ async fn main() {
 
     let redis_client =
         redis::Client::open(config.redis_url.as_str()).expect("invalid redis URL");
-    let redis: redis::aio::MultiplexedConnection = redis_client
-        .get_multiplexed_async_connection()
+    let redis = redis::aio::ConnectionManager::new(redis_client)
         .await
         .expect("failed to connect to redis");
+
+    tokio::spawn(stores::redis::run_health_loop(
+        redis.clone(),
+        Duration::from_secs(30),
+    ));
 
     let state = config::AppState {
         db,
