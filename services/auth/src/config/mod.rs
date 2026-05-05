@@ -4,7 +4,7 @@ use std::sync::Arc;
 #[derive(Clone)]
 pub struct AppState {
     pub db: sqlx::PgPool,
-    pub redis: redis::aio::MultiplexedConnection,
+    pub redis: redis::aio::ConnectionManager,
     pub config: Arc<AppConfig>,
     pub http: reqwest::Client,
 }
