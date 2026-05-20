@@ -1,0 +1,16 @@
+{
+  "categories": [
+    { "title": "## 🚀 Features",      "rules": [{ "pattern": "(?i)^feat(\\(.*\\))?:",       "on_property": "title" }] },
+    { "title": "## 🐛 Bug Fixes",     "rules": [{ "pattern": "(?i)^(bug|fix)(\\(.*\\))?:",  "on_property": "title" }] },
+    { "title": "## 📝 Documentation", "rules": [{ "pattern": "(?i)^(docs|dcos)(\\(.*\\))?:", "on_property": "title" }] },
+    { "title": "## ♻️ Refactoring",   "rules": [{ "pattern": "(?i)^refactor(\\(.*\\))?:",   "on_property": "title" }] },
+    { "title": "## ⚡ Performance",    "rules": [{ "pattern": "(?i)^perf(\\(.*\\))?:",       "on_property": "title" }] },
+    { "title": "## 🔧 Maintenance",   "rules": [{ "pattern": "(?i)^chore(\\(.*\\))?:",      "on_property": "title" }] },
+    { "title": "## 🧪 Tests",         "rules": [{ "pattern": "(?i)^test(\\(.*\\))?:",       "on_property": "title" }] },
+    { "title": "## 🔬 Spikes",        "rules": [{ "pattern": "(?i)^spike(\\(.*\\))?:",      "on_property": "title" }] }
+  ],
+  "template": "#{{CHANGELOG}}\n#{{UNCATEGORIZED}}\n\n**Full Changelog**: #{{RELEASE_DIFF}}",
+  "commit_template": "- #{{TITLE}} (#{{MERGE_SHA}})",
+  "empty_template": "- No changes",
+  "uncategorized_title": "## 🗂 Other"
+}
