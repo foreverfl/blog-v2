@@ -4,6 +4,17 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Version bump type'
+        required: true
+        default: minor
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 permissions:
   contents: write
@@ -20,21 +31,59 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Compute next version
+        id: ver
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BUMP: ${{ github.event.inputs.bump || 'minor' }}
+        run: |
+          # Last published release whose tag is a clean semver (ignores "next" etc.).
+          last=$(gh release list --exclude-drafts --limit 100 --json tagName --jq '.[].tagName' \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+            | sort -V \
+            | tail -1)
+          if [ -z "$last" ]; then
+            case "$BUMP" in
+              major) ver=v1.0.0 ;;
+              minor) ver=v0.1.0 ;;
+              *)     ver=v0.0.1 ;;
+            esac
+          else
+            base=${last#v}
+            IFS='.' read -r major minor patch <<< "$base"
+            case "$BUMP" in
+              major) ver="v$((major+1)).0.0" ;;
+              minor) ver="v${major}.$((minor+1)).0" ;;
+              *)     ver="v${major}.${minor}.$((patch+1))" ;;
+            esac
+          fi
+          echo "ver=$ver" >> "$GITHUB_OUTPUT"
+          echo "last=$last" >> "$GITHUB_OUTPUT"
       - name: Build changelog from commits
         id: changelog
         uses: mikepenz/release-changelog-builder-action@v5
         with:
           mode: COMMIT
           configuration: .github/changelog-config.json
+          fromTag: ${{ steps.ver.outputs.last }}
           toTag: ${{ github.sha }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Upsert draft release
-        uses: softprops/action-gh-release@v2
-        with:
-          draft: true
-          tag_name: next
-          name: "Next release (draft)"
-          body: ${{ steps.changelog.outputs.changelog }}
+      - name: Recreate draft release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VER: ${{ steps.ver.outputs.ver }}
+          NOTES: ${{ steps.changelog.outputs.changelog }}
+          SHA: ${{ github.sha }}
+        run: |
+          # Drop existing drafts so we never accumulate stale ones.
+          gh release list --limit 50 --json tagName,isDraft \
+            --jq '.[] | select(.isDraft) | .tagName' \
+            | while read -r tag; do
+                [ -n "$tag" ] && gh release delete "$tag" -y || true
+              done
+          gh release create "$VER" \
+            --draft \
+            --title "$VER" \
+            --notes "$NOTES" \
+            --target "$SHA"
