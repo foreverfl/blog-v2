@@ -2,6 +2,7 @@ package openai
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -13,17 +14,18 @@ import (
 	oai "github.com/sashabaranov/go-openai"
 )
 
-// Draw generates an image for the given date using DALL-E 3.
-// Returns the generated image URL.
-func (s *Service) Draw(ctx context.Context, r2Client *r2.Client, date string) (string, error) {
+// Draw generates an image for the given date using gpt-image-1.5.
+// gpt-image-1.5 always returns base64-encoded image data (no URL), so this
+// returns the decoded PNG bytes directly.
+func (s *Service) Draw(ctx context.Context, r2Client *r2.Client, date string) ([]byte, error) {
 	keywords, err := s.ExtractKeywords(ctx, r2Client, date)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	stylePromptText, err := s.readPrompt("picture-style.md")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	style := parseStylePrompt(stylePromptText)
 
@@ -42,26 +44,32 @@ func (s *Service) Draw(ctx context.Context, r2Client *r2.Client, date string) (s
 
 	promptJSON, _ := json.Marshal(fullPrompt)
 
+	// gpt-image-1.5 has no go-openai constant yet, so the model id is a literal.
+	// It does not accept response_format and always returns b64_json.
 	reqBody := oai.ImageRequest{
-		Model:          oai.CreateImageModelDallE3,
-		Prompt:         string(promptJSON),
-		N:              1,
-		Size:           oai.CreateImageSize1024x1024,
-		Quality:        oai.CreateImageQualityHD,
-		ResponseFormat: oai.CreateImageResponseFormatURL,
+		Model:   "gpt-image-1.5",
+		Prompt:  string(promptJSON),
+		N:       1,
+		Size:    oai.CreateImageSize1024x1024,
+		Quality: oai.CreateImageQualityMedium,
 	}
 
 	resp, err := s.client.CreateImage(ctx, reqBody)
 	if err != nil {
-		return "", fmt.Errorf("openai draw: %w", err)
+		return nil, fmt.Errorf("openai draw: %w", err)
 	}
 
-	if len(resp.Data) == 0 || resp.Data[0].URL == "" {
-		return "", fmt.Errorf("openai draw: no image URL returned")
+	if len(resp.Data) == 0 || resp.Data[0].B64JSON == "" {
+		return nil, fmt.Errorf("openai draw: no image data returned")
 	}
 
-	log.Printf("Image generated: %s", resp.Data[0].URL)
-	return resp.Data[0].URL, nil
+	imgData, err := base64.StdEncoding.DecodeString(resp.Data[0].B64JSON)
+	if err != nil {
+		return nil, fmt.Errorf("openai draw: decode b64: %w", err)
+	}
+
+	log.Printf("Image generated: %d bytes", len(imgData))
+	return imgData, nil
 }
 
 func parseStylePrompt(text string) model.StylePrompt {

@@ -2,10 +2,8 @@ package handler
 
 import (
 	"context"
-	"io"
 	"log"
 	"net/http"
-	"time"
 
 	"blog-go-api/internal/common"
 	"blog-go-api/internal/config"
@@ -64,26 +62,9 @@ func DrawHandler(cfg *config.Config, hnClient *r2.Client, hnImagesClient *r2.Cli
 
 		drawPool.Submit(func() {
 			ctx := context.Background()
-			imageURL, err := oai.Draw(ctx, hnClient, date)
+			imgData, err := oai.Draw(ctx, hnClient, date)
 			if err != nil {
 				log.Printf("Failed to generate image: %v", err)
-				sm.Set(statusKey, common.Error, 1, 1, 0, err.Error())
-				return
-			}
-
-			// Download the image
-			client := &http.Client{Timeout: 30 * time.Second}
-			resp, err := client.Get(imageURL)
-			if err != nil {
-				log.Printf("Failed to download image: %v", err)
-				sm.Set(statusKey, common.Error, 1, 1, 0, err.Error())
-				return
-			}
-			defer resp.Body.Close()
-
-			imgData, err := io.ReadAll(resp.Body)
-			if err != nil {
-				log.Printf("Failed to read image data: %v", err)
 				sm.Set(statusKey, common.Error, 1, 1, 0, err.Error())
 				return
 			}
