@@ -9,7 +9,7 @@ on:
       bump:
         description: 'Version bump type'
         required: true
-        default: minor
+        default: patch
         type: choice
         options:
           - patch
@@ -35,7 +35,7 @@ jobs:
         id: ver
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BUMP: ${{ github.event.inputs.bump || 'minor' }}
+          BUMP: ${{ github.event.inputs.bump || 'patch' }}
         run: |
           # Last published release whose tag is a clean semver (ignores "next" etc.).
           last=$(gh release list --exclude-drafts --limit 100 --json tagName --jq '.[].tagName' \
