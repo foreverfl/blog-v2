@@ -8,24 +8,43 @@ use crate::services;
 use crate::stores::{postgres as pg, redis as redis_store};
 use crate::types::{AuthError, CallbackQuery, TokenResponse, UserDto};
 
-// GET /auth/login/:provider
-pub async fn login(
-    State(state): State<AppState>,
-    Path(provider_name): Path<String>,
+// Shared OAuth start: generate CSRF state, persist it (with the CLI flag), and
+// redirect the browser to the provider's consent screen.
+async fn start_oauth(
+    state: &AppState,
+    provider_name: &str,
+    is_cli: bool,
 ) -> Result<Redirect, AuthError> {
-    let provider = Provider::from_name(&provider_name)?;
+    let provider = Provider::from_name(provider_name)?;
     let oauth_state = services::generate_state();
 
     redis_store::store_oauth_state(
         &mut state.redis.clone(),
         &oauth_state,
-        &provider_name,
+        provider_name,
+        is_cli,
         600, // 10 min
     )
     .await?;
 
     let url = provider.auth_url(&state.config, &oauth_state)?;
     Ok(Redirect::temporary(&url))
+}
+
+// GET /auth/login/:provider
+pub async fn login(
+    State(state): State<AppState>,
+    Path(provider_name): Path<String>,
+) -> Result<Redirect, AuthError> {
+    start_oauth(&state, &provider_name, false).await
+}
+
+// GET /auth/login-cli
+// Same redirect as the browser google login, but marks the OAuth state as
+// CLI-initiated so the callback can hand tokens back out-of-band (unit 2)
+// instead of redirecting to the frontend.
+pub async fn login_cli(State(state): State<AppState>) -> Result<Redirect, AuthError> {
+    start_oauth(&state, "google", true).await
 }
 
 // GET /auth/callback/:provider
@@ -35,14 +54,14 @@ pub async fn callback(
     Query(query): Query<CallbackQuery>,
 ) -> Result<impl IntoResponse, AuthError> {
     // Verify CSRF state
-    let stored_provider = redis_store::get_and_delete_oauth_state(
+    let stored = redis_store::get_and_delete_oauth_state(
         &mut state.redis.clone(),
         &query.state,
     )
     .await?
     .ok_or(AuthError::InvalidState)?;
 
-    if stored_provider != provider_name {
+    if stored.provider != provider_name {
         return Err(AuthError::InvalidState);
     }
 

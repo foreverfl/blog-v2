@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use redis::AsyncCommands;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::types::AuthError;
@@ -73,15 +74,27 @@ pub async fn delete_refresh_token(
 }
 
 // --- OAuth state (CSRF protection) ---
+#[derive(Debug, Serialize, Deserialize)]
+pub struct OAuthState {
+    pub provider: String,
+    #[serde(default)]
+    pub is_cli: bool,
+}
 
 pub async fn store_oauth_state(
     conn: &mut RedisConn,
     state: &str,
     provider: &str,
+    is_cli: bool,
     ttl_secs: u64,
 ) -> Result<(), AuthError> {
+    let payload = serde_json::to_string(&OAuthState {
+        provider: provider.to_string(),
+        is_cli,
+    })
+    .map_err(|e| AuthError::Internal(e.to_string()))?;
     let _: () = conn
-        .set_ex(format!("oauth_state:{state}"), provider, ttl_secs)
+        .set_ex(format!("oauth_state:{state}"), payload, ttl_secs)
         .await?;
     Ok(())
 }
@@ -89,11 +102,17 @@ pub async fn store_oauth_state(
 pub async fn get_and_delete_oauth_state(
     conn: &mut RedisConn,
     state: &str,
-) -> Result<Option<String>, AuthError> {
+) -> Result<Option<OAuthState>, AuthError> {
     let key = format!("oauth_state:{state}");
     let val: Option<String> = conn.get(&key).await?;
-    if val.is_some() {
-        let _: () = conn.del(&key).await?;
-    }
-    Ok(val)
+    let Some(raw) = val else {
+        return Ok(None);
+    };
+    let _: () = conn.del(&key).await?;
+
+    let parsed = serde_json::from_str::<OAuthState>(&raw).unwrap_or(OAuthState {
+        provider: raw,
+        is_cli: false,
+    });
+    Ok(Some(parsed))
 }

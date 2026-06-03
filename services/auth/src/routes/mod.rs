@@ -26,6 +26,7 @@ pub fn create_router(state: AppState) -> Router {
     Router::new()
         .route("/health", get(health))
         .route("/login/{provider}", get(handlers::login))
+        .route("/login-cli", get(handlers::login_cli))
         .route("/callback/{provider}", get(handlers::callback))
         .route("/refresh", post(handlers::refresh))
         .route("/logout", post(handlers::logout))
