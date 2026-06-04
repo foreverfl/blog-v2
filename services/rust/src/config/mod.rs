@@ -21,6 +21,7 @@ pub struct AppConfig {
     pub openai_api_key: String,
     pub redis_url: String,
     pub upload_base_url: Option<String>,
+    pub upload_secret: Option<String>,
 }
 
 impl AppConfig {
@@ -43,6 +44,7 @@ impl AppConfig {
             upload_base_url: env::var("UPLOAD_BASE_URL")
                 .ok()
                 .map(|url| url.trim_end_matches('/').to_string()),
+            upload_secret: env::var("UPLOAD_SECRET").ok(),
         }
     }
 }

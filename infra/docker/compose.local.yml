@@ -95,6 +95,7 @@ services:
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       UPLOAD_BASE_URL: ${UPLOAD_BASE_URL:-}
+      UPLOAD_SECRET: ${UPLOAD_SECRET:-}
     volumes:
       - ../../services/rust:/app
       - rust_cargo_cache:/usr/local/cargo/registry
