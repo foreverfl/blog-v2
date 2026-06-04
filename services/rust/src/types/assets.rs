@@ -52,8 +52,19 @@ pub struct AssetResponse {
     pub duration_ms: Option<i32>,
     pub kind: String,
     pub status: String,
+    pub url: Option<String>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
+}
+
+impl AssetResponse {
+    pub fn with_base(row: &AssetRow, base: Option<&str>) -> Self {
+        let url = base.map(|base| format!("{}/{}", base, row.object_key));
+        Self {
+            url,
+            ..Self::from(row)
+        }
+    }
 }
 
 impl From<&AssetRow> for AssetResponse {
@@ -71,6 +82,7 @@ impl From<&AssetRow> for AssetResponse {
             duration_ms: row.duration_ms,
             kind: row.kind.clone(),
             status: row.status.clone(),
+            url: None,
             created_at: row.created_at,
             updated_at: row.updated_at,
         }

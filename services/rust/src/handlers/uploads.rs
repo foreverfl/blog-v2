@@ -20,6 +20,7 @@ pub async fn upload(
     auth::extract_user_id(&state.config, &headers)?;
 
     let mut assets: Vec<AssetResponse> = Vec::new();
+    let base = state.config.upload_base_url.as_deref();
 
     while let Some(field) = multipart
         .next_field()
@@ -55,7 +56,7 @@ pub async fn upload(
 
         // Deduplicate by SHA-256
         if let Some(existing) = asset_store::find_by_sha256(&state.db, &sha256).await? {
-            assets.push(AssetResponse::from(&existing));
+            assets.push(AssetResponse::with_base(&existing, base));
             continue;
         }
 
@@ -79,6 +80,7 @@ pub async fn upload(
             .await
             .map_err(|e| ApiError::S3(e.to_string()))?;
 
+        // Save to DB
         let row = asset_store::insert(
             &state.db,
             &state.config.s3_bucket_blog_posts_assets,
@@ -91,7 +93,7 @@ pub async fn upload(
         )
         .await?;
 
-        assets.push(AssetResponse::from(&row));
+        assets.push(AssetResponse::with_base(&row, base));
     }
 
     Ok((StatusCode::CREATED, Json(assets)))

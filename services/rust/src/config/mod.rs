@@ -20,6 +20,7 @@ pub struct AppConfig {
     pub github_token: Option<String>,
     pub openai_api_key: String,
     pub redis_url: String,
+    pub upload_base_url: Option<String>,
 }
 
 impl AppConfig {
@@ -39,6 +40,9 @@ impl AppConfig {
             github_token: env::var("GITHUB_TOKEN").ok(),
             openai_api_key: env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY required"),
             redis_url: env::var("REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1:6379".into()),
+            upload_base_url: env::var("UPLOAD_BASE_URL")
+                .ok()
+                .map(|url| url.trim_end_matches('/').to_string()),
         }
     }
 }
