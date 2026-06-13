@@ -6,22 +6,22 @@ CREATE SCHEMA IF NOT EXISTS recipe;
 CREATE TABLE IF NOT EXISTS recipe.cuisines (
     code    text PRIMARY KEY,   -- ISO 3166-1 alpha-2 for countries; ad-hoc codes for region/fusion
     name_ko text NOT NULL,
-    name_ja text,
-    name_en text
+    name_ja text NOT NULL,
+    name_en text NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS recipe.sauce_usage_types (
     code    text PRIMARY KEY,   -- 'dip','marinade','glaze','soup_base','stir_fry','braise','dressing'
     name_ko text NOT NULL,
-    name_ja text,
-    name_en text
+    name_ja text NOT NULL,
+    name_en text NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS recipe.cooking_method_types (
     code    text PRIMARY KEY,   -- 'grill','pan_fry','stir_fry','boil','simmer','steam','raw','air_fry'
     name_ko text NOT NULL,
-    name_ja text,
-    name_en text
+    name_ja text NOT NULL,
+    name_en text NOT NULL
 );
 
 -- Seed cuisines: countries (ISO 3166-1 alpha-2), one row per line
