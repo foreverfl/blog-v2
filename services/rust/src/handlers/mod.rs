@@ -3,6 +3,7 @@ pub mod import;
 pub mod posts;
 pub mod recipe_cooking_method_types;
 pub mod recipe_cuisines;
+pub mod recipe_ingredients;
 pub mod recipe_sauce_usage_types;
 pub mod translate;
 pub mod uploads;

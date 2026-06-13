@@ -4,6 +4,7 @@ mod posts;
 mod recipe;
 mod recipe_cooking_method_types;
 mod recipe_cuisines;
+mod recipe_ingredients;
 mod recipe_sauce_usage_types;
 mod uploads;
 

@@ -5,4 +5,5 @@ pub mod jobs;
 pub mod posts;
 pub mod recipe_cooking_method_types;
 pub mod recipe_cuisines;
+pub mod recipe_ingredients;
 pub mod recipe_sauce_usage_types;
