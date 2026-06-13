@@ -1,21 +1,23 @@
--- V7: Create lookup tables (cuisines, sauce_usage_types, cooking_method_types) + seed
+-- V7: Create recipe schema + lookup tables (cuisines, sauce_usage_types, cooking_method_types) + seed
 
--- cuisines: flat classification by country (+ region / fusion extras, no hierarchy)
-CREATE TABLE IF NOT EXISTS public.cuisines (
+CREATE SCHEMA IF NOT EXISTS recipe;
+
+-- cuisines: flat classification by country (+ fusion extra, no hierarchy)
+CREATE TABLE IF NOT EXISTS recipe.cuisines (
     code    text PRIMARY KEY,   -- ISO 3166-1 alpha-2 for countries; ad-hoc codes for region/fusion
     name_ko text NOT NULL,
     name_ja text,
     name_en text
 );
 
-CREATE TABLE IF NOT EXISTS public.sauce_usage_types (
+CREATE TABLE IF NOT EXISTS recipe.sauce_usage_types (
     code    text PRIMARY KEY,   -- 'dip','marinade','glaze','soup_base','stir_fry','braise','dressing'
     name_ko text NOT NULL,
     name_ja text,
     name_en text
 );
 
-CREATE TABLE IF NOT EXISTS public.cooking_method_types (
+CREATE TABLE IF NOT EXISTS recipe.cooking_method_types (
     code    text PRIMARY KEY,   -- 'grill','pan_fry','stir_fry','boil','simmer','steam','raw','air_fry'
     name_ko text NOT NULL,
     name_ja text,
@@ -23,7 +25,7 @@ CREATE TABLE IF NOT EXISTS public.cooking_method_types (
 );
 
 -- Seed cuisines: countries (ISO 3166-1 alpha-2), one row per line
-INSERT INTO public.cuisines (code, name_ko, name_ja, name_en) VALUES
+INSERT INTO recipe.cuisines (code, name_ko, name_ja, name_en) VALUES
     -- Asia
     ('KR','대한민국','韓国','South Korea'),
     ('KP','북한','北朝鮮','North Korea'),
@@ -227,12 +229,12 @@ INSERT INTO public.cuisines (code, name_ko, name_ja, name_en) VALUES
 ON CONFLICT DO NOTHING;
 
 -- Seed cuisines: region / fusion extras (non-country, ad-hoc codes)
-INSERT INTO public.cuisines (code, name_ko, name_ja, name_en) VALUES
+INSERT INTO recipe.cuisines (code, name_ko, name_ja, name_en) VALUES
     ('FUSION','퓨전','フュージョン','Fusion')
 ON CONFLICT DO NOTHING;
 
 -- Seed sauce_usage_types, one row per line
-INSERT INTO public.sauce_usage_types (code, name_ko, name_ja, name_en) VALUES
+INSERT INTO recipe.sauce_usage_types (code, name_ko, name_ja, name_en) VALUES
     ('dip','찍어먹기','ディップ','Dip'),
     ('marinade','재움','マリネ','Marinade'),
     ('glaze','글레이즈','グレーズ','Glaze'),
@@ -243,7 +245,7 @@ INSERT INTO public.sauce_usage_types (code, name_ko, name_ja, name_en) VALUES
 ON CONFLICT DO NOTHING;
 
 -- Seed cooking_method_types, one row per line
-INSERT INTO public.cooking_method_types (code, name_ko, name_ja, name_en) VALUES
+INSERT INTO recipe.cooking_method_types (code, name_ko, name_ja, name_en) VALUES
     ('grill','구이','グリル','Grill'),
     ('pan_fry','팬프라이','パン焼き','Pan-fry'),
     ('stir_fry','볶음','炒め','Stir-fry'),
