@@ -1,10 +1,10 @@
-mod cooking_method_types;
-mod cuisines;
 mod hackernews;
 mod import;
 mod posts;
 mod recipe;
-mod sauce_usage_types;
+mod recipe_cooking_method_types;
+mod recipe_cuisines;
+mod recipe_sauce_usage_types;
 mod uploads;
 
 use axum::http::{header, Method};

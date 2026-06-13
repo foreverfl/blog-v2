@@ -1,8 +1,8 @@
 pub mod assets;
 pub mod contents;
-pub mod cooking_method_types;
-pub mod cuisines;
 pub mod hackernews_likes;
 pub mod jobs;
 pub mod posts;
-pub mod sauce_usage_types;
+pub mod recipe_cooking_method_types;
+pub mod recipe_cuisines;
+pub mod recipe_sauce_usage_types;

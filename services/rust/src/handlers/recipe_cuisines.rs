@@ -2,7 +2,7 @@ use axum::extract::State;
 use axum::Json;
 
 use crate::config::AppState;
-use crate::stores::cuisines as store;
+use crate::stores::recipe_cuisines as store;
 use crate::types::{ApiError, Cuisine};
 
 // GET /recipe/cuisines

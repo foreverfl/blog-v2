@@ -5,5 +5,5 @@ use crate::config::AppState;
 use crate::handlers;
 
 pub fn router() -> Router<AppState> {
-    Router::new().route("/", get(handlers::cuisines::list_cuisines))
+    Router::new().route("/", get(handlers::recipe_cuisines::list_cuisines))
 }
