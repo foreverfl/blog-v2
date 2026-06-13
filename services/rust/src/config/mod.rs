@@ -16,12 +16,11 @@ pub struct AppConfig {
     pub frontend_url: String,
     pub s3_bucket_blog_posts_assets: String,
     pub max_upload_size: usize,
-    pub import_secret: String,
+    pub api_secret: String,
     pub github_token: Option<String>,
     pub openai_api_key: String,
     pub redis_url: String,
     pub upload_base_url: Option<String>,
-    pub upload_secret: Option<String>,
 }
 
 impl AppConfig {
@@ -37,14 +36,13 @@ impl AppConfig {
                 .ok()
                 .and_then(|v| v.parse().ok())
                 .unwrap_or(50 * 1024 * 1024), // 50 MB
-            import_secret: env::var("IMPORT_SECRET").expect("IMPORT_SECRET required"),
+            api_secret: env::var("API_SECRET").expect("API_SECRET required"),
             github_token: env::var("GITHUB_TOKEN").ok(),
             openai_api_key: env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY required"),
             redis_url: env::var("REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1:6379".into()),
             upload_base_url: env::var("UPLOAD_BASE_URL")
                 .ok()
                 .map(|url| url.trim_end_matches('/').to_string()),
-            upload_secret: env::var("UPLOAD_SECRET").ok(),
         }
     }
 }

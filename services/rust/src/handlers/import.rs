@@ -3,8 +3,8 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::Json;
 use serde::{Deserialize, Serialize};
-use subtle::ConstantTimeEq;
 
+use crate::auth;
 use crate::config::AppState;
 use crate::stores::{contents as content_store, jobs as job_store, posts as post_store};
 use crate::types::ApiError;
@@ -52,18 +52,7 @@ pub async fn import_mdx_from_github(
     State(state): State<AppState>,
     headers: HeaderMap,
 ) -> Result<impl IntoResponse, ApiError> {
-    let secret = headers
-        .get("X-Import-Secret")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("");
-    if secret
-        .as_bytes()
-        .ct_eq(state.config.import_secret.as_bytes())
-        .unwrap_u8()
-        != 1
-    {
-        return Err(ApiError::InvalidToken);
-    }
+    auth::verify_bearer_secret(&headers, &state.config.api_secret)?;
 
     let job_id = uuid::Uuid::new_v4().to_string();
 
@@ -439,18 +428,7 @@ pub async fn import_json(
     headers: HeaderMap,
     Query(query): Query<ImportJsonQuery>,
 ) -> Result<impl IntoResponse, ApiError> {
-    let secret = headers
-        .get("X-Import-Secret")
-        .and_then(|v| v.to_str().ok())
-        .unwrap_or("");
-    if secret
-        .as_bytes()
-        .ct_eq(state.config.import_secret.as_bytes())
-        .unwrap_u8()
-        != 1
-    {
-        return Err(ApiError::InvalidToken);
-    }
+    auth::verify_bearer_secret(&headers, &state.config.api_secret)?;
 
     // Parse YYMMDD → NaiveDate
     let from_date = chrono::NaiveDate::parse_from_str(&query.from, "%y%m%d")

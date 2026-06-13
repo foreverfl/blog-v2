@@ -33,11 +33,7 @@ pub fn create_router(state: AppState) -> Router {
             Method::DELETE,
             Method::OPTIONS,
         ])
-        .allow_headers([
-            header::AUTHORIZATION,
-            header::CONTENT_TYPE,
-            "X-Import-Secret".parse().unwrap(),
-        ])
+        .allow_headers([header::AUTHORIZATION, header::CONTENT_TYPE])
         .allow_credentials(true);
 
     let upload_limit = state.config.max_upload_size;

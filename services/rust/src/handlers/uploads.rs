@@ -1,6 +1,6 @@
 use aws_sdk_s3::primitives::ByteStream;
 use axum::extract::{Multipart, State};
-use axum::http::{header, HeaderMap, StatusCode};
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::Json;
 use sha2::{Digest, Sha256};
@@ -11,17 +11,10 @@ use crate::config::{AppConfig, AppState};
 use crate::stores::assets as asset_store;
 use crate::types::{ApiError, AssetResponse};
 
-/// Authorize an upload via `UPLOAD_SECRET` Bearer token or a user JWT.
-/// Falls back to JWT-only when no secret is configured.
+/// Authorize an upload via the shared `API_SECRET` Bearer token or a user JWT.
 fn authorize_upload(config: &AppConfig, headers: &HeaderMap) -> Result<(), ApiError> {
-    if let Some(secret) = config.upload_secret.as_deref() {
-        let bearer = headers
-            .get(header::AUTHORIZATION)
-            .and_then(|value| value.to_str().ok())
-            .and_then(|value| value.strip_prefix("Bearer "));
-        if bearer == Some(secret) {
-            return Ok(());
-        }
+    if auth::verify_bearer_secret(headers, &config.api_secret).is_ok() {
+        return Ok(());
     }
     auth::extract_user_id(config, headers).map(|_| ())
 }

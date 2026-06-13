@@ -16,7 +16,7 @@ env:
   BACKEND_GO_URL: ${{ secrets.BACKEND_GO_URL }}
   BACKEND_RUST_URL: ${{ secrets.BACKEND_RUST_URL }}
   HACKERNEWS_SECRET: ${{ secrets.HACKERNEWS_SECRET }}
-  IMPORT_SECRET: ${{ secrets.IMPORT_SECRET }}
+  API_SECRET: ${{ secrets.API_SECRET }}
 
 jobs:
   pipeline:
@@ -213,7 +213,7 @@ jobs:
           DATE="${{ steps.date.outputs.value }}"
           echo "==> POST /import/json?from=${DATE}"
           RESP=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X POST "${BACKEND_RUST_URL}/import/json?from=${DATE}" \
-            -H "X-Import-Secret: ${IMPORT_SECRET}")
+            -H "Authorization: Bearer ${API_SECRET}")
           HTTP_CODE=$(echo "$RESP" | grep -oP 'HTTP_CODE:\K\d+')
           BODY=$(echo "$RESP" | sed '/HTTP_CODE:/d')
           echo "Response (HTTP ${HTTP_CODE}): ${BODY}"
