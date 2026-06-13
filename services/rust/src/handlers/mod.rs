@@ -1,3 +1,4 @@
+pub mod cuisines;
 pub mod hackernews;
 pub mod import;
 pub mod posts;

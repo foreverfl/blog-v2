@@ -1,6 +1,8 @@
+mod cuisines;
 mod hackernews;
 mod import;
 mod posts;
+mod recipe;
 mod uploads;
 
 use axum::http::{header, Method};
@@ -40,6 +42,7 @@ pub fn create_router(state: AppState) -> Router {
     Router::new()
         .route("/health", get(health))
         .nest("/posts", posts::router())
+        .nest("/recipe", recipe::router())
         .nest("/uploads", uploads::router(upload_limit))
         .nest("/import", import::router())
         .nest("/hackernews", hackernews::router())
