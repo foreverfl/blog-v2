@@ -1,8 +1,8 @@
 mod auth;
 mod config;
 mod handlers;
-mod repositories;
 mod routes;
+mod services;
 mod stores;
 mod types;
 

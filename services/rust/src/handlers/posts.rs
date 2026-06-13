@@ -5,7 +5,7 @@ use axum::Json;
 
 use crate::auth;
 use crate::config::AppState;
-use crate::repositories::posts as repo;
+use crate::services::posts as service;
 use crate::types::{
     ApiError, CreatePostRequest, LangQuery, ListPostsQuery, ListPostsResponse, MarkIndexedRequest,
     PostResponse, UpdatePostRequest,
@@ -19,7 +19,7 @@ pub async fn list_posts(
     let page = query.page.unwrap_or(1).max(1);
     let per_page = query.per_page.unwrap_or(20).clamp(1, 100);
 
-    let resp = repo::list_posts(&state.db, query.lang.as_deref(), page, per_page).await?;
+    let resp = service::list_posts(&state.db, query.lang.as_deref(), page, per_page).await?;
     Ok(Json(resp))
 }
 
@@ -32,7 +32,7 @@ pub async fn list_by_classification(
     let page = query.page.unwrap_or(1).max(1);
     let per_page = query.per_page.unwrap_or(20).clamp(1, 100);
 
-    let resp = repo::list(
+    let resp = service::list(
         &state.db,
         query.lang.as_deref(),
         Some(&classification),
@@ -53,7 +53,7 @@ pub async fn list_by_category(
     let page = query.page.unwrap_or(1).max(1);
     let per_page = query.per_page.unwrap_or(20).clamp(1, 100);
 
-    let resp = repo::list(
+    let resp = service::list(
         &state.db,
         query.lang.as_deref(),
         Some(&classification),
@@ -72,7 +72,7 @@ pub async fn get_by_slug(
     Query(query): Query<LangQuery>,
 ) -> Result<Json<PostResponse>, ApiError> {
     let resp =
-        repo::get_by_slug(&state.db, &classification, &category, &slug, query.lang.as_deref())
+        service::get_by_slug(&state.db, &classification, &category, &slug, query.lang.as_deref())
             .await?;
     Ok(Json(resp))
 }
@@ -91,7 +91,7 @@ pub async fn create(
         ));
     }
 
-    let resp = repo::create(&state.db, &req).await?;
+    let resp = service::create(&state.db, &req).await?;
     Ok((StatusCode::CREATED, Json(resp)))
 }
 
@@ -104,7 +104,7 @@ pub async fn update(
 ) -> Result<Json<PostResponse>, ApiError> {
     auth::extract_user_id(&state.config, &headers)?;
 
-    let resp = repo::update_by_slug(&state.db, &classification, &category, &slug, &req).await?;
+    let resp = service::update_by_slug(&state.db, &classification, &category, &slug, &req).await?;
     Ok(Json(resp))
 }
 
@@ -116,7 +116,7 @@ pub async fn delete(
 ) -> Result<StatusCode, ApiError> {
     auth::extract_user_id(&state.config, &headers)?;
 
-    let deleted = repo::delete_by_slug(&state.db, &classification, &category, &slug).await?;
+    let deleted = service::delete_by_slug(&state.db, &classification, &category, &slug).await?;
     if !deleted {
         return Err(ApiError::NotFound);
     }
@@ -132,7 +132,7 @@ pub async fn list_unindexed(
     let page = query.page.unwrap_or(1).max(1);
     let per_page = query.per_page.unwrap_or(20).clamp(1, 100);
 
-    let resp = repo::list_unindexed(&state.db, page, per_page).await?;
+    let resp = service::list_unindexed(&state.db, page, per_page).await?;
     Ok(Json(resp))
 }
 
@@ -144,6 +144,6 @@ pub async fn mark_indexed(
 ) -> Result<Json<Vec<PostResponse>>, ApiError> {
     auth::extract_user_id(&state.config, &headers)?;
 
-    let resp = repo::mark_indexed(&state.db, &req.ids).await?;
+    let resp = service::mark_indexed(&state.db, &req.ids).await?;
     Ok(Json(resp))
 }
