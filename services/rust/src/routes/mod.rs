@@ -3,6 +3,7 @@ mod hackernews;
 mod import;
 mod posts;
 mod recipe;
+mod sauce_usage_types;
 mod uploads;
 
 use axum::http::{header, Method};
