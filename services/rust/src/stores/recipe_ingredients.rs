@@ -1,4 +1,5 @@
 use sqlx::PgPool;
+use uuid::Uuid;
 
 use crate::types::{ApiError, CreateIngredientRequest, Ingredient};
 
@@ -29,4 +30,17 @@ pub async fn create(
         }
         other => ApiError::Database(other),
     })
+}
+
+/// Delete an ingredient by id. Returns NotFound when no row matched.
+pub async fn delete(pool: &PgPool, id: Uuid) -> Result<(), ApiError> {
+    let result = sqlx::query("DELETE FROM recipe.ingredients WHERE id = $1")
+        .bind(id)
+        .execute(pool)
+        .await?;
+
+    if result.rows_affected() == 0 {
+        return Err(ApiError::NotFound);
+    }
+    Ok(())
 }

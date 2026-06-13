@@ -1,6 +1,7 @@
-use axum::extract::State;
+use axum::extract::{Path, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::Json;
+use uuid::Uuid;
 
 use crate::auth;
 use crate::config::AppState;
@@ -20,4 +21,18 @@ pub async fn create_ingredient(
     auth::verify_bearer_secret(&headers, &state.config.api_secret)?;
     let ingredient = store::create(&state.db, &req).await?;
     Ok((StatusCode::CREATED, Json(ingredient)))
+}
+
+// DELETE /recipe/ingredients/{id}
+//
+// Request: Authorization: Bearer <API_SECRET>, path id (uuid).
+// Response: 204 No Content on success. 401 missing/bad secret, 404 unknown id.
+pub async fn delete_ingredient(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<Uuid>,
+) -> Result<StatusCode, ApiError> {
+    auth::verify_bearer_secret(&headers, &state.config.api_secret)?;
+    store::delete(&state.db, id).await?;
+    Ok(StatusCode::NO_CONTENT)
 }
