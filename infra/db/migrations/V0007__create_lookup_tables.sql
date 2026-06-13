@@ -228,7 +228,7 @@ ON CONFLICT DO NOTHING;
 
 -- Seed cuisines: region / fusion extras (non-country, ad-hoc codes)
 INSERT INTO public.cuisines (code, name_ko, name_ja, name_en) VALUES
-    ('FUSION','퓨전','フュージョン','Fusion'),
+    ('FUSION','퓨전','フュージョン','Fusion')
 ON CONFLICT DO NOTHING;
 
 -- Seed sauce_usage_types, one row per line
