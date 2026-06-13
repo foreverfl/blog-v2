@@ -6,7 +6,7 @@ use uuid::Uuid;
 use crate::auth;
 use crate::config::AppState;
 use crate::stores::recipe_ingredients as store;
-use crate::types::{ApiError, CreateIngredientRequest, Ingredient};
+use crate::types::{ApiError, CreateIngredientRequest, Ingredient, UpdateIngredientRequest};
 
 // POST /recipe/ingredients
 //
@@ -21,6 +21,23 @@ pub async fn create_ingredient(
     auth::verify_bearer_secret(&headers, &state.config.api_secret)?;
     let ingredient = store::create(&state.db, &req).await?;
     Ok((StatusCode::CREATED, Json(ingredient)))
+}
+
+// PATCH /recipe/ingredients/{id}
+//
+// Request: Authorization: Bearer <API_SECRET>, path id (uuid),
+//          JSON with any subset of { slug, name_ko, name_ja, name_en, category }.
+// Response: 200 with the updated ingredient. 401 missing/bad secret, 404 unknown id,
+//           409 duplicate slug, 400 invalid slug format.
+pub async fn update_ingredient(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<Uuid>,
+    Json(req): Json<UpdateIngredientRequest>,
+) -> Result<Json<Ingredient>, ApiError> {
+    auth::verify_bearer_secret(&headers, &state.config.api_secret)?;
+    let ingredient = store::update(&state.db, id, &req).await?;
+    Ok(Json(ingredient))
 }
 
 // DELETE /recipe/ingredients/{id}

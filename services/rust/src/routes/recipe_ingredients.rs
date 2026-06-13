@@ -1,4 +1,4 @@
-use axum::routing::{delete, post};
+use axum::routing::{patch, post};
 use axum::Router;
 
 use crate::config::AppState;
@@ -9,6 +9,7 @@ pub fn router() -> Router<AppState> {
         .route("/", post(handlers::recipe_ingredients::create_ingredient))
         .route(
             "/{id}",
-            delete(handlers::recipe_ingredients::delete_ingredient),
+            patch(handlers::recipe_ingredients::update_ingredient)
+                .delete(handlers::recipe_ingredients::delete_ingredient),
         )
 }
