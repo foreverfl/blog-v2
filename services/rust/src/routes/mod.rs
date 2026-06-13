@@ -1,3 +1,4 @@
+mod cooking_method_types;
 mod cuisines;
 mod hackernews;
 mod import;

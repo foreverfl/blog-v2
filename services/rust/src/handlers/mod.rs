@@ -1,3 +1,4 @@
+pub mod cooking_method_types;
 pub mod cuisines;
 pub mod hackernews;
 pub mod import;
