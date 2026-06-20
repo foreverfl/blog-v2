@@ -32,6 +32,21 @@ pub async fn create(
     })
 }
 
+/// Fetch a single ingredient by id. Returns NotFound when no row matched.
+pub async fn get(pool: &PgPool, id: Uuid) -> Result<Ingredient, ApiError> {
+    sqlx::query_as::<_, Ingredient>(
+        r#"
+        SELECT id, slug, name_ko, name_ja, name_en, category
+        FROM recipe.ingredients
+        WHERE id = $1
+        "#,
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await?
+    .ok_or(ApiError::NotFound)
+}
+
 /// Partially update an ingredient by id. Omitted (NULL) fields keep their
 /// current value via COALESCE. Returns NotFound when no row matched.
 pub async fn update(

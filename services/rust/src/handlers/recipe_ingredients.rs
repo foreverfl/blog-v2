@@ -23,6 +23,18 @@ pub async fn create_ingredient(
     Ok((StatusCode::CREATED, Json(ingredient)))
 }
 
+// GET /recipe/ingredients/{id}
+//
+// Request: path id (uuid). Read-only, no auth.
+// Response: 200 with the ingredient. 400 malformed uuid, 404 unknown id.
+pub async fn get_ingredient(
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Result<Json<Ingredient>, ApiError> {
+    let ingredient = store::get(&state.db, id).await?;
+    Ok(Json(ingredient))
+}
+
 // PATCH /recipe/ingredients/{id}
 //
 // Request: Authorization: Bearer <API_SECRET>, path id (uuid),
