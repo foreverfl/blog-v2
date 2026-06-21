@@ -148,10 +148,6 @@ git push -u origin feat/user-profile
 gh pr create --template feat.md
 ```
 
-## Documentation
-
-- [ADR Template](docs/adr/0000-template.md) - Architecture Decision Records format
-
 ## License
 
 MIT
