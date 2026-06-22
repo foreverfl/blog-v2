@@ -1,0 +1,727 @@
+openapi: 3.1.0
+info:
+  title: Blog Posts API
+  version: 1.0.0
+  description: |
+    Posts domain for the mogumogu.dev Rust service. Covers creating, reading,
+    updating, and deleting blog posts, as well as listing by classification or
+    category, managing index state, and AI-powered translation.
+  x-api-id: posts
+
+servers:
+  - url: https://api.mogumogu.dev/rust
+    description: Production
+  - url: http://localhost:8002
+    description: Local development (direct to the Rust service)
+
+tags:
+  - name: Posts
+    description: Blog post CRUD, listing, index management, and translation.
+
+paths:
+  /posts:
+    post:
+      tags: [Posts]
+      operationId: createPost
+      summary: Create a post
+      description: |
+        Creates a new post with optional content entries. Requires a valid
+        Bearer JWT. Returns 400 if `classification`, `category`, or `slug`
+        is empty.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePostRequest'
+      responses:
+        '201':
+          description: Post created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /posts/recent:
+    get:
+      tags: [Posts]
+      operationId: listRecentPosts
+      summary: List recent posts
+      description: Returns a paginated list of posts, excluding trend posts.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/LangQuery'
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+      responses:
+        '200':
+          description: Paginated list of post summaries.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListPostsResponse'
+
+  /posts/unindexed:
+    get:
+      tags: [Posts]
+      operationId: listUnindexedPosts
+      summary: List unindexed posts
+      description: Returns a paginated list of posts that have not yet been indexed.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+      responses:
+        '200':
+          description: Paginated list of unindexed post summaries.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListPostsResponse'
+
+  /posts/mark-indexed:
+    put:
+      tags: [Posts]
+      operationId: markPostsIndexed
+      summary: Mark posts as indexed
+      description: |
+        Sets the `indexed` flag to `true` for the given post IDs. Requires a
+        valid Bearer JWT.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarkIndexedRequest'
+      responses:
+        '200':
+          description: Updated post objects.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PostResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /posts/translate:
+    post:
+      tags: [Posts]
+      operationId: translatePost
+      summary: Translate post content
+      description: |
+        Uses an AI model to translate a post title and markdown content from
+        the given origin language into all three supported languages (en, ja,
+        ko). The origin language is passed as a query parameter.
+      security: []
+      parameters:
+        - name: origin
+          in: query
+          required: true
+          description: Source language of the content.
+          schema:
+            type: string
+            enum: [en, ja, ko]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TranslateRequest'
+      responses:
+        '200':
+          description: Translated content in all three languages.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranslateResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /posts/{classification}:
+    get:
+      tags: [Posts]
+      operationId: listPostsByClassification
+      summary: List posts by classification
+      description: Returns a paginated list of posts filtered by classification.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Classification'
+        - $ref: '#/components/parameters/LangQuery'
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+      responses:
+        '200':
+          description: Paginated list of post summaries.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListPostsResponse'
+
+  /posts/{classification}/{category}:
+    get:
+      tags: [Posts]
+      operationId: listPostsByCategory
+      summary: List posts by classification and category
+      description: |
+        Returns a paginated list of posts filtered by both classification and
+        category.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Classification'
+        - $ref: '#/components/parameters/Category'
+        - $ref: '#/components/parameters/LangQuery'
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/PerPageQuery'
+      responses:
+        '200':
+          description: Paginated list of post summaries.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListPostsResponse'
+
+  /posts/{classification}/{category}/{slug}:
+    get:
+      tags: [Posts]
+      operationId: getPostBySlug
+      summary: Get a single post
+      description: |
+        Returns the full post — including all content entries and attached
+        assets — identified by its classification, category, and slug.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Classification'
+        - $ref: '#/components/parameters/Category'
+        - $ref: '#/components/parameters/Slug'
+        - $ref: '#/components/parameters/LangQuery'
+      responses:
+        '200':
+          description: The requested post.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Posts]
+      operationId: updatePost
+      summary: Update a post
+      description: |
+        Updates one or more fields of an existing post. All request fields are
+        optional; omitting a field leaves it unchanged. Requires a valid Bearer
+        JWT.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Classification'
+        - $ref: '#/components/parameters/Category'
+        - $ref: '#/components/parameters/Slug'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePostRequest'
+      responses:
+        '200':
+          description: The updated post.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Posts]
+      operationId: deletePost
+      summary: Delete a post
+      description: |
+        Permanently deletes the post identified by classification, category,
+        and slug. Returns 404 if the post does not exist. Requires a valid
+        Bearer JWT.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Classification'
+        - $ref: '#/components/parameters/Category'
+        - $ref: '#/components/parameters/Slug'
+      responses:
+        '204':
+          description: Post deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  parameters:
+    Classification:
+      name: classification
+      in: path
+      required: true
+      description: Top-level post classification (e.g. `dev`, `miscellaneous`).
+      schema:
+        type: string
+
+    Category:
+      name: category
+      in: path
+      required: true
+      description: Category within the classification (e.g. `rust`, `my-thoughts`).
+      schema:
+        type: string
+
+    Slug:
+      name: slug
+      in: path
+      required: true
+      description: URL-safe slug that uniquely identifies the post within its category.
+      schema:
+        type: string
+
+    LangQuery:
+      name: lang
+      in: query
+      required: false
+      description: |
+        BCP-47 language code to filter content entries (e.g. `ko`, `en`, `ja`).
+        When omitted, all available language entries are returned.
+      schema:
+        type: string
+
+    PageQuery:
+      name: page
+      in: query
+      required: false
+      description: 1-based page number. Defaults to `1`.
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+        default: 1
+
+    PerPageQuery:
+      name: per_page
+      in: query
+      required: false
+      description: Number of items per page. Defaults to `20`, clamped to `[1, 100]`.
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters or missing required fields.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing or invalid Bearer JWT.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: The requested post does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    # ── Request schemas ──
+
+    CreatePostRequest:
+      type: object
+      required: [classification, category, slug]
+      properties:
+        classification:
+          type: string
+          description: Top-level classification for the post.
+          example: dev
+        category:
+          type: string
+          description: Category within the classification.
+          example: rust
+        slug:
+          type: string
+          description: URL-safe slug for the post.
+          example: hello-world
+        image:
+          type: ['string', 'null']
+          description: Optional cover image URL or storage key.
+        contents:
+          type: array
+          description: Initial content entries, one per language.
+          default: []
+          items:
+            $ref: '#/components/schemas/ContentPayload'
+
+    UpdatePostRequest:
+      type: object
+      description: |
+        All fields are optional. Omitting a field leaves the current value
+        unchanged.
+      properties:
+        classification:
+          type: ['string', 'null']
+          description: New classification to move the post to.
+        category:
+          type: ['string', 'null']
+          description: New category to move the post to.
+        slug:
+          type: ['string', 'null']
+          description: New slug for the post.
+        image:
+          type: ['string', 'null']
+          description: New cover image URL or storage key.
+        contents:
+          type: array
+          description: Replacement content entries (upserted by lang).
+          default: []
+          items:
+            $ref: '#/components/schemas/ContentPayload'
+
+    MarkIndexedRequest:
+      type: object
+      required: [ids]
+      properties:
+        ids:
+          type: array
+          description: UUIDs of the posts to mark as indexed.
+          items:
+            type: string
+            format: uuid
+
+    TranslateRequest:
+      type: object
+      required: [title, content]
+      properties:
+        title:
+          type: string
+          description: Post title to translate.
+        content:
+          type: string
+          description: Post body in Markdown to translate.
+
+    ContentPayload:
+      type: object
+      required: [lang, content_type]
+      description: A single language-specific content entry for a post.
+      properties:
+        lang:
+          type: string
+          description: BCP-47 language code.
+          example: ko
+        content_type:
+          type: string
+          description: Content format identifier (e.g. `markdown`).
+          example: markdown
+        title:
+          type: ['string', 'null']
+          description: Localized post title.
+        excerpt:
+          type: ['string', 'null']
+          description: Short summary or excerpt.
+        body_markdown:
+          type: ['string', 'null']
+          description: Full post body in Markdown.
+        body_json:
+          description: Structured body as a JSON object (e.g. a block-editor AST).
+          oneOf:
+            - type: 'null'
+            - type: object
+        body_text:
+          type: ['string', 'null']
+          description: Plain-text version of the body.
+        metadata:
+          description: Arbitrary extra metadata (e.g. reading time, tags).
+          oneOf:
+            - type: 'null'
+            - type: object
+
+    # ── Response schemas ──
+
+    PostResponse:
+      type: object
+      required:
+        - id
+        - classification
+        - category
+        - slug
+        - created_at
+        - updated_at
+        - indexed
+        - contents
+        - assets
+      properties:
+        id:
+          type: string
+          format: uuid
+        classification:
+          type: string
+          example: dev
+        category:
+          type: string
+          example: rust
+        slug:
+          type: string
+          example: hello-world
+        image:
+          type: ['string', 'null']
+          description: Cover image URL or storage key.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        indexed:
+          type: boolean
+          description: Whether the post has been submitted to a search index.
+        contents:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContentResponse'
+        assets:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostAssetResponse'
+
+    PostSummaryResponse:
+      type: object
+      required:
+        - id
+        - classification
+        - category
+        - slug
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        classification:
+          type: string
+          example: dev
+        category:
+          type: string
+          example: rust
+        slug:
+          type: string
+          example: hello-world
+        image:
+          type: ['string', 'null']
+          description: Cover image URL or storage key.
+        created_at:
+          type: string
+          format: date-time
+        title:
+          type: ['string', 'null']
+          description: |
+            Localized title resolved from the content entry matching the
+            requested `lang`, or `null` when no matching content exists.
+
+    ListPostsResponse:
+      type: object
+      required: [posts, total, page, per_page]
+      properties:
+        posts:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostSummaryResponse'
+        total:
+          type: integer
+          format: int64
+          description: Total number of matching posts across all pages.
+        page:
+          type: integer
+          format: int64
+          description: Current page number (1-based).
+        per_page:
+          type: integer
+          format: int64
+          description: Number of items per page.
+
+    ContentResponse:
+      type: object
+      required: [id, lang, content_type, created_at, updated_at]
+      description: A single language-specific content entry returned from the API.
+      properties:
+        id:
+          type: string
+          format: uuid
+        lang:
+          type: string
+          example: ko
+        content_type:
+          type: string
+          example: markdown
+        title:
+          type: ['string', 'null']
+        excerpt:
+          type: ['string', 'null']
+        body_markdown:
+          type: ['string', 'null']
+        body_json:
+          description: Structured body as a JSON object.
+          oneOf:
+            - type: 'null'
+            - type: object
+        body_text:
+          type: ['string', 'null']
+        metadata:
+          description: Arbitrary extra metadata.
+          oneOf:
+            - type: 'null'
+            - type: object
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    PostAssetResponse:
+      type: object
+      required: [id, asset_id, role, sort_order, asset]
+      description: A file asset attached to a post.
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Join-table record ID.
+        asset_id:
+          type: string
+          format: uuid
+          description: ID of the underlying asset.
+        lang:
+          type: ['string', 'null']
+          description: Language this asset is associated with, if language-specific.
+        role:
+          type: string
+          description: Semantic role of the asset (e.g. `cover`, `inline`).
+        sort_order:
+          type: integer
+          format: int32
+          description: Display order among assets with the same role.
+        asset:
+          $ref: '#/components/schemas/AssetResponse'
+
+    AssetResponse:
+      type: object
+      required:
+        - id
+        - bucket
+        - object_key
+        - file_name
+        - mime_type
+        - size_bytes
+        - sha256
+        - kind
+        - status
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+        bucket:
+          type: string
+          description: Storage bucket name.
+        object_key:
+          type: string
+          description: Object path within the bucket.
+        file_name:
+          type: string
+          description: Original file name.
+        mime_type:
+          type: string
+          example: image/webp
+        size_bytes:
+          type: integer
+          format: int64
+        sha256:
+          type: string
+          description: Hex-encoded SHA-256 digest of the file contents.
+        width:
+          type: ['integer', 'null']
+          format: int32
+          description: Image width in pixels, if applicable.
+        height:
+          type: ['integer', 'null']
+          format: int32
+          description: Image height in pixels, if applicable.
+        duration_ms:
+          type: ['integer', 'null']
+          format: int32
+          description: Media duration in milliseconds, if applicable.
+        kind:
+          type: string
+          description: Asset category (e.g. `image`, `video`, `document`).
+        status:
+          type: string
+          description: Processing status (e.g. `ready`, `processing`).
+        url:
+          type: ['string', 'null']
+          description: Fully-qualified public URL, when available.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    TranslateResponse:
+      type: object
+      required: [en, ja, ko]
+      description: Translation result containing all three language versions.
+      properties:
+        en:
+          $ref: '#/components/schemas/TranslatedEntry'
+        ja:
+          $ref: '#/components/schemas/TranslatedEntry'
+        ko:
+          $ref: '#/components/schemas/TranslatedEntry'
+
+    TranslatedEntry:
+      type: object
+      required: [title, content]
+      properties:
+        title:
+          type: string
+          description: Translated title.
+        content:
+          type: string
+          description: Translated body in Markdown.
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
