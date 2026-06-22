@@ -1,0 +1,334 @@
+openapi: 3.1.0
+info:
+  title: Blog Recipe API
+  version: 1.0.0
+  description: |
+    Recipe domain of the mogumogu.dev Rust service. Manages reference data
+    (cuisines, sauce-usage types, cooking-method types) and ingredients.
+    Read-only endpoints are public; write endpoints require a Bearer API_SECRET.
+  x-api-id: recipe
+
+servers:
+  - url: https://api.mogumogu.dev/rust
+    description: Production
+  - url: http://localhost:8002
+    description: Local development (direct to the Rust service)
+
+tags:
+  - name: Recipe
+    description: Recipe reference data and ingredient management.
+
+paths:
+  /recipe/cuisines:
+    get:
+      tags: [Recipe]
+      operationId: listCuisines
+      summary: List all cuisines
+      description: Returns all cuisine entries ordered by code.
+      security: []
+      responses:
+        '200':
+          description: Array of cuisines.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Cuisine'
+
+  /recipe/sauce-usage-types:
+    get:
+      tags: [Recipe]
+      operationId: listSauceUsageTypes
+      summary: List all sauce usage types
+      description: Returns all sauce usage type entries ordered by code.
+      security: []
+      responses:
+        '200':
+          description: Array of sauce usage types.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SauceUsageType'
+
+  /recipe/cooking-method-types:
+    get:
+      tags: [Recipe]
+      operationId: listCookingMethodTypes
+      summary: List all cooking method types
+      description: Returns all cooking method type entries ordered by code.
+      security: []
+      responses:
+        '200':
+          description: Array of cooking method types.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CookingMethodType'
+
+  /recipe/ingredients:
+    post:
+      tags: [Recipe]
+      operationId: createIngredient
+      summary: Create an ingredient
+      description: |
+        Creates a new ingredient. `slug` must be unique and match the allowed
+        format (lowercase, hyphens). Requires `Bearer <API_SECRET>`.
+      security:
+        - apiSecret: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateIngredientRequest'
+      responses:
+        '201':
+          description: Ingredient created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ingredient'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /recipe/ingredients/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IngredientId'
+
+    get:
+      tags: [Recipe]
+      operationId: getIngredient
+      summary: Get an ingredient
+      description: Returns a single ingredient by UUID. Public, no auth required.
+      security: []
+      responses:
+        '200':
+          description: The requested ingredient.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ingredient'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [Recipe]
+      operationId: updateIngredient
+      summary: Update an ingredient
+      description: |
+        Partially updates an ingredient. Omitted fields keep their current value.
+        Requires `Bearer <API_SECRET>`.
+      security:
+        - apiSecret: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateIngredientRequest'
+      responses:
+        '200':
+          description: The updated ingredient.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ingredient'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+    delete:
+      tags: [Recipe]
+      operationId: deleteIngredient
+      summary: Delete an ingredient
+      description: Deletes an ingredient by UUID. Requires `Bearer <API_SECRET>`.
+      security:
+        - apiSecret: []
+      responses:
+        '204':
+          description: Ingredient deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  parameters:
+    IngredientId:
+      name: id
+      in: path
+      required: true
+      description: UUID of the ingredient.
+      schema:
+        type: string
+        format: uuid
+
+  securitySchemes:
+    apiSecret:
+      type: http
+      scheme: bearer
+      description: Static API secret (`API_SECRET` env var) for write operations.
+
+  responses:
+    BadRequest:
+      description: Invalid request body or slug format.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: "Missing or invalid Authorization: Bearer header."
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: No ingredient found for the given id.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: An ingredient with the same slug already exists.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Cuisine:
+      type: object
+      required: [code, name_ko, name_ja, name_en]
+      properties:
+        code:
+          type: string
+          description: ISO 3166-1 alpha-2 country code, or an ad-hoc code for region/fusion.
+          example: KR
+        name_ko:
+          type: string
+          example: 한식
+        name_ja:
+          type: string
+          example: 韓国料理
+        name_en:
+          type: string
+          example: Korean
+
+    SauceUsageType:
+      type: object
+      required: [code, name_ko, name_ja, name_en]
+      properties:
+        code:
+          type: string
+          description: Ad-hoc slug for the sauce usage context.
+          example: marinade
+        name_ko:
+          type: string
+          example: 마리네이드
+        name_ja:
+          type: string
+          example: マリネ
+        name_en:
+          type: string
+          example: Marinade
+
+    CookingMethodType:
+      type: object
+      required: [code, name_ko, name_ja, name_en]
+      properties:
+        code:
+          type: string
+          description: Ad-hoc slug for the cooking method.
+          example: grill
+        name_ko:
+          type: string
+          example: 굽기
+        name_ja:
+          type: string
+          example: グリル
+        name_en:
+          type: string
+          example: Grill
+
+    Ingredient:
+      type: object
+      required: [id, slug, name_ko, name_ja, name_en]
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+          example: garlic
+        name_ko:
+          type: string
+          example: 마늘
+        name_ja:
+          type: string
+          example: ニンニク
+        name_en:
+          type: string
+          example: Garlic
+        category:
+          type: [string, 'null']
+          example: vegetable
+
+    CreateIngredientRequest:
+      type: object
+      required: [slug, name_ko, name_ja, name_en]
+      properties:
+        slug:
+          type: string
+          example: garlic
+        name_ko:
+          type: string
+          example: 마늘
+        name_ja:
+          type: string
+          example: ニンニク
+        name_en:
+          type: string
+          example: Garlic
+        category:
+          type: [string, 'null']
+          example: vegetable
+
+    UpdateIngredientRequest:
+      type: object
+      properties:
+        slug:
+          type: [string, 'null']
+          example: garlic
+        name_ko:
+          type: [string, 'null']
+          example: 마늘
+        name_ja:
+          type: [string, 'null']
+          example: ニンニク
+        name_en:
+          type: [string, 'null']
+          example: Garlic
+        category:
+          type: [string, 'null']
+          example: vegetable
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
