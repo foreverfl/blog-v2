@@ -1,0 +1,860 @@
+openapi: 3.1.0
+info:
+  title: Hacker News Pipeline API
+  version: 1.0.0
+  description: |
+    Data pipeline service for mogumogu.dev's Hacker News feed. Handles article
+    fetching from R2 or the HN Firebase API, content scraping, English summarization,
+    Korean/Japanese translation, image generation (draw), and cross-store inspection.
+    All endpoints require `Authorization: Bearer {HACKERNEWS_SECRET}`.
+  x-api-id: hackernews
+
+servers:
+  - url: https://api.mogumogu.dev/go
+    description: Production
+  - url: http://localhost:8003
+    description: Local development (direct to the Go service)
+
+tags:
+  - name: Hacker News
+    description: Articles, pipeline orchestration, and storage inspection.
+
+paths:
+  /hackernews:
+    get:
+      tags: [Hacker News]
+      operationId: listArticlesToday
+      summary: Get today's articles
+      description: |
+        Returns the article list for today (KST). If the JSON file already exists
+        in R2 and `fresh` is not set, the cached file is returned directly;
+        otherwise the HN Firebase API is queried and the result is uploaded to R2.
+      security:
+        - hackernewsSecret: []
+      parameters:
+        - $ref: '#/components/parameters/Fresh'
+      responses:
+        '200':
+          $ref: '#/components/responses/ArticleList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /hackernews/{date}:
+    get:
+      tags: [Hacker News]
+      operationId: listArticlesByDate
+      summary: Get articles for a specific date
+      description: |
+        Same as `GET /hackernews` but for a specific date. Accepts a `YYMMDD`
+        string or the literal `"today"` (resolved to today's KST date).
+      security:
+        - hackernewsSecret: []
+      parameters:
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/Fresh'
+      responses:
+        '200':
+          $ref: '#/components/responses/ArticleList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /hackernews/status:
+    get:
+      tags: [Hacker News]
+      operationId: getPipelineStatusToday
+      summary: Get today's pipeline status
+      description: |
+        Returns a per-stage completion summary for today's article data in R2:
+        how many articles have been fetched (content), summarized, and translated
+        into Korean and Japanese.
+      security:
+        - hackernewsSecret: []
+      responses:
+        '200':
+          $ref: '#/components/responses/PipelineStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /hackernews/status/{date}:
+    get:
+      tags: [Hacker News]
+      operationId: getPipelineStatusByDate
+      summary: Get pipeline status for a specific date
+      description: Same as `GET /hackernews/status` but for the given date.
+      security:
+        - hackernewsSecret: []
+      parameters:
+        - $ref: '#/components/parameters/Date'
+      responses:
+        '200':
+          $ref: '#/components/responses/PipelineStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /hackernews/fetch:
+    post:
+      tags: [Hacker News]
+      operationId: fetchContentToday
+      summary: Start content fetch for today
+      description: |
+        Scrapes web content for today's articles that have a URL but no content
+        stored yet. Results are written to Redis and then flushed to R2 in the
+        background. Returns immediately with a task-enqueued acknowledgement.
+        Returns `409` if a fetch task is already running for this date.
+      security:
+        - hackernewsSecret: []
+      parameters:
+        - $ref: '#/components/parameters/Fresh'
+      responses:
+        '200':
+          $ref: '#/components/responses/TaskAck'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /hackernews/fetch/{date}:
+    post:
+      tags: [Hacker News]
+      operationId: fetchContentByDate
+      summary: Start content fetch for a specific date
+      description: Same as `POST /hackernews/fetch` but for the given date.
+      security:
+        - hackernewsSecret: []
+      parameters:
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/Fresh'
+      responses:
+        '200':
+          $ref: '#/components/responses/TaskAck'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /hackernews/fetch/status:
+    get:
+      tags: [Hacker News]
+      operationId: getFetchStatusToday
+      summary: Get content-fetch task status for today
+      description: Returns the in-memory `StatusEntry` for the running or last fetch task (today).
+      security:
+        - hackernewsSecret: []
+      responses:
+        '200':
+          $ref: '#/components/responses/TaskStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /hackernews/fetch/status/{date}:
+    get:
+      tags: [Hacker News]
+      operationId: getFetchStatusByDate
+      summary: Get content-fetch task status for a specific date
+      description: Same as `GET /hackernews/fetch/status` but for the given date.
+      security:
+        - hackernewsSecret: []
+      parameters:
+        - $ref: '#/components/parameters/Date'
+      responses:
+        '200':
+          $ref: '#/components/responses/TaskStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /hackernews/summarize:
+    post:
+      tags: [Hacker News]
+      operationId: summarizeToday
+      summary: Start English summarization for today
+      description: |
+        Generates English summaries for articles that have content but no
+        `summary.en` yet. Summaries are stored in Redis and flushed to R2 in the
+        background. Returns immediately. Returns `409` if already running.
+      security:
+        - hackernewsSecret: []
+      parameters:
+        - $ref: '#/components/parameters/Fresh'
+      responses:
+        '200':
+          $ref: '#/components/responses/TaskAck'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /hackernews/summarize/{date}:
+    post:
+      tags: [Hacker News]
+      operationId: summarizeByDate
+      summary: Start English summarization for a specific date
+      description: Same as `POST /hackernews/summarize` but for the given date.
+      security:
+        - hackernewsSecret: []
+      parameters:
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/Fresh'
+      responses:
+        '200':
+          $ref: '#/components/responses/TaskAck'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /hackernews/summarize/status:
+    get:
+      tags: [Hacker News]
+      operationId: getSummarizeStatusToday
+      summary: Get summarize task status for today
+      description: Returns the in-memory `StatusEntry` for the running or last summarize task (today).
+      security:
+        - hackernewsSecret: []
+      responses:
+        '200':
+          $ref: '#/components/responses/TaskStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /hackernews/summarize/status/{date}:
+    get:
+      tags: [Hacker News]
+      operationId: getSummarizeStatusByDate
+      summary: Get summarize task status for a specific date
+      description: Same as `GET /hackernews/summarize/status` but for the given date.
+      security:
+        - hackernewsSecret: []
+      parameters:
+        - $ref: '#/components/parameters/Date'
+      responses:
+        '200':
+          $ref: '#/components/responses/TaskStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /hackernews/translate:
+    post:
+      tags: [Hacker News]
+      operationId: translateToday
+      summary: Start translation for today
+      description: |
+        Translates `title.en` and `summary.en` into the target language (`ko` or
+        `ja`) for articles that have a summary but are missing the target
+        translation. Results are flushed to R2 in the background. `lang` is
+        required. Returns `409` if already running for that language.
+      security:
+        - hackernewsSecret: []
+      parameters:
+        - $ref: '#/components/parameters/Lang'
+        - $ref: '#/components/parameters/Fresh'
+      responses:
+        '200':
+          $ref: '#/components/responses/TranslateAck'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /hackernews/translate/{date}:
+    post:
+      tags: [Hacker News]
+      operationId: translateByDate
+      summary: Start translation for a specific date
+      description: Same as `POST /hackernews/translate` but for the given date.
+      security:
+        - hackernewsSecret: []
+      parameters:
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/Lang'
+        - $ref: '#/components/parameters/Fresh'
+      responses:
+        '200':
+          $ref: '#/components/responses/TranslateAck'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /hackernews/translate/status:
+    get:
+      tags: [Hacker News]
+      operationId: getTranslateStatusToday
+      summary: Get translation task status for today
+      description: |
+        Returns the in-memory `StatusEntry` for the running or last translate task.
+        `lang` defaults to `ko` when omitted. For a completed translate task the
+        `flushedDetail` map contains `titles` and `summaries` counts.
+      security:
+        - hackernewsSecret: []
+      parameters:
+        - $ref: '#/components/parameters/LangOptional'
+      responses:
+        '200':
+          $ref: '#/components/responses/TranslateStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /hackernews/translate/status/{date}:
+    get:
+      tags: [Hacker News]
+      operationId: getTranslateStatusByDate
+      summary: Get translation task status for a specific date
+      description: Same as `GET /hackernews/translate/status` but for the given date.
+      security:
+        - hackernewsSecret: []
+      parameters:
+        - $ref: '#/components/parameters/Date'
+        - $ref: '#/components/parameters/LangOptional'
+      responses:
+        '200':
+          $ref: '#/components/responses/TranslateStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /hackernews/draw:
+    post:
+      tags: [Hacker News]
+      operationId: drawToday
+      summary: Generate thumbnail image for today
+      description: |
+        Selects the top-scored article that has a non-empty `summary.en`, calls
+        DALL-E to generate a PNG image, and uploads it to the hackernews-images R2
+        bucket as `{date}.png`. Runs with concurrency 1. Returns `409` if already
+        running.
+      security:
+        - hackernewsSecret: []
+      responses:
+        '200':
+          $ref: '#/components/responses/DrawAck'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /hackernews/draw/{date}:
+    post:
+      tags: [Hacker News]
+      operationId: drawByDate
+      summary: Generate thumbnail image for a specific date
+      description: Same as `POST /hackernews/draw` but for the given date.
+      security:
+        - hackernewsSecret: []
+      parameters:
+        - $ref: '#/components/parameters/Date'
+      responses:
+        '200':
+          $ref: '#/components/responses/DrawAck'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /hackernews/inspect/json:
+    get:
+      tags: [Hacker News]
+      operationId: inspectJson
+      summary: Inspect R2 for missing JSON files
+      description: |
+        Checks the hackernews R2 bucket for `{YYMMDD}.json` files in the date
+        range `[from, to]` (inclusive). `from` is required; `to` defaults to
+        today (KST). Returns a list of missing date strings.
+      security:
+        - hackernewsSecret: []
+      parameters:
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+      responses:
+        '200':
+          $ref: '#/components/responses/InspectResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /hackernews/inspect/webp:
+    get:
+      tags: [Hacker News]
+      operationId: inspectWebp
+      summary: Inspect R2 for missing image files
+      description: |
+        Checks the hackernews-images R2 bucket for `{YYMMDD}.webp` or
+        `{YYMMDD}.png` files in the date range. A date is considered found if
+        either extension exists. `from` is required; `to` defaults to today (KST).
+      security:
+        - hackernewsSecret: []
+      parameters:
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+      responses:
+        '200':
+          $ref: '#/components/responses/InspectResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /hackernews/inspect/db:
+    get:
+      tags: [Hacker News]
+      operationId: inspectDb
+      summary: Inspect Rust API DB for missing or incomplete records
+      description: |
+        Calls the Rust API (`/posts/trends/hackernews/{date}`) for each date in
+        the range. A date is "missing" if the Rust API returns 404; it is
+        "incomplete" if the stored post lacks one or more language variants
+        (`en`, `ko`, `ja`). `from` is required; `to` defaults to today (KST).
+      security:
+        - hackernewsSecret: []
+      parameters:
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+      responses:
+        '200':
+          $ref: '#/components/responses/InspectDbResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  parameters:
+    Date:
+      name: date
+      in: path
+      required: true
+      description: Target date as `YYMMDD` (e.g. `260620`) or the literal string `today`.
+      schema:
+        type: string
+        example: '260620'
+
+    Fresh:
+      name: fresh
+      in: query
+      required: false
+      description: |
+        When `true`, bypass the existing cache / skip-already-done checks and
+        reprocess all eligible articles.
+      schema:
+        type: string
+        enum: ['true', 'false']
+        example: 'false'
+
+    Lang:
+      name: lang
+      in: query
+      required: true
+      description: Target translation language.
+      schema:
+        type: string
+        enum: [ko, ja]
+        example: ko
+
+    LangOptional:
+      name: lang
+      in: query
+      required: false
+      description: Target translation language. Defaults to `ko` when omitted.
+      schema:
+        type: string
+        enum: [ko, ja]
+        default: ko
+        example: ko
+
+    From:
+      name: from
+      in: query
+      required: true
+      description: Start of the date range as `YYMMDD` (e.g. `260601`).
+      schema:
+        type: string
+        example: '260601'
+
+    To:
+      name: to
+      in: query
+      required: false
+      description: End of the date range as `YYMMDD`. Defaults to today (KST) when omitted.
+      schema:
+        type: string
+        example: '260620'
+
+  securitySchemes:
+    hackernewsSecret:
+      type: http
+      scheme: bearer
+      description: Static secret shared between pipeline clients and the Go service (`HACKERNEWS_SECRET`).
+
+  responses:
+    ArticleList:
+      description: Array of Hacker News article objects for the requested date.
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Article'
+
+    PipelineStatus:
+      description: Per-stage completion counts for the pipeline.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PipelineStatus'
+
+    TaskAck:
+      description: Task enqueued successfully.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TaskAck'
+
+    TranslateAck:
+      description: Translation task enqueued successfully.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TranslateAck'
+
+    TaskStatus:
+      description: In-memory status entry for the requested task.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StatusEntry'
+
+    TranslateStatus:
+      description: In-memory status entry for a translate task (includes `flushedDetail` when done).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TranslateStatusEntry'
+
+    DrawAck:
+      description: Image generation request queued.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DrawAck'
+
+    InspectResult:
+      description: Date-range inspection result (JSON or image files).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InspectResult'
+
+    InspectDbResult:
+      description: Date-range inspection result including incomplete language records.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InspectDbResult'
+
+    BadRequest:
+      description: Missing or invalid query parameters.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Unauthorized:
+      description: Missing or invalid `Authorization` header.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    Conflict:
+      description: A task for this date is already running.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ConflictError'
+
+  schemas:
+    LocalizedText:
+      type: object
+      description: A text value available in one or more languages. Null when not yet populated.
+      required: [en, ko, ja]
+      properties:
+        en:
+          type: [string, 'null']
+          description: English text.
+        ko:
+          type: [string, 'null']
+          description: Korean text.
+        ja:
+          type: [string, 'null']
+          description: Japanese text.
+
+    Article:
+      type: object
+      description: A Hacker News article with optional scraped content and multilingual metadata.
+      required: [id, hnId, title, type, summary]
+      properties:
+        id:
+          type: string
+          description: SHA-256-derived hex ID generated from the article title.
+          example: a3f8c1d2e4b56789
+        hnId:
+          type: integer
+          description: Original Hacker News item ID.
+          example: 43901234
+        title:
+          $ref: '#/components/schemas/LocalizedText'
+        type:
+          type: string
+          description: HN item type (usually `story`).
+          example: story
+        url:
+          type: [string, 'null']
+          description: Original article URL. Null for Ask HN / Show HN posts without a link.
+          format: uri
+        score:
+          type: [integer, 'null']
+          description: HN score at time of fetch. Null when zero.
+        by:
+          type: [string, 'null']
+          description: HN username of the submitter.
+        time:
+          type: [integer, 'null']
+          format: int64
+          description: Unix timestamp of the original HN submission.
+        content:
+          type: [string, 'null']
+          description: Scraped web content (truncated to ~15 000 tokens). Null before fetch runs.
+        summary:
+          $ref: '#/components/schemas/LocalizedText'
+
+    PipelineStage:
+      type: object
+      description: Completion counts for a single pipeline stage.
+      required: [done, remaining]
+      properties:
+        done:
+          type: integer
+          description: Number of articles that completed this stage.
+        remaining:
+          type: integer
+          description: Number of articles still pending for this stage.
+
+    PipelineStatus:
+      type: object
+      description: Per-stage pipeline completion summary derived from the R2 JSON file.
+      required: [date, total, fetch, summarize, translate_ko, translate_ja]
+      properties:
+        date:
+          type: string
+          description: The date this status covers (YYYY-MM-DD format as stored in R2).
+          example: '2026-06-20'
+        total:
+          type: integer
+          description: Total number of articles in the file.
+        fetch:
+          $ref: '#/components/schemas/PipelineStage'
+        summarize:
+          $ref: '#/components/schemas/PipelineStage'
+        translate_ko:
+          $ref: '#/components/schemas/PipelineStage'
+        translate_ja:
+          $ref: '#/components/schemas/PipelineStage'
+
+    StatusEntry:
+      type: object
+      description: In-memory task status entry maintained by the status manager.
+      required: [phase, total, processed, flushed, updatedAt]
+      properties:
+        phase:
+          type: string
+          description: Current phase of the task.
+          enum: [idle, processing, flushing, done, error]
+          example: done
+        total:
+          type: integer
+          description: Total number of items to process.
+        processed:
+          type: integer
+          description: Number of items processed so far.
+        flushed:
+          type: integer
+          description: Number of items successfully written to R2.
+        message:
+          type: [string, 'null']
+          description: Human-readable status message. Omitted when empty.
+        updatedAt:
+          type: string
+          format: date-time
+          description: RFC 3339 timestamp of the last status update (UTC).
+
+    TranslateStatusEntry:
+      allOf:
+        - $ref: '#/components/schemas/StatusEntry'
+        - type: object
+          properties:
+            flushedDetail:
+              description: |
+                Breakdown of flushed items into titles and summaries.
+                Present only after a translate task completes.
+              oneOf:
+                - $ref: '#/components/schemas/TranslateFlushedDetail'
+                - type: 'null'
+
+    TranslateFlushedDetail:
+      type: object
+      description: Counts of flushed titles and summaries for a translate task.
+      required: [titles, summaries]
+      properties:
+        titles:
+          type: integer
+          description: Number of titles flushed to R2.
+        summaries:
+          type: integer
+          description: Number of summaries flushed to R2.
+
+    TaskAck:
+      type: object
+      description: Acknowledgement returned when a fetch or summarize task is enqueued.
+      required: [ok, type, total, message]
+      properties:
+        ok:
+          type: boolean
+          example: true
+        type:
+          type: string
+          description: Task type identifier.
+          enum: [fetch, summarize]
+          example: fetch
+        total:
+          type: integer
+          description: Number of items enqueued for processing.
+        message:
+          type: string
+          example: 'Enqueued 80 fetch tasks.'
+
+    TranslateAck:
+      type: object
+      description: Acknowledgement returned when a translate task is enqueued.
+      required: [ok, type, lang, total, message]
+      properties:
+        ok:
+          type: boolean
+          example: true
+        type:
+          type: string
+          enum: [translate]
+          example: translate
+        lang:
+          type: string
+          description: Target language of this translation run.
+          enum: [ko, ja]
+          example: ko
+        total:
+          type: integer
+          description: Number of articles enqueued for translation.
+        message:
+          type: string
+          example: 'Enqueued 75 ko translation tasks.'
+
+    DrawAck:
+      type: object
+      description: Acknowledgement returned when an image generation task is queued.
+      required: [ok, message]
+      properties:
+        ok:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Image generation request queued.
+
+    InspectResult:
+      type: object
+      description: Result of an R2 file-existence inspection over a date range.
+      required: [from, to, total, found, missing]
+      properties:
+        from:
+          type: string
+          description: Start of the inspected range (YYMMDD).
+          example: '260601'
+        to:
+          type: string
+          description: End of the inspected range (YYMMDD).
+          example: '260620'
+        total:
+          type: integer
+          description: Total number of dates checked.
+        found:
+          type: integer
+          description: Number of dates where the file exists.
+        missing:
+          type: array
+          description: YYMMDD strings for dates where the file is absent.
+          items:
+            type: string
+            example: '260615'
+
+    IncompleteEntry:
+      type: object
+      description: A date whose DB record exists but is missing one or more language variants.
+      required: [date, missing_languages]
+      properties:
+        date:
+          type: string
+          description: The date (YYMMDD) of the incomplete record.
+          example: '260610'
+        missing_languages:
+          type: array
+          description: Language codes absent from the DB record.
+          items:
+            type: string
+            enum: [en, ko, ja]
+
+    InspectDbResult:
+      type: object
+      description: Result of a DB inspection over a date range, including incomplete language records.
+      required: [from, to, total, found, missing, incomplete]
+      properties:
+        from:
+          type: string
+          description: Start of the inspected range (YYMMDD).
+          example: '260601'
+        to:
+          type: string
+          description: End of the inspected range (YYMMDD).
+          example: '260620'
+        total:
+          type: integer
+          description: Total number of dates checked.
+        found:
+          type: integer
+          description: Number of dates where a DB record was found.
+        missing:
+          type: array
+          description: YYMMDD strings for dates with no DB record (Rust API returned 404).
+          items:
+            type: string
+            example: '260615'
+        incomplete:
+          type: array
+          description: Dates where a record exists but one or more language variants are absent.
+          items:
+            $ref: '#/components/schemas/IncompleteEntry'
+
+    ConflictError:
+      type: object
+      description: Returned when the requested task is already running for this date.
+      required: [ok, error]
+      properties:
+        ok:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: 'Fetch is already running for 2026-06-20'
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
