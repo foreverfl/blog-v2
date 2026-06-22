@@ -1,0 +1,268 @@
+openapi: 3.1.0
+info:
+  title: Blog Auth API
+  version: 1.0.0
+  description: |
+    OAuth-based authentication service for mogumogu.dev. Handles social login
+    (Google, GitHub, Apple, LINE, Kakao), access-token refresh, logout, and the
+    current-user lookup.
+  x-api-id: auth
+
+servers:
+  - url: https://api.mogumogu.dev/auth
+    description: Production
+  - url: http://localhost:8001
+    description: Local development (direct to the auth service)
+
+tags:
+  - name: Auth
+    description: OAuth login, token refresh, and session endpoints.
+
+paths:
+  /health:
+    get:
+      tags: [Auth]
+      operationId: healthCheck
+      summary: Liveness probe
+      description: Returns plain-text `ok` when the auth service is up.
+      security: []
+      responses:
+        '200':
+          description: Service is healthy.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ok
+
+  /login/{provider}:
+    get:
+      tags: [Auth]
+      operationId: login
+      summary: Start OAuth login
+      description: |
+        Generates a CSRF `state`, stores it server-side (10-minute TTL), and
+        redirects the browser to the chosen provider's consent screen.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Provider'
+      responses:
+        '307':
+          description: Redirect to the provider consent screen.
+          headers:
+            Location:
+              description: Provider authorization URL.
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /login-cli:
+    get:
+      tags: [Auth]
+      operationId: loginCli
+      summary: Start OAuth login for the CLI
+      description: |
+        Same as `GET /login/google`, but marks the OAuth state as CLI-initiated
+        so the callback hands tokens back out-of-band instead of redirecting to
+        the frontend.
+      security: []
+      responses:
+        '307':
+          description: Redirect to the Google consent screen.
+          headers:
+            Location:
+              description: Google authorization URL.
+              schema:
+                type: string
+
+  /callback/{provider}:
+    get:
+      tags: [Auth]
+      operationId: callback
+      summary: OAuth callback
+      description: |
+        Provider redirect target. Verifies the CSRF `state`, exchanges `code`
+        for user info, upserts the user, issues an access token (in the redirect
+        URL) and a refresh token (in an HttpOnly cookie), then redirects to the
+        frontend `/auth/callback`.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Provider'
+        - name: code
+          in: query
+          required: true
+          description: Authorization code returned by the provider.
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: true
+          description: CSRF state echoed back by the provider.
+          schema:
+            type: string
+      responses:
+        '307':
+          description: |
+            Redirect to the frontend `/auth/callback` with `access_token` and
+            `expires_in` query params; sets the `refresh_token` HttpOnly cookie.
+          headers:
+            Location:
+              description: Frontend callback URL carrying the access token.
+              schema:
+                type: string
+            Set-Cookie:
+              description: HttpOnly `refresh_token` cookie.
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '502':
+          $ref: '#/components/responses/BadGateway'
+
+  /refresh:
+    post:
+      tags: [Auth]
+      operationId: refresh
+      summary: Refresh the access token
+      description: |
+        Reads the `refresh_token` cookie, validates it, and returns a new access
+        token. The refresh token is not rotated.
+      security:
+        - refreshCookie: []
+      responses:
+        '200':
+          description: A new access token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /logout:
+    post:
+      tags: [Auth]
+      operationId: logout
+      summary: Log out
+      description: |
+        Revokes the refresh token (if present) and clears the `refresh_token`
+        cookie.
+      security:
+        - refreshCookie: []
+      responses:
+        '200':
+          description: Logged out.
+          headers:
+            Set-Cookie:
+              description: Expired `refresh_token` cookie.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message]
+                properties:
+                  message:
+                    type: string
+                    example: logged out
+
+  /me:
+    get:
+      tags: [Auth]
+      operationId: me
+      summary: Get the current user
+      description: Returns the authenticated user resolved from the `Bearer` access token.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The current user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDto'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  parameters:
+    Provider:
+      name: provider
+      in: path
+      required: true
+      description: OAuth provider.
+      schema:
+        type: string
+        enum: [google, github, apple, line, kakao]
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    refreshCookie:
+      type: apiKey
+      in: cookie
+      name: refresh_token
+
+  responses:
+    BadRequest:
+      description: Unsupported or misconfigured provider.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Invalid, expired, or missing token / OAuth state.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    BadGateway:
+      description: Upstream OAuth provider error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    UserDto:
+      type: object
+      required: [id, email, username, auth_provider]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        username:
+          type: string
+        photo:
+          type: [string, 'null']
+        auth_provider:
+          type: string
+          example: google
+    TokenResponse:
+      type: object
+      required: [access_token, token_type, expires_in]
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+          example: Bearer
+        expires_in:
+          type: integer
+          format: int64
+          description: Access-token lifetime in seconds.
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
