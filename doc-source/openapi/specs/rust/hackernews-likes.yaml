@@ -1,0 +1,111 @@
+openapi: 3.1.0
+info:
+  title: Hacker News Likes API
+  version: 1.0.0
+  description: |
+    User-scoped Hacker News likes for mogumogu.dev. Lets an authenticated user
+    list, add, and remove liked Hacker News item IDs.
+  x-api-id: hackernews-likes
+
+servers:
+  - url: https://api.mogumogu.dev/rust
+    description: Production
+  - url: http://localhost:8002
+    description: Local development (direct to the Rust service)
+
+tags:
+  - name: Hacker News Likes
+    description: Like and unlike Hacker News items, and retrieve the full liked-ID list.
+
+paths:
+  /hackernews/likes:
+    get:
+      tags: [Hacker News Likes]
+      operationId: listHackernewsLikes
+      summary: List liked Hacker News IDs
+      description: Returns the list of Hacker News item IDs the authenticated user has liked.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Liked item IDs.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LikesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /hackernews/likes/{hn_id}:
+    post:
+      tags: [Hacker News Likes]
+      operationId: addHackernewsLike
+      summary: Like a Hacker News item
+      description: Adds the given Hacker News item ID to the authenticated user's likes.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/HnId'
+      responses:
+        '200':
+          description: Like added successfully.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags: [Hacker News Likes]
+      operationId: removeHackernewsLike
+      summary: Unlike a Hacker News item
+      description: Removes the given Hacker News item ID from the authenticated user's likes.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/HnId'
+      responses:
+        '200':
+          description: Like removed successfully.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  parameters:
+    HnId:
+      name: hn_id
+      in: path
+      required: true
+      description: Hacker News item ID (i64).
+      schema:
+        type: integer
+        format: int64
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid Bearer token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    LikesResponse:
+      type: object
+      required: [ids]
+      properties:
+        ids:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: Liked Hacker News item IDs.
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
