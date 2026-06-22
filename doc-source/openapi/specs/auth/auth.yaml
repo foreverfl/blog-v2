@@ -19,22 +19,6 @@ tags:
     description: OAuth login, token refresh, and session endpoints.
 
 paths:
-  /health:
-    get:
-      tags: [Auth]
-      operationId: healthCheck
-      summary: Liveness probe
-      description: Returns plain-text `ok` when the auth service is up.
-      security: []
-      responses:
-        '200':
-          description: Service is healthy.
-          content:
-            text/plain:
-              schema:
-                type: string
-                example: ok
-
   /login/{provider}:
     get:
       tags: [Auth]
