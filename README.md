@@ -53,14 +53,15 @@ pipx install schemathesis     # Contract-based API testing
 
 ### OpenAPI
 
-Specs live under `doc-source/openapi/specs/`, one standalone OpenAPI 3.1
-document per backend domain (e.g. `auth.yaml`). The blog-doc docs site reads
-these specs and merges them into a single Scalar reference at its build time, so
-this repo carries no bundling toolchain.
+Specs live under `doc-source/openapi/specs/<service>/`, one standalone OpenAPI
+3.1 document per backend domain (e.g. `auth/auth.yaml`, `rust/posts.yaml`,
+`go/hackernews.yaml`). The blog-doc docs site reads these specs and merges them
+into a single Scalar reference at its build time, so this repo carries no
+bundling toolchain.
 
 ```bash
 # Contract tests against a running service
-schemathesis run doc-source/openapi/specs/auth.yaml --base-url http://localhost:8001
+schemathesis run doc-source/openapi/specs/auth/auth.yaml --base-url http://localhost:8001
 ```
 
 ### gRPC (Protocol Buffers)
