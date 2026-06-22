@@ -1,0 +1,17 @@
+name: Trigger docs rebuild on OpenAPI change
+
+# When the OpenAPI specs change on main, ping the blog-doc Cloudflare Pages
+# deploy hook so the docs site rebuilds and re-merges the specs into its Scalar
+# reference. The hook URL is stored as the CF_PAGES_DEPLOY_HOOK secret.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'doc-source/openapi/specs/**'
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Cloudflare Pages deploy hook
+        run: curl -fsS -X POST "${{ secrets.CF_PAGES_DEPLOY_HOOK }}"
