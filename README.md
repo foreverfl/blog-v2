@@ -23,9 +23,8 @@ A polyglot monorepo for my personal blog platform. Migrating from [Next.js blog]
 │   ├── rust/                # Rust API (Axum)
 │   ├── go/                  # Go worker/cron/queue
 │   └── haskell/             # Haskell experimental service
-├── contracts/
-│   ├── openapi/             # OpenAPI specs
-│   └── proto/               # Protocol Buffer definitions
+├── doc-source/
+│   └── openapi/specs/       # OpenAPI specs (one standalone doc per domain)
 ├── infra/
 │   ├── docker/              # Docker Compose files
 │   └── terraform/           # Infrastructure as Code
@@ -45,7 +44,6 @@ A polyglot monorepo for my personal blog platform. Migrating from [Next.js blog]
 
 ```bash
 # Contract tools
-brew install redocly-cli      # OpenAPI lint/bundle
 brew install bufbuild/buf/buf # Proto lint/generate
 brew install grpcurl          # gRPC debugging
 pipx install schemathesis     # Contract-based API testing
@@ -55,18 +53,14 @@ pipx install schemathesis     # Contract-based API testing
 
 ### OpenAPI
 
+Specs live under `doc-source/openapi/specs/`, one standalone OpenAPI 3.1
+document per backend domain (e.g. `auth.yaml`). The blog-doc docs site reads
+these specs and merges them into a single Scalar reference at its build time, so
+this repo carries no bundling toolchain.
+
 ```bash
-# Lint spec
-redocly lint contracts/openapi/openapi.yaml
-
-# Bundle into single file
-redocly bundle contracts/openapi/openapi.yaml -o dist/openapi.bundle.yaml
-
-# Generate HTML docs
-redocly build-docs dist/openapi.bundle.yaml -o dist/api-docs.html
-
-# Run contract tests against running server
-schemathesis run dist/openapi.bundle.yaml --base-url http://localhost:8080
+# Contract tests against a running service
+schemathesis run doc-source/openapi/specs/auth.yaml --base-url http://localhost:8001
 ```
 
 ### gRPC (Protocol Buffers)
