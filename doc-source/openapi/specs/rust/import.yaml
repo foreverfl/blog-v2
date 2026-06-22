@@ -1,0 +1,274 @@
+openapi: 3.1.0
+info:
+  title: Blog Import API
+  version: 1.0.0
+  description: |
+    Background-job import endpoints for the mogumogu.dev Rust service.
+    Triggers MDX (blog content from GitHub) and JSON (Hacker News items from
+    Cloudflare R2) imports. Jobs are queued immediately and results are stored
+    in Redis with a 24-hour TTL.
+  x-api-id: import
+
+servers:
+  - url: https://api.mogumogu.dev/rust
+    description: Production
+  - url: http://localhost:8002
+    description: Local development (direct to the Rust service)
+
+tags:
+  - name: Import
+    description: Trigger and poll background import jobs.
+
+paths:
+  /import/mdx:
+    post:
+      tags: [Import]
+      operationId: importMdx
+      summary: Import MDX content from GitHub
+      description: |
+        Fetches the repository tree from `foreverfl/blog` on GitHub, filters
+        markdown/MDX files under `contents/`, and upserts them into the
+        database (posts + contents tables). Returns `202` immediately; the
+        actual work runs in a background task. Poll `/import/jobs/{job_id}`
+        for the result (stored in Redis, 24-hour TTL).
+      security:
+        - apiSecret: []
+      responses:
+        '202':
+          description: Import job accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobAccepted'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /import/json:
+    post:
+      tags: [Import]
+      operationId: importJson
+      summary: Import Hacker News JSON from Cloudflare R2
+      description: |
+        Downloads daily Hacker News JSON batches from Cloudflare R2
+        (`from` date through today JST) and upserts them as posts. Returns
+        `202` immediately; work runs in the background. Poll
+        `/import/jobs/{job_id}` for the result (stored in Redis, 24-hour TTL).
+      security:
+        - apiSecret: []
+      parameters:
+        - name: from
+          in: query
+          required: true
+          description: Start date in `YYMMDD` format (JST). Batches from this date to today are imported.
+          schema:
+            type: string
+            pattern: '^\d{6}$'
+            example: '250324'
+      responses:
+        '202':
+          description: Import job accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobAccepted'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /import/jobs/{job_id}:
+    get:
+      tags: [Import]
+      operationId: getImportJob
+      summary: Get import job status
+      description: |
+        Returns the current status of an import job stored in Redis.
+        The response shape varies by job type and state — see the
+        `JobStatus` schema for the full union. Jobs expire after 24 hours.
+      security: []
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          description: UUID returned by the import trigger endpoint.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Job status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobStatus'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    apiSecret:
+      type: http
+      scheme: bearer
+      description: Static API secret passed as a Bearer token (`API_SECRET` env var).
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing or invalid Bearer token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Job not found (expired or unknown job_id).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalError:
+      description: Unexpected server error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    JobAccepted:
+      type: object
+      required: [job_id, status]
+      properties:
+        job_id:
+          type: string
+          format: uuid
+          description: Identifier to poll with `GET /import/jobs/{job_id}`.
+        status:
+          type: string
+          enum: [processing]
+          example: processing
+
+    JobStatusProcessing:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [processing]
+          example: processing
+        from:
+          type: [string, 'null']
+          description: Present for JSON jobs — the `from` date that was supplied.
+          example: '250324'
+
+    MdxFileDetail:
+      type: object
+      required: [path, classification, category, slug, lang, status]
+      properties:
+        path:
+          type: string
+          description: Repository-relative file path.
+          example: contents/development/devnotes/001-some-slug-ko.mdx
+        classification:
+          type: string
+          example: development
+        category:
+          type: string
+          example: devnotes
+        slug:
+          type: string
+          example: 001-some-slug
+        lang:
+          type: string
+          example: ko
+        status:
+          type: string
+          enum: [imported, skipped, error]
+        error:
+          type: [string, 'null']
+          description: Error message, present only when `status` is `error` or `skipped`.
+
+    JobStatusMdxCompleted:
+      type: object
+      required: [status, imported, skipped, error_count, errors, files_processed]
+      properties:
+        status:
+          type: string
+          enum: [completed]
+        imported:
+          type: integer
+          description: Number of files successfully imported.
+        skipped:
+          type: integer
+          description: Number of files skipped (unparseable path, etc.).
+        error_count:
+          type: integer
+          description: Total number of errors encountered.
+        errors:
+          type: array
+          description: Up to 50 error messages from the import run.
+          items:
+            type: string
+        files_processed:
+          type: array
+          description: Per-file result detail.
+          items:
+            $ref: '#/components/schemas/MdxFileDetail'
+
+    JobStatusJsonCompleted:
+      type: object
+      required: [status, from, imported, skipped, error_count, errors]
+      properties:
+        status:
+          type: string
+          enum: [completed]
+        from:
+          type: string
+          description: The `from` date that was supplied to the import request.
+          example: '250324'
+        imported:
+          type: integer
+          description: Number of daily batches successfully imported.
+        skipped:
+          type: integer
+          description: Number of daily batches skipped (no data for that date).
+        error_count:
+          type: integer
+          description: Total number of errors encountered.
+        errors:
+          type: array
+          description: Up to 20 error messages from the import run.
+          items:
+            type: string
+
+    JobStatus:
+      description: |
+        Import job status. The shape varies by job type and whether the job
+        is still processing or has completed.
+
+        - **Processing (either type):** `{ status: "processing" }` plus an
+          optional `from` field for JSON jobs.
+        - **MDX completed:** includes `imported`, `skipped`, `error_count`,
+          `errors[]`, and a `files_processed[]` array with per-file detail.
+        - **JSON completed:** includes `imported`, `skipped`, `error_count`,
+          `errors[]`, and the `from` date.
+      oneOf:
+        - $ref: '#/components/schemas/JobStatusProcessing'
+        - $ref: '#/components/schemas/JobStatusMdxCompleted'
+        - $ref: '#/components/schemas/JobStatusJsonCompleted'
