@@ -243,3 +243,7 @@ jobs:
             echo "Import timed out. Last status=${STATE}"
             exit 1
           fi
+
+      - name: Trigger blog rebuild
+        if: steps.check.outputs.skip == 'false'
+        run: curl -sf -X POST "${{ secrets.BLOG_DEPLOY_HOOK_URL }}"
