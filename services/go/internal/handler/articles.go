@@ -32,7 +32,7 @@ func cleanHNTitle(title string) string {
 
 func ArticlesHandler(cfg *config.Config, r2c *r2.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !common.CheckAuth(r, cfg.HackernewsSecret) {
+		if !common.CheckAuth(r, cfg.ApiSecret) {
 			common.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 			return
 		}

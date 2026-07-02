@@ -55,7 +55,7 @@ func todayKST() string {
 // InspectJSONHandler checks R2 for missing hackernews/{YYMMDD}.json files.
 func InspectJSONHandler(cfg *config.Config, r2c *r2.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !common.CheckAuth(r, cfg.HackernewsSecret) {
+		if !common.CheckAuth(r, cfg.ApiSecret) {
 			common.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 			return
 		}
@@ -103,7 +103,7 @@ func InspectJSONHandler(cfg *config.Config, r2c *r2.Client) http.HandlerFunc {
 // so a date is considered "found" if either extension exists.
 func InspectWebpHandler(cfg *config.Config, r2c *r2.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !common.CheckAuth(r, cfg.HackernewsSecret) {
+		if !common.CheckAuth(r, cfg.ApiSecret) {
 			common.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 			return
 		}
@@ -158,7 +158,7 @@ func InspectDBHandler(cfg *config.Config) http.HandlerFunc {
 	client := &http.Client{Timeout: 30 * time.Second}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !common.CheckAuth(r, cfg.HackernewsSecret) {
+		if !common.CheckAuth(r, cfg.ApiSecret) {
 			common.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 			return
 		}

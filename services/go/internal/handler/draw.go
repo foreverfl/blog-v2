@@ -17,7 +17,7 @@ func DrawHandler(cfg *config.Config, hnClient *r2.Client, hnImagesClient *r2.Cli
 	drawPool := worker.NewPool(1) // concurrency 1
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !common.CheckAuth(r, cfg.HackernewsSecret) {
+		if !common.CheckAuth(r, cfg.ApiSecret) {
 			common.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 			return
 		}

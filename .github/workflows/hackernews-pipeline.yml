@@ -15,7 +15,6 @@ permissions:
 env:
   BACKEND_GO_URL: ${{ secrets.BACKEND_GO_URL }}
   BACKEND_RUST_URL: ${{ secrets.BACKEND_RUST_URL }}
-  HACKERNEWS_SECRET: ${{ secrets.HACKERNEWS_SECRET }}
   API_SECRET: ${{ secrets.API_SECRET }}
 
 jobs:
@@ -71,7 +70,7 @@ jobs:
           DATE="${{ steps.date.outputs.value }}"
           echo "==> GET /hackernews/${DATE}"
           curl -sf "${BACKEND_GO_URL}/hackernews/${DATE}" \
-            -H "Authorization: Bearer ${HACKERNEWS_SECRET}" \
+            -H "Authorization: Bearer ${API_SECRET}" \
             | jq 'length' | xargs -I{} echo "Collected {} articles."
 
       - name: Fetch articles
@@ -80,12 +79,12 @@ jobs:
           DATE="${{ steps.date.outputs.value }}"
           echo "==> POST /hackernews/fetch/${DATE}"
           curl -sf -X POST "${BACKEND_GO_URL}/hackernews/fetch/${DATE}" \
-            -H "Authorization: Bearer ${HACKERNEWS_SECRET}"
+            -H "Authorization: Bearer ${API_SECRET}"
 
           for i in $(seq 1 60); do
             sleep 30
             STATUS=$(curl -sf "${BACKEND_GO_URL}/hackernews/fetch/status/${DATE}" \
-              -H "Authorization: Bearer ${HACKERNEWS_SECRET}")
+              -H "Authorization: Bearer ${API_SECRET}")
             PHASE=$(echo "$STATUS" | jq -r '.phase')
             echo "  [$i] phase=${PHASE}"
             if [ "$PHASE" = "done" ]; then
@@ -107,12 +106,12 @@ jobs:
           DATE="${{ steps.date.outputs.value }}"
           echo "==> POST /hackernews/summarize/${DATE}"
           curl -sf -X POST "${BACKEND_GO_URL}/hackernews/summarize/${DATE}" \
-            -H "Authorization: Bearer ${HACKERNEWS_SECRET}"
+            -H "Authorization: Bearer ${API_SECRET}"
 
           for i in $(seq 1 60); do
             sleep 20
             STATUS=$(curl -sf "${BACKEND_GO_URL}/hackernews/summarize/status/${DATE}" \
-              -H "Authorization: Bearer ${HACKERNEWS_SECRET}")
+              -H "Authorization: Bearer ${API_SECRET}")
             PHASE=$(echo "$STATUS" | jq -r '.phase')
             echo "  [$i] phase=${PHASE}"
             if [ "$PHASE" = "done" ]; then
@@ -134,12 +133,12 @@ jobs:
           DATE="${{ steps.date.outputs.value }}"
           echo "==> POST /hackernews/translate/${DATE}?lang=ko"
           curl -sf -X POST "${BACKEND_GO_URL}/hackernews/translate/${DATE}?lang=ko" \
-            -H "Authorization: Bearer ${HACKERNEWS_SECRET}"
+            -H "Authorization: Bearer ${API_SECRET}"
 
           for i in $(seq 1 60); do
             sleep 20
             STATUS=$(curl -sf "${BACKEND_GO_URL}/hackernews/translate/status/${DATE}?lang=ko" \
-              -H "Authorization: Bearer ${HACKERNEWS_SECRET}")
+              -H "Authorization: Bearer ${API_SECRET}")
             PHASE=$(echo "$STATUS" | jq -r '.phase')
             echo "  [$i] phase=${PHASE}"
             if [ "$PHASE" = "done" ]; then
@@ -161,12 +160,12 @@ jobs:
           DATE="${{ steps.date.outputs.value }}"
           echo "==> POST /hackernews/translate/${DATE}?lang=ja"
           curl -sf -X POST "${BACKEND_GO_URL}/hackernews/translate/${DATE}?lang=ja" \
-            -H "Authorization: Bearer ${HACKERNEWS_SECRET}"
+            -H "Authorization: Bearer ${API_SECRET}"
 
           for i in $(seq 1 60); do
             sleep 20
             STATUS=$(curl -sf "${BACKEND_GO_URL}/hackernews/translate/status/${DATE}?lang=ja" \
-              -H "Authorization: Bearer ${HACKERNEWS_SECRET}")
+              -H "Authorization: Bearer ${API_SECRET}")
             PHASE=$(echo "$STATUS" | jq -r '.phase')
             echo "  [$i] phase=${PHASE}"
             if [ "$PHASE" = "done" ]; then
@@ -188,7 +187,7 @@ jobs:
           DATE="${{ steps.date.outputs.value }}"
           echo "==> POST /hackernews/draw/${DATE}"
           DRAW_RESP=$(curl -sf -X POST "${BACKEND_GO_URL}/hackernews/draw/${DATE}" \
-            -H "Authorization: Bearer ${HACKERNEWS_SECRET}")
+            -H "Authorization: Bearer ${API_SECRET}")
           DRAW_OK=$(echo "$DRAW_RESP" | jq -r '.ok')
           if [ "$DRAW_OK" != "true" ]; then
             echo "Draw rejected: $(echo "$DRAW_RESP" | jq -r '.error // .message // "unknown"')"
@@ -199,7 +198,7 @@ jobs:
           for i in $(seq 1 20); do
             sleep 15
             STATUS=$(curl -sf "${BACKEND_GO_URL}/hackernews/status/${DATE}" \
-              -H "Authorization: Bearer ${HACKERNEWS_SECRET}")
+              -H "Authorization: Bearer ${API_SECRET}")
             echo "  [$i] $(echo "$STATUS" | jq -c '.')"
             if [ "$i" -ge 4 ]; then
               echo "Draw step waited 60s — proceeding."

@@ -18,7 +18,7 @@ import (
 
 func TranslateHandler(cfg *config.Config, r2c *r2.Client, redis *redisclient.Client, oai *oaiservice.Service, sm *common.StatusManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !common.CheckAuth(r, cfg.HackernewsSecret) {
+		if !common.CheckAuth(r, cfg.ApiSecret) {
 			common.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 			return
 		}

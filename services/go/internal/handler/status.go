@@ -11,7 +11,7 @@ import (
 
 func FetchStatusHandler(cfg *config.Config, sm *common.StatusManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !common.CheckAuth(r, cfg.HackernewsSecret) {
+		if !common.CheckAuth(r, cfg.ApiSecret) {
 			common.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 			return
 		}
@@ -23,7 +23,7 @@ func FetchStatusHandler(cfg *config.Config, sm *common.StatusManager) http.Handl
 
 func SummarizeStatusHandler(cfg *config.Config, sm *common.StatusManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !common.CheckAuth(r, cfg.HackernewsSecret) {
+		if !common.CheckAuth(r, cfg.ApiSecret) {
 			common.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 			return
 		}
@@ -35,7 +35,7 @@ func SummarizeStatusHandler(cfg *config.Config, sm *common.StatusManager) http.H
 
 func PipelineStatusHandler(cfg *config.Config, r2c *r2.Client) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !common.CheckAuth(r, cfg.HackernewsSecret) {
+		if !common.CheckAuth(r, cfg.ApiSecret) {
 			common.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 			return
 		}
@@ -80,7 +80,7 @@ func PipelineStatusHandler(cfg *config.Config, r2c *r2.Client) http.HandlerFunc 
 
 func TranslateStatusHandler(cfg *config.Config, sm *common.StatusManager) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if !common.CheckAuth(r, cfg.HackernewsSecret) {
+		if !common.CheckAuth(r, cfg.ApiSecret) {
 			common.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 			return
 		}

@@ -21,8 +21,8 @@ type Config struct {
 	OpenAIAPIKey string
 
 	// App
-	HackernewsSecret string
-	RustAPIURL       string
+	ApiSecret  string
+	RustAPIURL string
 }
 
 func Load() *Config {
@@ -35,12 +35,12 @@ func Load() *Config {
 		AWSRegion:                    getEnv("AWS_REGION", "auto"),
 		RedisURL:                     getEnv("REDIS_URL", "redis://localhost:6379"),
 		OpenAIAPIKey:                 getEnv("OPENAI_API_KEY", ""),
-		HackernewsSecret:             getEnv("HACKERNEWS_SECRET", ""),
+		ApiSecret:                    getEnv("API_SECRET", ""),
 		RustAPIURL:                   getEnv("RUST_API_URL", "http://localhost:8002"),
 	}
 
 	required := map[string]string{
-		"HACKERNEWS_SECRET":                cfg.HackernewsSecret,
+		"API_SECRET":                       cfg.ApiSecret,
 		"OPENAI_API_KEY":                   cfg.OpenAIAPIKey,
 		"S3_BUCKET_BLOG_HACKERNEWS":        cfg.S3BucketBlogHackernews,
 		"S3_BUCKET_BLOG_HACKERNEWS_IMAGES": cfg.S3BucketBlogHackernewsImages,
