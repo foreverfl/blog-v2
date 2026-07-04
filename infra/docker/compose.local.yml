@@ -57,11 +57,13 @@ services:
   # Auth (axum)
   auth-api:
     image: rust:1.93
-    container_name: blog-auth-api
+    container_name: ${STACK_PREFIX:-blog}-auth-api
     working_dir: /app
     ports:
-      - "8001:8001"
+      - "${AUTH_PORT:-8001}:8001"
     env_file: .env.local
+    environment:
+      FRONTEND_URL: ${FRONTEND_URL}
     volumes:
       - ../../services/auth:/app
       - auth_cargo_cache:/usr/local/cargo/registry
@@ -76,10 +78,10 @@ services:
   # Rust (axum)
   rust-api:
     image: rust:1.93
-    container_name: blog-rust-api
+    container_name: ${STACK_PREFIX:-blog}-rust-api
     working_dir: /app
     ports:
-      - "8002:8002"
+      - "${RUST_PORT:-8002}:8002"
     environment:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
@@ -109,10 +111,10 @@ services:
   # Go
   go-api:
     image: golang:1.26
-    container_name: blog-go-api
+    container_name: ${STACK_PREFIX:-blog}-go-api
     working_dir: /app
     ports:
-      - "8003:8003"
+      - "${GO_PORT:-8003}:8003"
     environment:
       REDIS_URL: ${REDIS_URL}
       S3_ENDPOINT: ${S3_ENDPOINT}
@@ -136,10 +138,10 @@ services:
   # Haskell
   haskell-api:
     image: haskell:9.14
-    container_name: blog-haskell-api
+    container_name: ${STACK_PREFIX:-blog}-haskell-api
     working_dir: /app
     ports:
-      - "8004:8004"
+      - "${HASKELL_PORT:-8004}:8004"
     environment:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
@@ -163,6 +165,11 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - dozzle_data:/data
+
+networks:
+  default:
+    name: blog-local
+    external: true
 
 volumes:
   redis_data:
