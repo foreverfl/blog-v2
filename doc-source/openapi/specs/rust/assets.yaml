@@ -430,8 +430,11 @@ components:
           format: int64
           description: File size in bytes.
         sha256:
-          type: string
-          description: Hex-encoded SHA-256 digest of the file content (used for deduplication).
+          type: ['string', 'null']
+          description: |
+            Hex-encoded SHA-256 digest of the file content (used for upload
+            deduplication). Null for rows discovered by R2 sync — those sit
+            outside deduplication.
           example: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
         width:
           type: ['integer', 'null']
