@@ -150,6 +150,44 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /assets/sync:
+    post:
+      tags: [Assets]
+      operationId: syncAssets
+      summary: Sync the asset table from R2
+      description: |
+        Treats R2 as the source of truth and reconciles the asset table with
+        it: objects missing from the DB are inserted (with `sha256` null —
+        they sit outside upload deduplication), rows whose object no longer
+        exists are deleted. Idempotent — a second run reports zero changes.
+
+        Auth accepts **either** a user JWT (`Authorization: Bearer <token>`)
+        **or** the shared `API_SECRET` (`Authorization: Bearer <secret>`).
+      security:
+        - bearerAuth: []
+        - apiSecret: []
+      parameters:
+        - name: bucket
+          in: query
+          required: false
+          schema:
+            type: string
+          description: |
+            Logical bucket to sync (one of `GET /assets/buckets`). The default
+            bucket when omitted; unknown names are rejected with 400.
+          example: blog-posts-assets
+      responses:
+        '200':
+          description: Reconciliation result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncAssetsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /assets/{id}:
     get:
       tags: [Assets]
@@ -292,6 +330,20 @@ components:
             $ref: '#/components/schemas/Error'
 
   schemas:
+    SyncAssetsResponse:
+      type: object
+      required: [bucket, inserted, deleted]
+      properties:
+        bucket:
+          type: string
+          description: Physical bucket that was reconciled.
+          example: dev-blog-posts-assets
+        inserted:
+          type: integer
+          description: Rows inserted for objects that were missing from the DB.
+        deleted:
+          type: integer
+          description: Rows deleted because their object is gone from R2.
     ListBucketsResponse:
       type: object
       required: [buckets, default]

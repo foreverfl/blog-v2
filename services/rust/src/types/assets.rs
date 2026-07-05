@@ -50,6 +50,11 @@ pub struct UploadQuery {
     pub bucket: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct SyncQuery {
+    pub bucket: Option<String>,
+}
+
 // ── Request types ──
 
 #[derive(Debug, Deserialize)]
@@ -109,6 +114,13 @@ impl From<&AssetRow> for AssetResponse {
             updated_at: row.updated_at,
         }
     }
+}
+
+#[derive(Debug, Serialize)]
+pub struct SyncAssetsResponse {
+    pub bucket: String,
+    pub inserted: usize,
+    pub deleted: usize,
 }
 
 #[derive(Debug, Serialize)]

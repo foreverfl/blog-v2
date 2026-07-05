@@ -6,12 +6,14 @@ use axum::Json;
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
+use std::collections::HashSet;
+
 use crate::auth;
 use crate::config::AppState;
 use crate::stores::assets as asset_store;
 use crate::types::{
     ApiError, AssetResponse, ListAssetsQuery, ListAssetsResponse, ListBucketsResponse,
-    UpdateAssetRequest, UploadQuery,
+    SyncAssetsResponse, SyncQuery, UpdateAssetRequest, UploadQuery,
 };
 
 // GET /assets
@@ -53,7 +55,7 @@ pub async fn list_assets(
 // Request: Authorization: Bearer <API_SECRET or user JWT>.
 // Response: 200 { buckets: [logical names for this env], default }.
 //           401 missing/bad token.
-// ponytail: hits R2 ListBuckets on every call — cache only if it gets slow.
+// Hits R2 ListBuckets on every call — cache only if it gets slow.
 pub async fn list_buckets(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -145,8 +147,8 @@ pub async fn delete_asset(
 
     // External object first, DB row second: a failed S3 delete keeps the DB
     // record intact, while the reverse would leave an untracked R2 object.
-    // ponytail: sha256-dedup'd assets may still be referenced by posts —
-    // deletion is unconditional until the orphan-detection spike adds a guard.
+    // sha256-dedup'd assets may still be referenced by posts — deletion is
+    // unconditional; stale references are handled manually via the manager.
     state
         .s3
         .delete_object()
@@ -161,11 +163,8 @@ pub async fn delete_asset(
     Ok(StatusCode::NO_CONTENT)
 }
 
-/// Every object (key, size) in a bucket, following ListObjectsV2
-/// continuation tokens until the listing is exhausted. Sync needs the full
-/// inventory — stopping at one page would misread absent-from-page as
-/// absent-from-bucket. page_size is 1000 in production; tests shrink it to
-/// force the pagination path.
+/// Every object (key, size) in a bucket, following ListObjectsV2 continuation
+/// tokens. page_size is 1000 in production; tests shrink it to force paging.
 async fn collect_bucket_inventory(
     s3: &aws_sdk_s3::Client,
     bucket: &str,
@@ -199,9 +198,9 @@ async fn collect_bucket_inventory(
     Ok(inventory)
 }
 
-/// Resolve the upload target: logical `?bucket=` → physical name verified
-/// against the live R2 bucket list; the default bucket when omitted.
-async fn resolve_upload_bucket(
+/// Resolve a logical `?bucket=` to its physical name, verified against the
+/// live R2 bucket list; the default bucket when omitted.
+async fn resolve_bucket(
     state: &AppState,
     logical: Option<&str>,
 ) -> Result<String, ApiError> {
@@ -244,7 +243,7 @@ pub async fn upload(
 ) -> Result<impl IntoResponse, ApiError> {
     auth::verify_secret_or_user(&state.config, &headers)?;
 
-    let bucket = resolve_upload_bucket(&state, query.bucket.as_deref()).await?;
+    let bucket = resolve_bucket(&state, query.bucket.as_deref()).await?;
     let mut assets: Vec<AssetResponse> = Vec::new();
     let base = state.config.upload_base_url.as_deref();
 
@@ -280,7 +279,6 @@ pub async fn upload(
             hex::encode(hasher.finalize())
         };
 
-        // Deduplicate by SHA-256
         if let Some(existing) = asset_store::find_by_sha256(&state.db, &sha256).await? {
             assets.push(AssetResponse::with_base(&existing, base));
             continue;
@@ -294,7 +292,6 @@ pub async fn upload(
             .unwrap_or("bin");
         let object_key = format!("{}.{}", Uuid::new_v4(), ext);
 
-        // Upload to S3
         state
             .s3
             .put_object()
@@ -306,7 +303,6 @@ pub async fn upload(
             .await
             .map_err(|e| ApiError::S3(e.to_string()))?;
 
-        // Save to DB
         let row = asset_store::insert(
             &state.db,
             &bucket,
@@ -323,6 +319,84 @@ pub async fn upload(
     }
 
     Ok((StatusCode::CREATED, Json(assets)))
+}
+
+// POST /assets/sync
+//
+// Request: Authorization: Bearer <API_SECRET or user JWT>,
+//          query ?bucket= (logical name, default bucket when omitted).
+// Response: 200 { bucket, inserted, deleted }.
+//           400 unknown bucket, 401 missing/bad token.
+//
+// R2 is the source of truth: objects missing from the DB are inserted
+// (sha256 NULL — excluded from upload dedup), rows whose object is gone are
+// deleted. Idempotent — a second run reports {inserted: 0, deleted: 0}.
+pub async fn sync_assets(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Query(query): Query<SyncQuery>,
+) -> Result<Json<SyncAssetsResponse>, ApiError> {
+    auth::verify_secret_or_user(&state.config, &headers)?;
+
+    let bucket = resolve_bucket(&state, query.bucket.as_deref()).await?;
+
+    let inventory = collect_bucket_inventory(&state.s3, &bucket, 1000).await?;
+    let db_keys: HashSet<String> = asset_store::list_object_keys(&state.db, &bucket)
+        .await?
+        .into_iter()
+        .collect();
+    let r2_keys: HashSet<&str> = inventory.iter().map(|(key, _)| key.as_str()).collect();
+
+    let to_insert: Vec<&(String, i64)> = inventory
+        .iter()
+        .filter(|(key, _)| !db_keys.contains(key))
+        .collect();
+    let to_delete: Vec<String> = db_keys
+        .iter()
+        .filter(|key| !r2_keys.contains(key.as_str()))
+        .cloned()
+        .collect();
+
+    for (object_key, size_bytes) in &to_insert {
+        let mime_type = mime_from_extension(object_key);
+        let kind = kind_from_mime(&mime_type);
+        asset_store::insert_synced(
+            &state.db,
+            &bucket,
+            object_key,
+            object_key,
+            &mime_type,
+            *size_bytes,
+            &kind,
+        )
+        .await?;
+    }
+    let deleted = asset_store::delete_missing(&state.db, &bucket, &to_delete).await?;
+
+    Ok(Json(SyncAssetsResponse {
+        bucket,
+        inserted: to_insert.len(),
+        deleted: deleted as usize,
+    }))
+}
+
+/// Extension sniffing only — ListObjectsV2 carries no content-type and a
+/// HEAD request per object is not worth it for sync.
+fn mime_from_extension(key: &str) -> String {
+    let extension = key.rsplit('.').next().map(|ext| ext.to_ascii_lowercase());
+    match extension.as_deref() {
+        Some("png") => "image/png",
+        Some("jpg" | "jpeg") => "image/jpeg",
+        Some("gif") => "image/gif",
+        Some("webp") => "image/webp",
+        Some("svg") => "image/svg+xml",
+        Some("mp4") => "video/mp4",
+        Some("webm") => "video/webm",
+        Some("mp3") => "audio/mpeg",
+        Some("pdf") => "application/pdf",
+        _ => "application/octet-stream",
+    }
+    .into()
 }
 
 fn kind_from_mime(mime: &str) -> String {

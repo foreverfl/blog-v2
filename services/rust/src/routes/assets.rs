@@ -1,5 +1,5 @@
 use axum::extract::DefaultBodyLimit;
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::Router;
 
 use crate::config::AppState;
@@ -14,6 +14,7 @@ pub fn router(upload_limit: usize) -> Router<AppState> {
                 .layer(DefaultBodyLimit::max(upload_limit)),
         )
         .route("/buckets", get(handlers::assets::list_buckets))
+        .route("/sync", post(handlers::assets::sync_assets))
         .route(
             "/{id}",
             get(handlers::assets::get_asset)

@@ -125,6 +125,64 @@ pub async fn update(
     Ok(row)
 }
 
+pub async fn list_object_keys(pool: &PgPool, bucket: &str) -> Result<Vec<String>, ApiError> {
+    let rows: Vec<(String,)> = sqlx::query_as("SELECT object_key FROM assets WHERE bucket = $1")
+        .bind(bucket)
+        .fetch_all(pool)
+        .await?;
+
+    Ok(rows.into_iter().map(|row| row.0).collect())
+}
+
+/// Insert a row discovered in R2 by sync: no sha256 (would require a full
+/// download), so these rows sit outside upload deduplication.
+pub async fn insert_synced(
+    pool: &PgPool,
+    bucket: &str,
+    object_key: &str,
+    file_name: &str,
+    mime_type: &str,
+    size_bytes: i64,
+    kind: &str,
+) -> Result<(), ApiError> {
+    sqlx::query(
+        r#"
+        INSERT INTO assets (bucket, object_key, file_name, mime_type, size_bytes, kind)
+        VALUES ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT (bucket, object_key) DO NOTHING
+        "#,
+    )
+    .bind(bucket)
+    .bind(object_key)
+    .bind(file_name)
+    .bind(mime_type)
+    .bind(size_bytes)
+    .bind(kind)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+/// Drop rows whose R2 object no longer exists. Returns the deleted count.
+pub async fn delete_missing(
+    pool: &PgPool,
+    bucket: &str,
+    object_keys: &[String],
+) -> Result<u64, ApiError> {
+    if object_keys.is_empty() {
+        return Ok(0);
+    }
+
+    let result = sqlx::query("DELETE FROM assets WHERE bucket = $1 AND object_key = ANY($2)")
+        .bind(bucket)
+        .bind(object_keys)
+        .execute(pool)
+        .await?;
+
+    Ok(result.rows_affected())
+}
+
 pub async fn delete(pool: &PgPool, id: Uuid) -> Result<(), ApiError> {
     sqlx::query("DELETE FROM assets WHERE id = $1")
         .bind(id)
