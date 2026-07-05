@@ -63,6 +63,41 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /assets/{id}:
+    get:
+      tags: [Assets]
+      operationId: getAsset
+      summary: Get a single asset
+      description: |
+        Returns one asset by id, including the derived `url`.
+
+        Auth accepts **either** a user JWT (`Authorization: Bearer <token>`)
+        **or** the shared `API_SECRET` (`Authorization: Bearer <secret>`).
+      security:
+        - bearerAuth: []
+        - apiSecret: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Asset identifier.
+      responses:
+        '200':
+          description: The asset.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -76,8 +111,20 @@ components:
       description: Shared API_SECRET used by trusted internal callers.
 
   responses:
+    BadRequest:
+      description: Malformed request (e.g. the path id is not a valid UUID).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
     Unauthorized:
       description: Missing, invalid, or expired Bearer token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: No asset exists with the given id.
       content:
         application/json:
           schema:
