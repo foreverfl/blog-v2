@@ -21,6 +21,7 @@ pub struct AppConfig {
     pub openai_api_key: String,
     pub redis_url: String,
     pub upload_base_url: Option<String>,
+    pub bucket_prefix: String,
 }
 
 impl AppConfig {
@@ -43,6 +44,62 @@ impl AppConfig {
             upload_base_url: env::var("UPLOAD_BASE_URL")
                 .ok()
                 .map(|url| url.trim_end_matches('/').to_string()),
+            bucket_prefix: env::var("BUCKET_PREFIX").unwrap_or_default(),
         }
+    }
+
+    /// Map a logical bucket name (what the API and UI use) to the physical
+    /// R2 bucket for this environment: "dev-" prefix locally, none in prod.
+    pub fn physical_bucket(&self, logical: &str) -> String {
+        format!("{}{}", self.bucket_prefix, logical)
+    }
+
+    /// Reverse mapping: the logical name of a physical bucket, or None when
+    /// the bucket does not belong to this environment (hidden from listings).
+    pub fn logical_bucket<'a>(&self, physical: &'a str) -> Option<&'a str> {
+        if self.bucket_prefix.is_empty() {
+            if physical.starts_with("dev-") {
+                None
+            } else {
+                Some(physical)
+            }
+        } else {
+            physical.strip_prefix(&self.bucket_prefix)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    fn config_with_prefix(prefix: &str) -> super::AppConfig {
+        super::AppConfig {
+            database_url: String::new(),
+            jwt_secret: String::new(),
+            frontend_url: String::new(),
+            s3_bucket_blog_posts_assets: String::new(),
+            max_upload_size: 0,
+            api_secret: String::new(),
+            github_token: None,
+            openai_api_key: String::new(),
+            redis_url: String::new(),
+            upload_base_url: None,
+            bucket_prefix: prefix.into(),
+        }
+    }
+
+    #[test]
+    fn local_prefix_maps_and_filters() {
+        let config = config_with_prefix("dev-");
+        assert_eq!(config.physical_bucket("blog-posts-assets"), "dev-blog-posts-assets");
+        assert_eq!(config.logical_bucket("dev-blog-posts-assets"), Some("blog-posts-assets"));
+        assert_eq!(config.logical_bucket("blog-posts-images"), None);
+    }
+
+    #[test]
+    fn prod_empty_prefix_passes_through_and_hides_dev() {
+        let config = config_with_prefix("");
+        assert_eq!(config.physical_bucket("blog-posts-images"), "blog-posts-images");
+        assert_eq!(config.logical_bucket("blog-posts-images"), Some("blog-posts-images"));
+        assert_eq!(config.logical_bucket("dev-blog-posts-assets"), None);
     }
 }
