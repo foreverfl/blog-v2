@@ -77,6 +77,17 @@ paths:
       security:
         - bearerAuth: []
         - apiSecret: []
+      parameters:
+        - name: bucket
+          in: query
+          required: false
+          schema:
+            type: string
+          description: |
+            Logical bucket name to upload into (one of `GET /assets/buckets`).
+            Falls back to the default bucket when omitted; unknown names are
+            rejected with 400.
+          example: blog-hackernews-images
       requestBody:
         required: true
         content:

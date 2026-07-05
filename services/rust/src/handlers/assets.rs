@@ -11,7 +11,7 @@ use crate::config::AppState;
 use crate::stores::assets as asset_store;
 use crate::types::{
     ApiError, AssetResponse, ListAssetsQuery, ListAssetsResponse, ListBucketsResponse,
-    UpdateAssetRequest,
+    UpdateAssetRequest, UploadQuery,
 };
 
 // GET /assets
@@ -156,19 +156,52 @@ pub async fn delete_asset(
     Ok(StatusCode::NO_CONTENT)
 }
 
+/// Resolve the upload target: logical `?bucket=` → physical name verified
+/// against the live R2 bucket list; the default bucket when omitted.
+async fn resolve_upload_bucket(
+    state: &AppState,
+    logical: Option<&str>,
+) -> Result<String, ApiError> {
+    let Some(logical) = logical else {
+        return Ok(state.config.s3_bucket_blog_posts_assets.clone());
+    };
+
+    let physical = state.config.physical_bucket(logical);
+    let output = state
+        .s3
+        .list_buckets()
+        .send()
+        .await
+        .map_err(|e| ApiError::S3(e.to_string()))?;
+    let exists = output
+        .buckets()
+        .iter()
+        .filter_map(|bucket| bucket.name())
+        .any(|name| name == physical);
+
+    if exists {
+        Ok(physical)
+    } else {
+        Err(ApiError::BadRequest(format!("unknown bucket '{logical}'")))
+    }
+}
+
 // POST /assets
 //
 // Request: Authorization: Bearer <API_SECRET or user JWT>,
+//          optional ?bucket= (logical name, default bucket when omitted),
 //          multipart/form-data with one or more `file` fields.
-// Response: 201 array of assets (SHA-256 deduplicated). 400 bad multipart or
-//           file over the size limit, 401 missing/bad token.
+// Response: 201 array of assets (SHA-256 deduplicated). 400 bad multipart,
+//           file over the size limit, or unknown bucket. 401 missing/bad token.
 pub async fn upload(
     State(state): State<AppState>,
     headers: HeaderMap,
+    Query(query): Query<UploadQuery>,
     mut multipart: Multipart,
 ) -> Result<impl IntoResponse, ApiError> {
     auth::verify_secret_or_user(&state.config, &headers)?;
 
+    let bucket = resolve_upload_bucket(&state, query.bucket.as_deref()).await?;
     let mut assets: Vec<AssetResponse> = Vec::new();
     let base = state.config.upload_base_url.as_deref();
 
@@ -222,7 +255,7 @@ pub async fn upload(
         state
             .s3
             .put_object()
-            .bucket(&state.config.s3_bucket_blog_posts_assets)
+            .bucket(&bucket)
             .key(&object_key)
             .body(ByteStream::from(data))
             .content_type(&mime_type)
@@ -233,7 +266,7 @@ pub async fn upload(
         // Save to DB
         let row = asset_store::insert(
             &state.db,
-            &state.config.s3_bucket_blog_posts_assets,
+            &bucket,
             &object_key,
             &file_name,
             &mime_type,

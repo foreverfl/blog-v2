@@ -44,6 +44,11 @@ pub struct ListAssetsQuery {
     pub per_page: Option<i64>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct UploadQuery {
+    pub bucket: Option<String>,
+}
+
 // ── Request types ──
 
 #[derive(Debug, Deserialize)]
