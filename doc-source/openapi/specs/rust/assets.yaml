@@ -402,6 +402,7 @@ components:
         - sha256
         - kind
         - status
+        - url
         - created_at
         - updated_at
       properties:
@@ -453,12 +454,12 @@ components:
           description: Processing status of the asset.
           example: ready
         url:
-          type: ['string', 'null']
+          type: string
           description: |
-            Fully-qualified URL to retrieve the asset
-            (`{UPLOAD_BASE_URL}/{object_key}`). Null when no base URL is
-            configured on the server.
-          example: https://cdn.mogumogu.dev/550e8400-e29b-41d4-a716-446655440000.png
+            Fully-qualified URL to retrieve the asset:
+            `https://assets-{bucket}.mogumogu.dev/{object_key}` with {bucket}
+            the physical bucket name.
+          example: https://assets-blog-posts-images.mogumogu.dev/550e8400-e29b-41d4-a716-446655440000.png
         created_at:
           type: string
           format: date-time

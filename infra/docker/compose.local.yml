@@ -96,7 +96,6 @@ services:
       API_SECRET: ${API_SECRET}
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY}
-      UPLOAD_BASE_URL: ${UPLOAD_BASE_URL:-}
       BUCKET_PREFIX: ${BUCKET_PREFIX:-dev-}
     volumes:
       - ../../services/rust:/app

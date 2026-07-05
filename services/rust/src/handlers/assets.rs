@@ -36,10 +36,9 @@ pub async fn list_assets(
         .map(|logical| state.config.physical_bucket(logical));
 
     let (rows, total) = asset_store::list(&state.db, bucket.as_deref(), page, per_page).await?;
-    let base = state.config.upload_base_url.as_deref();
     let items = rows
         .iter()
-        .map(|row| AssetResponse::with_base(row, base))
+        .map(|row| AssetResponse::from(row))
         .collect();
 
     Ok(Json(ListAssetsResponse {
@@ -101,9 +100,8 @@ pub async fn get_asset(
     let row = asset_store::get_by_id(&state.db, id)
         .await?
         .ok_or(ApiError::NotFound)?;
-    let base = state.config.upload_base_url.as_deref();
 
-    Ok(Json(AssetResponse::with_base(&row, base)))
+    Ok(Json(AssetResponse::from(&row)))
 }
 
 // PATCH /assets/{id}
@@ -124,9 +122,8 @@ pub async fn update_asset(
     let row = asset_store::update(&state.db, id, req.file_name.as_deref(), req.status.as_deref())
         .await?
         .ok_or(ApiError::NotFound)?;
-    let base = state.config.upload_base_url.as_deref();
 
-    Ok(Json(AssetResponse::with_base(&row, base)))
+    Ok(Json(AssetResponse::from(&row)))
 }
 
 // DELETE /assets/{id}
@@ -245,7 +242,6 @@ pub async fn upload(
 
     let bucket = resolve_bucket(&state, query.bucket.as_deref()).await?;
     let mut assets: Vec<AssetResponse> = Vec::new();
-    let base = state.config.upload_base_url.as_deref();
 
     while let Some(field) = multipart
         .next_field()
@@ -280,7 +276,7 @@ pub async fn upload(
         };
 
         if let Some(existing) = asset_store::find_by_sha256(&state.db, &sha256).await? {
-            assets.push(AssetResponse::with_base(&existing, base));
+            assets.push(AssetResponse::from(&existing));
             continue;
         }
 
@@ -315,7 +311,7 @@ pub async fn upload(
         )
         .await?;
 
-        assets.push(AssetResponse::with_base(&row, base));
+        assets.push(AssetResponse::from(&row));
     }
 
     Ok((StatusCode::CREATED, Json(assets)))

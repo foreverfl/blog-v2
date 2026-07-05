@@ -2,6 +2,8 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::config::ASSET_URL_PATTERN;
+
 // ── Database rows ──
 
 #[allow(dead_code)]
@@ -79,23 +81,17 @@ pub struct AssetResponse {
     pub duration_ms: Option<i32>,
     pub kind: String,
     pub status: String,
-    pub url: Option<String>,
+    pub url: String,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
-
-impl AssetResponse {
-    pub fn with_base(row: &AssetRow, base: Option<&str>) -> Self {
-        let url = base.map(|base| format!("{}/{}", base, row.object_key));
-        Self {
-            url,
-            ..Self::from(row)
-        }
-    }
-}
-
 impl From<&AssetRow> for AssetResponse {
     fn from(row: &AssetRow) -> Self {
+        let url = format!(
+            "{}/{}",
+            ASSET_URL_PATTERN.replace("{bucket}", &row.bucket),
+            row.object_key
+        );
         Self {
             id: row.id,
             bucket: row.bucket.clone(),
@@ -109,7 +105,7 @@ impl From<&AssetRow> for AssetResponse {
             duration_ms: row.duration_ms,
             kind: row.kind.clone(),
             status: row.status.clone(),
-            url: None,
+            url,
             created_at: row.created_at,
             updated_at: row.updated_at,
         }

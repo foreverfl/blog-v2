@@ -1,6 +1,8 @@
 use std::env;
 use std::sync::Arc;
 
+pub const ASSET_URL_PATTERN: &str = "https://assets-{bucket}.mogumogu.dev";
+
 #[derive(Clone)]
 pub struct AppState {
     pub db: sqlx::PgPool,
@@ -20,7 +22,6 @@ pub struct AppConfig {
     pub github_token: Option<String>,
     pub openai_api_key: String,
     pub redis_url: String,
-    pub upload_base_url: Option<String>,
     pub bucket_prefix: String,
 }
 
@@ -41,9 +42,6 @@ impl AppConfig {
             github_token: env::var("GITHUB_TOKEN").ok(),
             openai_api_key: env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY required"),
             redis_url: env::var("REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1:6379".into()),
-            upload_base_url: env::var("UPLOAD_BASE_URL")
-                .ok()
-                .map(|url| url.trim_end_matches('/').to_string()),
             bucket_prefix: env::var("BUCKET_PREFIX").unwrap_or_default(),
         }
     }
@@ -82,7 +80,6 @@ mod tests {
             github_token: None,
             openai_api_key: String::new(),
             redis_url: String::new(),
-            upload_base_url: None,
             bucket_prefix: prefix.into(),
         }
     }
