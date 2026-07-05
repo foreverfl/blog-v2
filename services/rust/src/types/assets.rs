@@ -1,5 +1,5 @@
 use chrono::NaiveDateTime;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 // ── Database rows ──
@@ -34,6 +34,14 @@ pub struct PostAssetRow {
     pub role: String,
     pub sort_order: i32,
     pub created_at: NaiveDateTime,
+}
+
+// ── Query types ──
+
+#[derive(Debug, Deserialize)]
+pub struct ListAssetsQuery {
+    pub page: Option<i64>,
+    pub per_page: Option<i64>,
 }
 
 // ── Response types ──
@@ -87,6 +95,14 @@ impl From<&AssetRow> for AssetResponse {
             updated_at: row.updated_at,
         }
     }
+}
+
+#[derive(Debug, Serialize)]
+pub struct ListAssetsResponse {
+    pub items: Vec<AssetResponse>,
+    pub total: i64,
+    pub page: i64,
+    pub per_page: i64,
 }
 
 #[derive(Debug, Serialize)]

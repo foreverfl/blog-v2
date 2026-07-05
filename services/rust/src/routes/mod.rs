@@ -1,3 +1,4 @@
+mod files;
 mod hackernews;
 mod import;
 mod posts;
@@ -40,6 +41,7 @@ pub fn create_router(state: AppState) -> Router {
 
     Router::new()
         .route("/health", get(health))
+        .nest("/files", files::router())
         .nest("/posts", posts::router())
         .nest("/recipe", recipe::router())
         .nest("/uploads", uploads::router(upload_limit))

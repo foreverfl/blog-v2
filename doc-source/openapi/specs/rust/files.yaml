@@ -1,0 +1,190 @@
+openapi: 3.1.0
+info:
+  title: Blog Rust Files API
+  version: 1.0.0
+  description: |
+    File management service for mogumogu.dev — lists and manages uploaded
+    assets stored in S3 with metadata in Postgres. Authentication accepts
+    either a user Bearer JWT or the shared API_SECRET Bearer token.
+  x-api-id: files
+
+servers:
+  - url: https://api.mogumogu.dev/rust
+    description: Production
+  - url: http://localhost:8002
+    description: Local development (direct to the Rust service)
+
+tags:
+  - name: Files
+    description: Uploaded asset listing and management endpoints.
+
+paths:
+  /files:
+    get:
+      tags: [Files]
+      operationId: listFiles
+      summary: List uploaded assets
+      description: |
+        Returns a paginated list of uploaded assets, newest first
+        (`created_at DESC`).
+
+        Auth accepts **either** a user JWT (`Authorization: Bearer <token>`)
+        **or** the shared `API_SECRET` (`Authorization: Bearer <secret>`).
+      security:
+        - bearerAuth: []
+        - apiSecret: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            default: 1
+          description: 1-based page number. Values below 1 are clamped to 1.
+        - name: per_page
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Page size. Clamped to the 1–100 range.
+      responses:
+        '200':
+          description: A page of assets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListAssetsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: User access token issued by the auth service.
+    apiSecret:
+      type: http
+      scheme: bearer
+      description: Shared API_SECRET used by trusted internal callers.
+
+  responses:
+    Unauthorized:
+      description: Missing, invalid, or expired Bearer token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    ListAssetsResponse:
+      type: object
+      required: [items, total, page, per_page]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetResponse'
+          description: Assets on this page, newest first.
+        total:
+          type: integer
+          format: int64
+          description: Total number of assets across all pages.
+        page:
+          type: integer
+          format: int64
+          description: The 1-based page number that was returned.
+        per_page:
+          type: integer
+          format: int64
+          description: The page size that was applied.
+    AssetResponse:
+      type: object
+      required:
+        - id
+        - bucket
+        - object_key
+        - file_name
+        - mime_type
+        - size_bytes
+        - sha256
+        - kind
+        - status
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique asset identifier.
+        bucket:
+          type: string
+          description: S3 bucket name where the object is stored.
+        object_key:
+          type: string
+          description: S3 object key (UUID + original extension).
+          example: 550e8400-e29b-41d4-a716-446655440000.png
+        file_name:
+          type: string
+          description: Original file name provided by the uploader.
+          example: photo.png
+        mime_type:
+          type: string
+          description: MIME type detected from the Content-Type of the uploaded part.
+          example: image/png
+        size_bytes:
+          type: integer
+          format: int64
+          description: File size in bytes.
+        sha256:
+          type: string
+          description: Hex-encoded SHA-256 digest of the file content (used for deduplication).
+          example: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+        width:
+          type: ['integer', 'null']
+          format: int32
+          description: Image width in pixels (populated for image assets; null otherwise).
+        height:
+          type: ['integer', 'null']
+          format: int32
+          description: Image height in pixels (populated for image assets; null otherwise).
+        duration_ms:
+          type: ['integer', 'null']
+          format: int32
+          description: Media duration in milliseconds (populated for audio/video; null otherwise).
+        kind:
+          type: string
+          enum: [image, video, audio, document]
+          description: Asset kind derived from the MIME type.
+        status:
+          type: string
+          description: Processing status of the asset.
+          example: ready
+        url:
+          type: ['string', 'null']
+          description: |
+            Fully-qualified URL to retrieve the asset
+            (`{UPLOAD_BASE_URL}/{object_key}`). Null when no base URL is
+            configured on the server.
+          example: https://cdn.mogumogu.dev/550e8400-e29b-41d4-a716-446655440000.png
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the asset record was first created.
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp of the most recent update to the asset record.
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
