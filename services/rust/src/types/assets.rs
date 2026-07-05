@@ -44,6 +44,14 @@ pub struct ListAssetsQuery {
     pub per_page: Option<i64>,
 }
 
+// ── Request types ──
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateAssetRequest {
+    pub file_name: Option<String>,
+    pub status: Option<String>,
+}
+
 // ── Response types ──
 
 #[derive(Debug, Serialize)]

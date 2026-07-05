@@ -9,7 +9,9 @@ use uuid::Uuid;
 use crate::auth;
 use crate::config::AppState;
 use crate::stores::assets as asset_store;
-use crate::types::{ApiError, AssetResponse, ListAssetsQuery, ListAssetsResponse};
+use crate::types::{
+    ApiError, AssetResponse, ListAssetsQuery, ListAssetsResponse, UpdateAssetRequest,
+};
 
 // GET /assets
 //
@@ -53,6 +55,29 @@ pub async fn get_asset(
     auth::verify_secret_or_user(&state.config, &headers)?;
 
     let row = asset_store::get_by_id(&state.db, id)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+    let base = state.config.upload_base_url.as_deref();
+
+    Ok(Json(AssetResponse::with_base(&row, base)))
+}
+
+// PATCH /assets/{id}
+//
+// Request: Authorization: Bearer <API_SECRET or user JWT>, path id (uuid),
+//          JSON with any subset of { file_name, status }. object_key and the
+//          stored bytes are immutable.
+// Response: 200 with the updated asset. 400 malformed uuid/body,
+//           401 missing/bad token, 404 unknown id.
+pub async fn update_asset(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<Uuid>,
+    Json(req): Json<UpdateAssetRequest>,
+) -> Result<Json<AssetResponse>, ApiError> {
+    auth::verify_secret_or_user(&state.config, &headers)?;
+
+    let row = asset_store::update(&state.db, id, req.file_name.as_deref(), req.status.as_deref())
         .await?
         .ok_or(ApiError::NotFound)?;
     let base = state.config.upload_base_url.as_deref();

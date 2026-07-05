@@ -93,6 +93,33 @@ pub async fn insert(
     Ok(row)
 }
 
+/// Partial update: None keeps the current value via COALESCE.
+/// Returns None when no row matched.
+pub async fn update(
+    pool: &PgPool,
+    id: Uuid,
+    file_name: Option<&str>,
+    status: Option<&str>,
+) -> Result<Option<AssetRow>, ApiError> {
+    let row = sqlx::query_as::<_, AssetRow>(
+        r#"
+        UPDATE assets SET
+            file_name = COALESCE($2, file_name),
+            status = COALESCE($3, status),
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+        RETURNING id, bucket, object_key, file_name, mime_type, size_bytes, sha256, width, height, duration_ms, kind, status, metadata, created_at, updated_at
+        "#,
+    )
+    .bind(id)
+    .bind(file_name)
+    .bind(status)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(row)
+}
+
 pub async fn get_post_assets(
     pool: &PgPool,
     post_id: Uuid,

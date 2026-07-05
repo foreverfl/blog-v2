@@ -141,6 +141,47 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Assets]
+      operationId: updateAsset
+      summary: Update asset metadata
+      description: |
+        Partial update of asset metadata. Only `file_name` and `status` can
+        change; the stored object (`object_key`, bytes) is immutable. Omitted
+        fields keep their current value.
+
+        Auth accepts **either** a user JWT (`Authorization: Bearer <token>`)
+        **or** the shared `API_SECRET` (`Authorization: Bearer <secret>`).
+      security:
+        - bearerAuth: []
+        - apiSecret: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Asset identifier.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAssetRequest'
+      responses:
+        '200':
+          description: The updated asset.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
 components:
   securitySchemes:
@@ -177,6 +218,17 @@ components:
             $ref: '#/components/schemas/Error'
 
   schemas:
+    UpdateAssetRequest:
+      type: object
+      properties:
+        file_name:
+          type: string
+          description: New display file name.
+          example: renamed.png
+        status:
+          type: string
+          description: New processing status.
+          example: active
     ListAssetsResponse:
       type: object
       required: [items, total, page, per_page]
