@@ -1,0 +1,9 @@
+{
+  "lsp": {
+    "rust-analyzer": {
+      "initialization_options": {
+        "linkedProjects": ["services/rust/Cargo.toml", "services/auth/Cargo.toml"]
+      }
+    }
+  }
+}
