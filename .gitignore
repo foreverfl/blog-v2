@@ -108,3 +108,6 @@ htmlcov/
 *.exe
 .cache/
 tmp/
+
+# Parallel-work worktrees (created by /worktree skill)
+.worktrees/
