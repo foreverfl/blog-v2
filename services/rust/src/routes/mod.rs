@@ -7,7 +7,6 @@ mod recipe_cooking_method_types;
 mod recipe_cuisines;
 mod recipe_ingredients;
 mod recipe_sauce_usage_types;
-mod uploads;
 
 use axum::http::{header, Method};
 use axum::routing::get;
@@ -44,7 +43,6 @@ pub fn create_router(state: AppState) -> Router {
         .nest("/assets", assets::router(upload_limit))
         .nest("/posts", posts::router())
         .nest("/recipe", recipe::router())
-        .nest("/uploads", uploads::router(upload_limit))
         .nest("/import", import::router())
         .nest("/hackernews", hackernews::router())
         .layer(

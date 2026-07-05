@@ -119,7 +119,7 @@ pub async fn delete_asset(
     Ok(StatusCode::NO_CONTENT)
 }
 
-// POST /assets (also mounted at /uploads until the editor migrates)
+// POST /assets
 //
 // Request: Authorization: Bearer <API_SECRET or user JWT>,
 //          multipart/form-data with one or more `file` fields.

@@ -72,9 +72,6 @@ paths:
         array of `AssetResponse` objects in the same order as the fields
         (existing assets are returned as-is without re-uploading).
 
-        The same handler is also mounted at `POST /uploads` as a legacy
-        alias until the editor migrates.
-
         Auth accepts **either** a user JWT (`Authorization: Bearer <token>`)
         **or** the shared `API_SECRET` (`Authorization: Bearer <secret>`).
       security:
