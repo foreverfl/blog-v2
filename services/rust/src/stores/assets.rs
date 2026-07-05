@@ -36,23 +36,28 @@ pub async fn get_by_id(pool: &PgPool, id: Uuid) -> Result<Option<AssetRow>, ApiE
 
 pub async fn list(
     pool: &PgPool,
+    bucket: Option<&str>,
     page: i64,
     per_page: i64,
 ) -> Result<(Vec<AssetRow>, i64), ApiError> {
     let offset = (page - 1) * per_page;
 
-    let total: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM assets")
-        .fetch_one(pool)
-        .await?;
+    let total: (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM assets WHERE ($1::text IS NULL OR bucket = $1)")
+            .bind(bucket)
+            .fetch_one(pool)
+            .await?;
 
     let rows = sqlx::query_as::<_, AssetRow>(
         r#"
         SELECT id, bucket, object_key, file_name, mime_type, size_bytes, sha256, width, height, duration_ms, kind, status, metadata, created_at, updated_at
         FROM assets
+        WHERE ($1::text IS NULL OR bucket = $1)
         ORDER BY created_at DESC
-        LIMIT $1 OFFSET $2
+        LIMIT $2 OFFSET $3
         "#,
     )
+    .bind(bucket)
     .bind(per_page)
     .bind(offset)
     .fetch_all(pool)

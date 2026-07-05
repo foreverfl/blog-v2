@@ -16,7 +16,8 @@ use crate::types::{
 
 // GET /assets
 //
-// Request: Authorization: Bearer <API_SECRET or user JWT>, query ?page= &per_page=.
+// Request: Authorization: Bearer <API_SECRET or user JWT>,
+//          query ?bucket= (logical name) &page= &per_page=.
 // Response: 200 { items: [asset], total, page, per_page }. 401 missing/bad token.
 pub async fn list_assets(
     State(state): State<AppState>,
@@ -27,8 +28,12 @@ pub async fn list_assets(
 
     let page = query.page.unwrap_or(1).max(1);
     let per_page = query.per_page.unwrap_or(20).clamp(1, 100);
+    let bucket = query
+        .bucket
+        .as_deref()
+        .map(|logical| state.config.physical_bucket(logical));
 
-    let (rows, total) = asset_store::list(&state.db, page, per_page).await?;
+    let (rows, total) = asset_store::list(&state.db, bucket.as_deref(), page, per_page).await?;
     let base = state.config.upload_base_url.as_deref();
     let items = rows
         .iter()
