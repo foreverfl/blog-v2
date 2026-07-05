@@ -23,7 +23,8 @@ paths:
     post:
       tags: [Uploads]
       operationId: uploadFiles
-      summary: Upload one or more files
+      deprecated: true
+      summary: Upload one or more files (legacy alias of POST /assets)
       description: |
         Accepts a `multipart/form-data` body with one or more `file` fields.
         Each file is SHA-256-deduplicated before writing to S3. Returns an

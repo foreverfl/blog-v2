@@ -41,7 +41,7 @@ pub fn create_router(state: AppState) -> Router {
 
     Router::new()
         .route("/health", get(health))
-        .nest("/assets", assets::router())
+        .nest("/assets", assets::router(upload_limit))
         .nest("/posts", posts::router())
         .nest("/recipe", recipe::router())
         .nest("/uploads", uploads::router(upload_limit))

@@ -62,6 +62,50 @@ paths:
                 $ref: '#/components/schemas/ListAssetsResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Assets]
+      operationId: uploadAssets
+      summary: Upload one or more files
+      description: |
+        Accepts a `multipart/form-data` body with one or more `file` fields.
+        Each file is SHA-256-deduplicated before writing to S3. Returns an
+        array of `AssetResponse` objects in the same order as the fields
+        (existing assets are returned as-is without re-uploading).
+
+        The same handler is also mounted at `POST /uploads` as a legacy
+        alias until the editor migrates.
+
+        Auth accepts **either** a user JWT (`Authorization: Bearer <token>`)
+        **or** the shared `API_SECRET` (`Authorization: Bearer <secret>`).
+      security:
+        - bearerAuth: []
+        - apiSecret: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  description: |
+                    One or more files to upload. Repeat this field for each
+                    file in a single request.
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: All files uploaded (or deduplicated) successfully.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AssetResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
 
   /assets/{id}:
     get:
@@ -112,7 +156,9 @@ components:
 
   responses:
     BadRequest:
-      description: Malformed request (e.g. the path id is not a valid UUID).
+      description: |
+        Malformed request (e.g. the path id is not a valid UUID, a broken
+        multipart body, or a file over the upload size limit).
       content:
         application/json:
           schema:

@@ -11,7 +11,7 @@ use crate::config::AppState;
 use crate::stores::assets as asset_store;
 use crate::types::{ApiError, AssetResponse};
 
-// POST /api/uploads
+// POST /assets (also mounted at /uploads until the editor migrates)
 pub async fn upload(
     State(state): State<AppState>,
     headers: HeaderMap,
