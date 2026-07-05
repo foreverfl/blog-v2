@@ -161,6 +161,44 @@ pub async fn delete_asset(
     Ok(StatusCode::NO_CONTENT)
 }
 
+/// Every object (key, size) in a bucket, following ListObjectsV2
+/// continuation tokens until the listing is exhausted. Sync needs the full
+/// inventory — stopping at one page would misread absent-from-page as
+/// absent-from-bucket. page_size is 1000 in production; tests shrink it to
+/// force the pagination path.
+async fn collect_bucket_inventory(
+    s3: &aws_sdk_s3::Client,
+    bucket: &str,
+    page_size: i32,
+) -> Result<Vec<(String, i64)>, ApiError> {
+    let mut inventory = Vec::new();
+    let mut continuation_token: Option<String> = None;
+
+    loop {
+        let output = s3
+            .list_objects_v2()
+            .bucket(bucket)
+            .max_keys(page_size)
+            .set_continuation_token(continuation_token.take())
+            .send()
+            .await
+            .map_err(|e| ApiError::S3(e.to_string()))?;
+
+        for object in output.contents() {
+            if let Some(key) = object.key() {
+                inventory.push((key.to_string(), object.size().unwrap_or(0)));
+            }
+        }
+
+        match output.next_continuation_token() {
+            Some(token) => continuation_token = Some(token.to_string()),
+            None => break,
+        }
+    }
+
+    Ok(inventory)
+}
+
 /// Resolve the upload target: logical `?bucket=` → physical name verified
 /// against the live R2 bucket list; the default bucket when omitted.
 async fn resolve_upload_bucket(
@@ -296,5 +334,36 @@ fn kind_from_mime(mime: &str) -> String {
         "audio".into()
     } else {
         "document".into()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::collect_bucket_inventory;
+
+    // Integration check against real R2 — needs AWS_* and S3_ENDPOINT in the
+    // env, so it is #[ignore]d in normal runs:
+    //   cargo test collects_full_inventory -- --ignored
+    #[tokio::test]
+    #[ignore]
+    async fn collects_full_inventory() {
+        let endpoint = std::env::var("S3_ENDPOINT").expect("S3_ENDPOINT required");
+        let bucket =
+            std::env::var("S3_BUCKET_BLOG_POSTS_ASSETS").expect("bucket env required");
+        let aws_config =
+            aws_config::load_defaults(aws_config::BehaviorVersion::latest()).await;
+        let s3_config = aws_sdk_s3::config::Builder::from(&aws_config)
+            .endpoint_url(endpoint)
+            .force_path_style(true)
+            .build();
+        let s3 = aws_sdk_s3::Client::from_conf(s3_config);
+
+        // page_size=1 forces one continuation round-trip per object; the
+        // result must match the single-page run exactly, order included.
+        let paged = collect_bucket_inventory(&s3, &bucket, 1).await.unwrap();
+        let single = collect_bucket_inventory(&s3, &bucket, 1000).await.unwrap();
+
+        assert!(!single.is_empty(), "dev bucket should not be empty");
+        assert_eq!(paged, single);
     }
 }
