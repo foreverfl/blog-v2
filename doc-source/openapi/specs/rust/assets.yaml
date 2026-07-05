@@ -1,12 +1,12 @@
 openapi: 3.1.0
 info:
-  title: Blog Rust Files API
+  title: Blog Rust Assets API
   version: 1.0.0
   description: |
     File management service for mogumogu.dev — lists and manages uploaded
     assets stored in S3 with metadata in Postgres. Authentication accepts
     either a user Bearer JWT or the shared API_SECRET Bearer token.
-  x-api-id: files
+  x-api-id: assets
 
 servers:
   - url: https://api.mogumogu.dev/rust
@@ -15,14 +15,14 @@ servers:
     description: Local development (direct to the Rust service)
 
 tags:
-  - name: Files
+  - name: Assets
     description: Uploaded asset listing and management endpoints.
 
 paths:
-  /files:
+  /assets:
     get:
-      tags: [Files]
-      operationId: listFiles
+      tags: [Assets]
+      operationId: listAssets
       summary: List uploaded assets
       description: |
         Returns a paginated list of uploaded assets, newest first

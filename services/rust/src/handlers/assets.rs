@@ -7,8 +7,8 @@ use crate::config::AppState;
 use crate::stores::assets as asset_store;
 use crate::types::{ApiError, AssetResponse, ListAssetsQuery, ListAssetsResponse};
 
-// GET /files
-pub async fn list_files(
+// GET /assets
+pub async fn list_assets(
     State(state): State<AppState>,
     headers: HeaderMap,
     Query(query): Query<ListAssetsQuery>,

@@ -5,5 +5,5 @@ use crate::config::AppState;
 use crate::handlers;
 
 pub fn router() -> Router<AppState> {
-    Router::new().route("/", get(handlers::files::list_files))
+    Router::new().route("/", get(handlers::assets::list_assets))
 }

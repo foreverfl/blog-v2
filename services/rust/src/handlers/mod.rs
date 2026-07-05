@@ -1,4 +1,4 @@
-pub mod files;
+pub mod assets;
 pub mod hackernews;
 pub mod import;
 pub mod posts;
