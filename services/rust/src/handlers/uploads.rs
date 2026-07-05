@@ -7,17 +7,9 @@ use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
 use crate::auth;
-use crate::config::{AppConfig, AppState};
+use crate::config::AppState;
 use crate::stores::assets as asset_store;
 use crate::types::{ApiError, AssetResponse};
-
-/// Authorize an upload via the shared `API_SECRET` Bearer token or a user JWT.
-fn authorize_upload(config: &AppConfig, headers: &HeaderMap) -> Result<(), ApiError> {
-    if auth::verify_bearer_secret(headers, &config.api_secret).is_ok() {
-        return Ok(());
-    }
-    auth::extract_user_id(config, headers).map(|_| ())
-}
 
 // POST /api/uploads
 pub async fn upload(
@@ -25,7 +17,7 @@ pub async fn upload(
     headers: HeaderMap,
     mut multipart: Multipart,
 ) -> Result<impl IntoResponse, ApiError> {
-    authorize_upload(&state.config, &headers)?;
+    auth::verify_secret_or_user(&state.config, &headers)?;
 
     let mut assets: Vec<AssetResponse> = Vec::new();
     let base = state.config.upload_base_url.as_deref();

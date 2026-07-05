@@ -22,6 +22,14 @@ pub fn verify_bearer_secret(headers: &HeaderMap, secret: &str) -> Result<(), Api
     }
 }
 
+/// Authorize via the shared `API_SECRET` Bearer token or a user JWT.
+pub fn verify_secret_or_user(config: &AppConfig, headers: &HeaderMap) -> Result<(), ApiError> {
+    if verify_bearer_secret(headers, &config.api_secret).is_ok() {
+        return Ok(());
+    }
+    extract_user_id(config, headers).map(|_| ())
+}
+
 pub fn extract_user_id(config: &AppConfig, headers: &HeaderMap) -> Result<Uuid, ApiError> {
     let token = headers
         .get(header::AUTHORIZATION)
