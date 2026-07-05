@@ -15,6 +15,8 @@ pub fn router(upload_limit: usize) -> Router<AppState> {
         )
         .route(
             "/{id}",
-            get(handlers::assets::get_asset).patch(handlers::assets::update_asset),
+            get(handlers::assets::get_asset)
+                .patch(handlers::assets::update_asset)
+                .delete(handlers::assets::delete_asset),
         )
 }

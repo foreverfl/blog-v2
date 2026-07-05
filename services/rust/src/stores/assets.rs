@@ -120,6 +120,15 @@ pub async fn update(
     Ok(row)
 }
 
+pub async fn delete(pool: &PgPool, id: Uuid) -> Result<(), ApiError> {
+    sqlx::query("DELETE FROM assets WHERE id = $1")
+        .bind(id)
+        .execute(pool)
+        .await?;
+
+    Ok(())
+}
+
 pub async fn get_post_assets(
     pool: &PgPool,
     post_id: Uuid,

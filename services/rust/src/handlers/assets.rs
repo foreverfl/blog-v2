@@ -85,6 +85,40 @@ pub async fn update_asset(
     Ok(Json(AssetResponse::with_base(&row, base)))
 }
 
+// DELETE /assets/{id}
+//
+// Request: Authorization: Bearer <API_SECRET or user JWT>, path id (uuid).
+// Response: 204 No Content. 400 malformed uuid, 401 missing/bad token,
+//           404 unknown id.
+pub async fn delete_asset(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<Uuid>,
+) -> Result<StatusCode, ApiError> {
+    auth::verify_secret_or_user(&state.config, &headers)?;
+
+    let row = asset_store::get_by_id(&state.db, id)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+
+    // External object first, DB row second: a failed S3 delete keeps the DB
+    // record intact, while the reverse would leave an untracked R2 object.
+    // ponytail: sha256-dedup'd assets may still be referenced by posts —
+    // deletion is unconditional until the orphan-detection spike adds a guard.
+    state
+        .s3
+        .delete_object()
+        .bucket(&row.bucket)
+        .key(&row.object_key)
+        .send()
+        .await
+        .map_err(|e| ApiError::S3(e.to_string()))?;
+
+    asset_store::delete(&state.db, id).await?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
 // POST /assets (also mounted at /uploads until the editor migrates)
 //
 // Request: Authorization: Bearer <API_SECRET or user JWT>,

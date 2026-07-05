@@ -182,6 +182,37 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Assets]
+      operationId: deleteAsset
+      summary: Delete an asset
+      description: |
+        Deletes the stored object from S3 first, then the DB record.
+        Deletion is unconditional even if posts still reference the asset
+        (a reference guard is planned with orphan detection).
+
+        Auth accepts **either** a user JWT (`Authorization: Bearer <token>`)
+        **or** the shared `API_SECRET` (`Authorization: Bearer <secret>`).
+      security:
+        - bearerAuth: []
+        - apiSecret: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Asset identifier.
+      responses:
+        '204':
+          description: Asset deleted.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
 components:
   securitySchemes:
