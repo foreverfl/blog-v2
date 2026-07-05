@@ -10,7 +10,7 @@ pub fn router(upload_limit: usize) -> Router<AppState> {
         .route(
             "/",
             get(handlers::assets::list_assets)
-                .post(handlers::uploads::upload)
+                .post(handlers::assets::upload)
                 .layer(DefaultBodyLimit::max(upload_limit)),
         )
         .route("/{id}", get(handlers::assets::get_asset))
