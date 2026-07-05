@@ -10,7 +10,8 @@ use crate::auth;
 use crate::config::AppState;
 use crate::stores::assets as asset_store;
 use crate::types::{
-    ApiError, AssetResponse, ListAssetsQuery, ListAssetsResponse, UpdateAssetRequest,
+    ApiError, AssetResponse, ListAssetsQuery, ListAssetsResponse, ListBucketsResponse,
+    UpdateAssetRequest,
 };
 
 // GET /assets
@@ -40,6 +41,42 @@ pub async fn list_assets(
         page,
         per_page,
     }))
+}
+
+// GET /assets/buckets
+//
+// Request: Authorization: Bearer <API_SECRET or user JWT>.
+// Response: 200 { buckets: [logical names for this env], default }.
+//           401 missing/bad token.
+// ponytail: hits R2 ListBuckets on every call — cache only if it gets slow.
+pub async fn list_buckets(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+) -> Result<Json<ListBucketsResponse>, ApiError> {
+    auth::verify_secret_or_user(&state.config, &headers)?;
+
+    let output = state
+        .s3
+        .list_buckets()
+        .send()
+        .await
+        .map_err(|e| ApiError::S3(e.to_string()))?;
+
+    let buckets = output
+        .buckets()
+        .iter()
+        .filter_map(|bucket| bucket.name())
+        .filter_map(|name| state.config.logical_bucket(name))
+        .map(String::from)
+        .collect();
+    let default_bucket = &state.config.s3_bucket_blog_posts_assets;
+    let default = state
+        .config
+        .logical_bucket(default_bucket)
+        .unwrap_or(default_bucket)
+        .to_string();
+
+    Ok(Json(ListBucketsResponse { buckets, default }))
 }
 
 // GET /assets/{id}

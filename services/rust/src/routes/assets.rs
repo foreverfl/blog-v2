@@ -13,6 +13,7 @@ pub fn router(upload_limit: usize) -> Router<AppState> {
                 .post(handlers::assets::upload)
                 .layer(DefaultBodyLimit::max(upload_limit)),
         )
+        .route("/buckets", get(handlers::assets::list_buckets))
         .route(
             "/{id}",
             get(handlers::assets::get_asset)

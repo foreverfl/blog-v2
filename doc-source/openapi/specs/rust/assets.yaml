@@ -104,6 +104,32 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
+  /assets/buckets:
+    get:
+      tags: [Assets]
+      operationId: listBuckets
+      summary: List selectable buckets
+      description: |
+        Returns the buckets available to this environment as logical names —
+        the environment bucket prefix (`dev-` locally, none in prod) is used
+        to filter the R2 bucket list and is stripped from the returned names.
+        `default` is the bucket used when an upload does not specify one.
+
+        Auth accepts **either** a user JWT (`Authorization: Bearer <token>`)
+        **or** the shared `API_SECRET` (`Authorization: Bearer <secret>`).
+      security:
+        - bearerAuth: []
+        - apiSecret: []
+      responses:
+        '200':
+          description: Buckets for this environment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListBucketsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /assets/{id}:
     get:
       tags: [Assets]
@@ -246,6 +272,20 @@ components:
             $ref: '#/components/schemas/Error'
 
   schemas:
+    ListBucketsResponse:
+      type: object
+      required: [buckets, default]
+      properties:
+        buckets:
+          type: array
+          items:
+            type: string
+          description: Logical bucket names available in this environment.
+          example: [blog-posts-assets, blog-hackernews-images]
+        default:
+          type: string
+          description: Logical name of the bucket used when none is specified.
+          example: blog-posts-assets
     UpdateAssetRequest:
       type: object
       properties:

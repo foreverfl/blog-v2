@@ -106,6 +106,12 @@ impl From<&AssetRow> for AssetResponse {
 }
 
 #[derive(Debug, Serialize)]
+pub struct ListBucketsResponse {
+    pub buckets: Vec<String>,
+    pub default: String,
+}
+
+#[derive(Debug, Serialize)]
 pub struct ListAssetsResponse {
     pub items: Vec<AssetResponse>,
     pub total: i64,
