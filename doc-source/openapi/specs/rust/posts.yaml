@@ -5,7 +5,7 @@ info:
   description: |
     Posts domain for the mogumogu.dev Rust service. Covers creating, reading,
     updating, and deleting blog posts, as well as listing by classification or
-    category, managing index state, and AI-powered translation.
+    category and managing index state.
   x-api-id: posts
 
 servers:
@@ -16,7 +16,7 @@ servers:
 
 tags:
   - name: Posts
-    description: Blog post CRUD, listing, index management, and translation.
+    description: Blog post CRUD, listing, and index management.
 
 paths:
   /posts:
@@ -114,40 +114,6 @@ paths:
                   $ref: '#/components/schemas/PostResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-
-  /posts/translate:
-    post:
-      tags: [Posts]
-      operationId: translatePost
-      summary: Translate post content
-      description: |
-        Uses an AI model to translate a post title and markdown content from
-        the given origin language into all three supported languages (en, ja,
-        ko). The origin language is passed as a query parameter.
-      security: []
-      parameters:
-        - name: origin
-          in: query
-          required: true
-          description: Source language of the content.
-          schema:
-            type: string
-            enum: [en, ja, ko]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TranslateRequest'
-      responses:
-        '200':
-          description: Translated content in all three languages.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TranslateResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
 
   /posts/{classification}:
     get:
@@ -428,17 +394,6 @@ components:
             type: string
             format: uuid
 
-    TranslateRequest:
-      type: object
-      required: [title, content]
-      properties:
-        title:
-          type: string
-          description: Post title to translate.
-        content:
-          type: string
-          description: Post body in Markdown to translate.
-
     ContentPayload:
       type: object
       required: [lang, content_type]
@@ -705,29 +660,6 @@ components:
         updated_at:
           type: string
           format: date-time
-
-    TranslateResponse:
-      type: object
-      required: [en, ja, ko]
-      description: Translation result containing all three language versions.
-      properties:
-        en:
-          $ref: '#/components/schemas/TranslatedEntry'
-        ja:
-          $ref: '#/components/schemas/TranslatedEntry'
-        ko:
-          $ref: '#/components/schemas/TranslatedEntry'
-
-    TranslatedEntry:
-      type: object
-      required: [title, content]
-      properties:
-        title:
-          type: string
-          description: Translated title.
-        content:
-          type: string
-          description: Translated body in Markdown.
 
     Error:
       type: object
