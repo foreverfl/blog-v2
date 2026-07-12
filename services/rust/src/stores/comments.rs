@@ -86,20 +86,31 @@ pub async fn update(
     Ok(comment)
 }
 
-/// Delete a comment the user owns. Returns whether a row was removed.
-pub async fn delete(pool: &PgPool, comment_id: Uuid, user_id: Uuid) -> Result<bool, ApiError> {
-    let result = sqlx::query(
+/// Delete a comment the user owns. Returns the deleted comment (so the caller
+/// can notify), or `None` when it's missing or owned by someone else.
+pub async fn delete(
+    pool: &PgPool,
+    comment_id: Uuid,
+    user_id: Uuid,
+) -> Result<Option<CommentResponse>, ApiError> {
+    let comment = sqlx::query_as::<_, CommentResponse>(&format!(
         r#"
-        DELETE FROM comments
-        WHERE id = $1 AND user_id = $2
-        "#,
-    )
+        WITH deleted AS (
+            DELETE FROM comments
+            WHERE id = $1 AND user_id = $2
+            RETURNING id, user_id, content, created_at, reply, replied_at
+        )
+        SELECT {SELECT_COLUMNS}
+        FROM deleted c
+        JOIN users u ON c.user_id = u.id
+        "#
+    ))
     .bind(comment_id)
     .bind(user_id)
-    .execute(pool)
+    .fetch_optional(pool)
     .await?;
 
-    Ok(result.rows_affected() > 0)
+    Ok(comment)
 }
 
 /// Set (or replace) the admin reply on any comment. Admin-only — no ownership

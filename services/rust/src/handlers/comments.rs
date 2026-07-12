@@ -1,17 +1,50 @@
 use axum::extract::{Path, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::Json;
+use chrono::{FixedOffset, Utc};
 use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::auth;
-use crate::config::AppState;
+use crate::config::{AppConfig, AppState};
+use crate::services::discord;
 use crate::stores::{comments as store, posts as posts_store};
 use crate::types::{ApiError, CommentResponse};
 
 #[derive(Debug, Deserialize)]
 pub struct CreateCommentRequest {
     pub content: String,
+}
+
+/// Best-effort admin DM about a comment event. Spawned so it never blocks or
+/// fails the request — a Discord outage must not break commenting.
+fn notify_admin(config: &AppConfig, message: String) {
+    let bot_token = config.discord_bot_token.clone();
+    let user_id = config.discord_user_id.clone();
+    tokio::spawn(async move {
+        if let Err(e) = discord::send_dm(&bot_token, &user_id, &message).await {
+            tracing::warn!("comment discord notify failed: {e}");
+        }
+    });
+}
+
+fn comment_message(
+    action: &str,
+    classification: &str,
+    category: &str,
+    slug: &str,
+    username: &str,
+    content: Option<&str>,
+) -> String {
+    let now_kst = Utc::now().with_timezone(&FixedOffset::east_opt(9 * 3600).unwrap());
+    let mut message = format!(
+        "[{}]\n# {action}\n\n## Post\n{classification}/{category}/{slug}\n\n## User\n{username}",
+        now_kst.format("%Y-%m-%d %H:%M:%S"),
+    );
+    if let Some(body) = content {
+        message.push_str(&format!("\n\n## Content\n{body}"));
+    }
+    message
 }
 
 #[derive(Debug, Deserialize)]
@@ -53,6 +86,17 @@ pub async fn create(
         .ok_or(ApiError::NotFound)?;
 
     let comment = store::create(&state.db, post.id, user_id, &req.content).await?;
+    notify_admin(
+        &state.config,
+        comment_message(
+            "New Comment",
+            &classification,
+            &category,
+            &slug,
+            &comment.username,
+            Some(&comment.content),
+        ),
+    );
     Ok(Json(comment))
 }
 
@@ -62,7 +106,7 @@ pub async fn create(
 pub async fn update(
     State(state): State<AppState>,
     headers: HeaderMap,
-    Path((_classification, _category, _slug, comment_id)): Path<(String, String, String, Uuid)>,
+    Path((classification, category, slug, comment_id)): Path<(String, String, String, Uuid)>,
     Json(req): Json<CreateCommentRequest>,
 ) -> Result<Json<CommentResponse>, ApiError> {
     let user_id = auth::extract_user_id(&state.config, &headers)?;
@@ -74,6 +118,17 @@ pub async fn update(
     let comment = store::update(&state.db, comment_id, user_id, &req.content)
         .await?
         .ok_or(ApiError::NotFound)?;
+    notify_admin(
+        &state.config,
+        comment_message(
+            "Update Comment",
+            &classification,
+            &category,
+            &slug,
+            &comment.username,
+            Some(&comment.content),
+        ),
+    );
     Ok(Json(comment))
 }
 
@@ -83,14 +138,26 @@ pub async fn update(
 pub async fn remove(
     State(state): State<AppState>,
     headers: HeaderMap,
-    Path((_classification, _category, _slug, comment_id)): Path<(String, String, String, Uuid)>,
+    Path((classification, category, slug, comment_id)): Path<(String, String, String, Uuid)>,
 ) -> Result<StatusCode, ApiError> {
     let user_id = auth::extract_user_id(&state.config, &headers)?;
 
-    if store::delete(&state.db, comment_id, user_id).await? {
-        Ok(StatusCode::NO_CONTENT)
-    } else {
-        Err(ApiError::NotFound)
+    match store::delete(&state.db, comment_id, user_id).await? {
+        Some(comment) => {
+            notify_admin(
+                &state.config,
+                comment_message(
+                    "Delete Comment",
+                    &classification,
+                    &category,
+                    &slug,
+                    &comment.username,
+                    None,
+                ),
+            );
+            Ok(StatusCode::NO_CONTENT)
+        }
+        None => Err(ApiError::NotFound),
     }
 }
 
