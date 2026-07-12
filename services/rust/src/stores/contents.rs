@@ -114,38 +114,6 @@ pub async fn get_by_post(
     Ok(rows)
 }
 
-pub async fn upsert_sync(
-    pool: &PgPool,
-    post_id: Uuid,
-    lang: &str,
-    content_type: &str,
-    title: Option<&str>,
-    body_markdown: &str,
-    metadata: &serde_json::Value,
-) -> Result<(), ApiError> {
-    sqlx::query(
-        r#"
-        INSERT INTO post_contents (post_id, lang, content_type, title, body_markdown, metadata)
-        VALUES ($1, $2, $3, $4, $5, $6)
-        ON CONFLICT (post_id, lang) DO UPDATE SET
-            content_type = EXCLUDED.content_type,
-            title = EXCLUDED.title,
-            body_markdown = EXCLUDED.body_markdown,
-            metadata = EXCLUDED.metadata,
-            updated_at = CURRENT_TIMESTAMP
-        "#,
-    )
-    .bind(post_id)
-    .bind(lang)
-    .bind(content_type)
-    .bind(title)
-    .bind(body_markdown)
-    .bind(metadata)
-    .execute(pool)
-    .await?;
-
-    Ok(())
-}
 pub async fn upsert_batch_json(
     pool: &PgPool,
     post_id: Uuid,
