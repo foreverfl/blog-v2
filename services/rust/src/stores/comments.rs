@@ -58,7 +58,6 @@ pub async fn create(
 
 /// Update a comment the user owns. Returns `None` when the comment does not
 /// exist or belongs to someone else (indistinguishable on purpose).
-#[allow(dead_code)] // wired into PATCH /comments/{id}
 pub async fn update(
     pool: &PgPool,
     comment_id: Uuid,
@@ -88,7 +87,6 @@ pub async fn update(
 }
 
 /// Delete a comment the user owns. Returns whether a row was removed.
-#[allow(dead_code)] // wired into DELETE /comments/{id}
 pub async fn delete(pool: &PgPool, comment_id: Uuid, user_id: Uuid) -> Result<bool, ApiError> {
     let result = sqlx::query(
         r#"
