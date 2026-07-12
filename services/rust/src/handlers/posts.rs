@@ -83,7 +83,7 @@ pub async fn create(
     headers: HeaderMap,
     Json(req): Json<CreatePostRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
-    auth::extract_user_id(&state.config, &headers)?;
+    auth::verify_secret_or_user(&state.config, &headers)?;
 
     if req.classification.is_empty() || req.category.is_empty() || req.slug.is_empty() {
         return Err(ApiError::BadRequest(
@@ -102,7 +102,7 @@ pub async fn update(
     Path((classification, category, slug)): Path<(String, String, String)>,
     Json(req): Json<UpdatePostRequest>,
 ) -> Result<Json<PostResponse>, ApiError> {
-    auth::extract_user_id(&state.config, &headers)?;
+    auth::verify_secret_or_user(&state.config, &headers)?;
 
     let resp = service::update_by_slug(&state.db, &classification, &category, &slug, &req).await?;
     Ok(Json(resp))
@@ -114,7 +114,7 @@ pub async fn delete(
     headers: HeaderMap,
     Path((classification, category, slug)): Path<(String, String, String)>,
 ) -> Result<StatusCode, ApiError> {
-    auth::extract_user_id(&state.config, &headers)?;
+    auth::verify_secret_or_user(&state.config, &headers)?;
 
     let deleted = service::delete_by_slug(&state.db, &classification, &category, &slug).await?;
     if !deleted {

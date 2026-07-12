@@ -25,11 +25,13 @@ paths:
       operationId: createPost
       summary: Create a post
       description: |
-        Creates a new post with optional content entries. Requires a valid
-        Bearer JWT. Returns 400 if `classification`, `category`, or `slug`
-        is empty.
+        Creates a new post with optional content entries. Auth accepts
+        **either** a user JWT (`Authorization: Bearer <token>`) **or** the
+        shared `API_SECRET` (`Authorization: Bearer <secret>`). Returns 400 if
+        `classification`, `category`, or `slug` is empty.
       security:
         - bearerAuth: []
+        - apiSecret: []
       requestBody:
         required: true
         content:
@@ -220,10 +222,12 @@ paths:
       summary: Update a post
       description: |
         Updates one or more fields of an existing post. All request fields are
-        optional; omitting a field leaves it unchanged. Requires a valid Bearer
-        JWT.
+        optional; omitting a field leaves it unchanged. Auth accepts **either**
+        a user JWT (`Authorization: Bearer <token>`) **or** the shared
+        `API_SECRET` (`Authorization: Bearer <secret>`).
       security:
         - bearerAuth: []
+        - apiSecret: []
       parameters:
         - $ref: '#/components/parameters/Classification'
         - $ref: '#/components/parameters/Category'
@@ -252,10 +256,12 @@ paths:
       summary: Delete a post
       description: |
         Permanently deletes the post identified by classification, category,
-        and slug. Returns 404 if the post does not exist. Requires a valid
-        Bearer JWT.
+        and slug. Returns 404 if the post does not exist. Auth accepts
+        **either** a user JWT (`Authorization: Bearer <token>`) **or** the
+        shared `API_SECRET` (`Authorization: Bearer <secret>`).
       security:
         - bearerAuth: []
+        - apiSecret: []
       parameters:
         - $ref: '#/components/parameters/Classification'
         - $ref: '#/components/parameters/Category'
@@ -332,6 +338,10 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+    apiSecret:
+      type: http
+      scheme: bearer
+      description: Shared API_SECRET used by trusted internal callers.
 
   responses:
     BadRequest:
