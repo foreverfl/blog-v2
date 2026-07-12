@@ -225,7 +225,8 @@ jobs:
 
           for i in $(seq 1 30); do
             sleep 10
-            STATUS=$(curl -sf "${BACKEND_RUST_URL}/import/jobs/${JOB_ID}")
+            STATUS=$(curl -sf "${BACKEND_RUST_URL}/import/jobs/${JOB_ID}" \
+              -H "Authorization: Bearer ${API_SECRET}")
             STATE=$(echo "$STATUS" | jq -r '.status')
             echo "  [$i] status=${STATE}"
             if [ "$STATE" = "completed" ]; then
