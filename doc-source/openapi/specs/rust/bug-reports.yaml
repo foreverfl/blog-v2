@@ -1,0 +1,81 @@
+openapi: 3.1.0
+info:
+  title: Bug Reports API
+  version: 1.0.0
+  description: |
+    Public bug-report intake for mogumogu.dev. A submission is gated by a
+    Cloudflare Turnstile token and, once verified, is delivered to the site
+    owner as a Discord DM. Nothing is persisted, so there is no resource to
+    read back.
+  x-api-id: bug-reports
+
+servers:
+  - url: https://api.mogumogu.dev/rust
+    description: Production
+  - url: http://localhost:8002
+    description: Local development (direct to the Rust service)
+
+tags:
+  - name: Bug Reports
+    description: Submit a Turnstile-verified bug report.
+
+paths:
+  /bug-reports:
+    post:
+      tags: [Bug Reports]
+      operationId: createBugReport
+      summary: Submit a bug report
+      description: |
+        Verifies the Cloudflare Turnstile token, then dispatches the report to
+        the owner's Discord DM. Public endpoint — the Turnstile token is the
+        anti-abuse gate, so no authentication is required.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BugReportRequest'
+      responses:
+        '202':
+          description: Accepted — verified and dispatched to Discord. No body.
+        '403':
+          description: Turnstile verification failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Malformed request body.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Turnstile or Discord upstream call failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    BugReportRequest:
+      type: object
+      required: [turnstileToken, title, content]
+      properties:
+        turnstileToken:
+          type: string
+          description: Cloudflare Turnstile token from the widget.
+        title:
+          type: string
+          description: Short bug title.
+        content:
+          type: string
+          description: Bug description body.
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string

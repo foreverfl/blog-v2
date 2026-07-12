@@ -10,7 +10,6 @@ struct SiteverifyResponse {
 /// Verify a Cloudflare Turnstile token against the siteverify API.
 /// `remote_ip` is the client IP — optional, but recommended by Cloudflare.
 /// Returns whether the token is valid for the given secret.
-#[allow(dead_code)] // wired into POST /bug-reports
 pub async fn verify(
     secret: &str,
     token: &str,

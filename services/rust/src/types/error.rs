@@ -19,6 +19,9 @@ pub enum ApiError {
     #[error("bad request: {0}")]
     BadRequest(String),
 
+    #[error("forbidden: {0}")]
+    Forbidden(String),
+
     #[error("database error: {0}")]
     Database(#[from] sqlx::Error),
 
@@ -39,6 +42,7 @@ impl IntoResponse for ApiError {
             ApiError::NotFound => (StatusCode::NOT_FOUND, self.to_string()),
             ApiError::Conflict(_) => (StatusCode::CONFLICT, self.to_string()),
             ApiError::BadRequest(_) => (StatusCode::BAD_REQUEST, self.to_string()),
+            ApiError::Forbidden(_) => (StatusCode::FORBIDDEN, self.to_string()),
             ApiError::Database(e) => {
                 tracing::error!("database error: {e}");
                 (StatusCode::INTERNAL_SERVER_ERROR, "internal error".into())

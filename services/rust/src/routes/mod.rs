@@ -1,4 +1,5 @@
 mod assets;
+mod bug_reports;
 mod hackernews;
 mod import;
 mod posts;
@@ -46,6 +47,7 @@ pub fn create_router(state: AppState) -> Router {
         .nest("/recipe", recipe::router())
         .nest("/import", import::router())
         .nest("/hackernews", hackernews::router())
+        .nest("/bug-reports", bug_reports::router())
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(|req: &axum::http::Request<_>| {

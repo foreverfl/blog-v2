@@ -23,6 +23,9 @@ pub struct AppConfig {
     pub openai_api_key: String,
     pub redis_url: String,
     pub bucket_prefix: String,
+    pub turnstile_secret: String,
+    pub discord_bot_token: String,
+    pub discord_user_id: String,
 }
 
 impl AppConfig {
@@ -43,6 +46,10 @@ impl AppConfig {
             openai_api_key: env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY required"),
             redis_url: env::var("REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1:6379".into()),
             bucket_prefix: env::var("BUCKET_PREFIX").unwrap_or_default(),
+            turnstile_secret: env::var("TURNSTILE_SECRET_KEY")
+                .expect("TURNSTILE_SECRET_KEY required"),
+            discord_bot_token: env::var("DISCORD_BOT_TOKEN").expect("DISCORD_BOT_TOKEN required"),
+            discord_user_id: env::var("DISCORD_USER_ID").expect("DISCORD_USER_ID required"),
         }
     }
 
@@ -81,6 +88,9 @@ mod tests {
             openai_api_key: String::new(),
             redis_url: String::new(),
             bucket_prefix: prefix.into(),
+            turnstile_secret: String::new(),
+            discord_bot_token: String::new(),
+            discord_user_id: String::new(),
         }
     }
 

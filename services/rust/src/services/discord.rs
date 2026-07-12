@@ -9,7 +9,6 @@ struct DmChannel {
 
 /// Send a direct message to a Discord user via a bot token.
 /// Opens (or reuses) the bot↔user DM channel, then posts `content` to it.
-#[allow(dead_code)] // wired into POST /bug-reports
 pub async fn send_dm(bot_token: &str, user_id: &str, content: &str) -> Result<(), ApiError> {
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(10))
