@@ -29,7 +29,6 @@ pub async fn list_for_post(
 
 /// Insert a comment (snapshotting the author's avatar) and return it joined
 /// with the author, matching the list-item shape.
-#[allow(dead_code)] // wired into POST /comments
 pub async fn create(
     pool: &PgPool,
     post_id: Uuid,

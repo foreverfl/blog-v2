@@ -46,7 +46,59 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+    post:
+      tags: [Comments]
+      operationId: createComment
+      summary: Post a comment
+      description: |
+        Creates a comment authored by the authenticated user (taken from the
+        JWT — not the request body). Returns the created comment in list-item
+        shape.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Classification'
+        - $ref: '#/components/parameters/Category'
+        - $ref: '#/components/parameters/Slug'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommentRequest'
+      responses:
+        '200':
+          description: The created comment.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '400':
+          description: Empty content.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid Bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No post exists for the given path.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   parameters:
     Classification:
       name: classification
@@ -68,6 +120,12 @@ components:
         type: string
 
   schemas:
+    CreateCommentRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
     Comment:
       type: object
       required: [id, email, username, content, created_at]
