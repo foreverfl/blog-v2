@@ -55,3 +55,51 @@ pub async fn create(
 
     Ok(comment)
 }
+
+/// Update a comment the user owns. Returns `None` when the comment does not
+/// exist or belongs to someone else (indistinguishable on purpose).
+#[allow(dead_code)] // wired into PATCH /comments/{id}
+pub async fn update(
+    pool: &PgPool,
+    comment_id: Uuid,
+    user_id: Uuid,
+    content: &str,
+) -> Result<Option<CommentResponse>, ApiError> {
+    let comment = sqlx::query_as::<_, CommentResponse>(&format!(
+        r#"
+        WITH updated AS (
+            UPDATE comments
+            SET content = $3, updated_at = now()
+            WHERE id = $1 AND user_id = $2
+            RETURNING id, user_id, content, created_at, reply, replied_at
+        )
+        SELECT {SELECT_COLUMNS}
+        FROM updated c
+        JOIN users u ON c.user_id = u.id
+        "#
+    ))
+    .bind(comment_id)
+    .bind(user_id)
+    .bind(content)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(comment)
+}
+
+/// Delete a comment the user owns. Returns whether a row was removed.
+#[allow(dead_code)] // wired into DELETE /comments/{id}
+pub async fn delete(pool: &PgPool, comment_id: Uuid, user_id: Uuid) -> Result<bool, ApiError> {
+    let result = sqlx::query(
+        r#"
+        DELETE FROM comments
+        WHERE id = $1 AND user_id = $2
+        "#,
+    )
+    .bind(comment_id)
+    .bind(user_id)
+    .execute(pool)
+    .await?;
+
+    Ok(result.rows_affected() > 0)
+}
