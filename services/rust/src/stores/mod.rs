@@ -1,4 +1,5 @@
 pub mod assets;
+pub mod comments;
 pub mod contents;
 pub mod hackernews_likes;
 pub mod jobs;

@@ -1,5 +1,6 @@
 mod assets;
 mod auth;
+mod comments;
 mod contents;
 mod error;
 mod posts;
@@ -10,6 +11,7 @@ mod recipe_sauce_usage_types;
 
 pub use assets::*;
 pub use auth::*;
+pub use comments::*;
 pub use contents::*;
 pub use error::*;
 pub use posts::*;
