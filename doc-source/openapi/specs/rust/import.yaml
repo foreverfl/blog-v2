@@ -89,7 +89,12 @@ paths:
         Returns the current status of an import job stored in Redis.
         The response shape varies by job type and state — see the
         `JobStatus` schema for the full union. Jobs expire after 24 hours.
-      security: []
+
+        Auth accepts **either** a user JWT (`Authorization: Bearer <token>`)
+        **or** the shared `API_SECRET` (`Authorization: Bearer <secret>`).
+      security:
+        - bearerAuth: []
+        - apiSecret: []
       parameters:
         - name: job_id
           in: path
@@ -105,6 +110,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/JobStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -112,6 +119,11 @@ paths:
 
 components:
   securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: User access token issued by the auth service.
     apiSecret:
       type: http
       scheme: bearer

@@ -550,8 +550,11 @@ async fn run_json_import(
 /// GET /import/jobs/{job_id} — check import job status
 pub async fn get_import_job(
     State(state): State<AppState>,
+    headers: HeaderMap,
     Path(job_id): Path<String>,
 ) -> Result<impl IntoResponse, ApiError> {
+    auth::verify_secret_or_user(&state.config, &headers)?;
+
     match job_store::get(&state.redis, &job_id, &["mdx", "json"]).await? {
         Some(value) => Ok(Json(value)),
         None => Err(ApiError::NotFound),
