@@ -1,0 +1,148 @@
+openapi: 3.1.0
+info:
+  title: Likes API
+  version: 1.0.0
+  description: |
+    Post likes for mogumogu.dev. Likes are addressed by the post's
+    classification/category/slug. Reading the count is public; the `liked` flag
+    reflects the caller only when a valid Bearer token is sent. Adding and
+    removing a like require an authenticated user (taken from the JWT).
+  x-api-id: likes
+
+servers:
+  - url: https://api.mogumogu.dev/rust
+    description: Production
+  - url: http://localhost:8002
+    description: Local development (direct to the Rust service)
+
+tags:
+  - name: Likes
+    description: Read, add, and remove likes on a post.
+
+paths:
+  /likes/{classification}/{category}/{slug}:
+    get:
+      tags: [Likes]
+      operationId: getLikeStatus
+      summary: Get like count and status
+      description: |
+        Returns the post's like count. `liked` is true only when a valid Bearer
+        token is sent and that user has liked the post; otherwise false. Public.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Classification'
+        - $ref: '#/components/parameters/Category'
+        - $ref: '#/components/parameters/Slug'
+      responses:
+        '200':
+          description: Like count and the caller's like status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LikeStatus'
+        '404':
+          description: No post exists for the given path.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags: [Likes]
+      operationId: addLike
+      summary: Like a post
+      description: |
+        Adds a like by the authenticated user (from the JWT). Idempotent — a
+        repeat like is a no-op.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Classification'
+        - $ref: '#/components/parameters/Category'
+        - $ref: '#/components/parameters/Slug'
+      responses:
+        '204':
+          description: Liked. No body.
+        '401':
+          description: Missing or invalid Bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No post exists for the given path.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags: [Likes]
+      operationId: removeLike
+      summary: Unlike a post
+      description: Removes the authenticated user's like (from the JWT).
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Classification'
+        - $ref: '#/components/parameters/Category'
+        - $ref: '#/components/parameters/Slug'
+      responses:
+        '204':
+          description: Unliked. No body.
+        '401':
+          description: Missing or invalid Bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No post exists for the given path.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Classification:
+      name: classification
+      in: path
+      required: true
+      schema:
+        type: string
+    Category:
+      name: category
+      in: path
+      required: true
+      schema:
+        type: string
+    Slug:
+      name: slug
+      in: path
+      required: true
+      schema:
+        type: string
+
+  schemas:
+    LikeStatus:
+      type: object
+      required: [like_count, liked]
+      properties:
+        like_count:
+          type: integer
+          format: int64
+        liked:
+          type: boolean
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string

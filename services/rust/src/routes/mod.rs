@@ -3,6 +3,7 @@ mod bug_reports;
 mod comments;
 mod hackernews;
 mod import;
+mod likes;
 mod posts;
 mod recipe;
 mod recipe_cooking_method_types;
@@ -50,6 +51,7 @@ pub fn create_router(state: AppState) -> Router {
         .nest("/hackernews", hackernews::router())
         .nest("/bug-reports", bug_reports::router())
         .nest("/comments", comments::router())
+        .nest("/likes", likes::router())
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(|req: &axum::http::Request<_>| {

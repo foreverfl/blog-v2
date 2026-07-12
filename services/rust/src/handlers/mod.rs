@@ -3,6 +3,7 @@ pub mod bug_reports;
 pub mod comments;
 pub mod hackernews;
 pub mod import;
+pub mod likes;
 pub mod posts;
 pub mod recipe_cooking_method_types;
 pub mod recipe_cuisines;
