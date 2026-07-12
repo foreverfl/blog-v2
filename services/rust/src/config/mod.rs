@@ -26,6 +26,7 @@ pub struct AppConfig {
     pub turnstile_secret: String,
     pub discord_bot_token: String,
     pub discord_user_id: String,
+    pub admin_emails: Vec<String>,
 }
 
 impl AppConfig {
@@ -50,6 +51,12 @@ impl AppConfig {
                 .expect("TURNSTILE_SECRET_KEY required"),
             discord_bot_token: env::var("DISCORD_BOT_TOKEN").expect("DISCORD_BOT_TOKEN required"),
             discord_user_id: env::var("DISCORD_USER_ID").expect("DISCORD_USER_ID required"),
+            admin_emails: env::var("ADMIN_EMAILS")
+                .unwrap_or_default()
+                .split(',')
+                .map(|email| email.trim().to_string())
+                .filter(|email| !email.is_empty())
+                .collect(),
         }
     }
 
@@ -91,6 +98,7 @@ mod tests {
             turnstile_secret: String::new(),
             discord_bot_token: String::new(),
             discord_user_id: String::new(),
+            admin_emails: Vec::new(),
         }
     }
 

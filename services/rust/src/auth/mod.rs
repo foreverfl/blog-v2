@@ -30,14 +30,14 @@ pub fn verify_secret_or_user(config: &AppConfig, headers: &HeaderMap) -> Result<
     extract_user_id(config, headers).map(|_| ())
 }
 
-pub fn extract_user_id(config: &AppConfig, headers: &HeaderMap) -> Result<Uuid, ApiError> {
+fn decode_claims(config: &AppConfig, headers: &HeaderMap) -> Result<Claims, ApiError> {
     let token = headers
         .get(header::AUTHORIZATION)
         .and_then(|v| v.to_str().ok())
         .and_then(|v| v.strip_prefix("Bearer "))
         .ok_or(ApiError::InvalidToken)?;
 
-    let claims = decode::<Claims>(
+    decode::<Claims>(
         token,
         &DecodingKey::from_secret(config.jwt_secret.as_bytes()),
         &Validation::default(),
@@ -46,7 +46,21 @@ pub fn extract_user_id(config: &AppConfig, headers: &HeaderMap) -> Result<Uuid, 
     .map_err(|e| match e.kind() {
         jsonwebtoken::errors::ErrorKind::ExpiredSignature => ApiError::ExpiredToken,
         _ => ApiError::InvalidToken,
-    })?;
+    })
+}
 
-    Ok(claims.sub)
+pub fn extract_user_id(config: &AppConfig, headers: &HeaderMap) -> Result<Uuid, ApiError> {
+    Ok(decode_claims(config, headers)?.sub)
+}
+
+/// Require the caller to be an admin: a valid JWT whose email is in the
+/// `ADMIN_EMAILS` allowlist. 401 on a bad token, 403 on a non-admin user.
+#[allow(dead_code)] // wired into admin comment reply endpoints
+pub fn require_admin(config: &AppConfig, headers: &HeaderMap) -> Result<(), ApiError> {
+    let claims = decode_claims(config, headers)?;
+    if config.admin_emails.iter().any(|email| email == &claims.email) {
+        Ok(())
+    } else {
+        Err(ApiError::Forbidden("admin only".into()))
+    }
 }
