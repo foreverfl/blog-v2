@@ -7,7 +7,6 @@ const SELECT_COLUMNS: &str =
     "c.id, u.email, u.username, u.photo, c.content, c.created_at, c.reply, c.replied_at";
 
 /// All comments for a post, oldest first, joined with their authors.
-#[allow(dead_code)] // wired into GET /comments
 pub async fn list_for_post(
     pool: &PgPool,
     post_id: Uuid,

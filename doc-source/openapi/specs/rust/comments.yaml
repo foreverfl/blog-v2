@@ -1,0 +1,101 @@
+openapi: 3.1.0
+info:
+  title: Comments API
+  version: 1.0.0
+  description: |
+    Reader comments on blog posts for mogumogu.dev. Comments are addressed by
+    the post's classification/category/slug. Listing is public; creating a
+    comment requires an authenticated user (added in a later revision).
+  x-api-id: comments
+
+servers:
+  - url: https://api.mogumogu.dev/rust
+    description: Production
+  - url: http://localhost:8002
+    description: Local development (direct to the Rust service)
+
+tags:
+  - name: Comments
+    description: List and create comments on a post.
+
+paths:
+  /comments/{classification}/{category}/{slug}:
+    get:
+      tags: [Comments]
+      operationId: listComments
+      summary: List comments on a post
+      description: Returns every comment on the post, oldest first. Public.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Classification'
+        - $ref: '#/components/parameters/Category'
+        - $ref: '#/components/parameters/Slug'
+      responses:
+        '200':
+          description: Comments on the post (possibly empty).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Comment'
+        '404':
+          description: No post exists for the given path.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  parameters:
+    Classification:
+      name: classification
+      in: path
+      required: true
+      schema:
+        type: string
+    Category:
+      name: category
+      in: path
+      required: true
+      schema:
+        type: string
+    Slug:
+      name: slug
+      in: path
+      required: true
+      schema:
+        type: string
+
+  schemas:
+    Comment:
+      type: object
+      required: [id, email, username, content, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        username:
+          type: string
+        photo:
+          type: [string, 'null']
+          description: Author's current avatar URL.
+        content:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        reply:
+          type: [string, 'null']
+          description: Admin reply, if any.
+        replied_at:
+          type: [string, 'null']
+          format: date-time
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string

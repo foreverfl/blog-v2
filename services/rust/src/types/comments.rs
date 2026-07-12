@@ -5,7 +5,6 @@ use uuid::Uuid;
 /// A comment joined with its author, as returned to the frontend.
 /// `photo`/`username`/`email` come from the user row; `photo` is the author's
 /// current avatar (not the snapshot stored on the comment).
-#[allow(dead_code)] // wired into GET/POST /comments
 #[derive(Debug, Serialize, sqlx::FromRow)]
 pub struct CommentResponse {
     pub id: Uuid,

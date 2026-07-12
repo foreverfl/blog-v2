@@ -1,5 +1,6 @@
 pub mod assets;
 pub mod bug_reports;
+pub mod comments;
 pub mod hackernews;
 pub mod import;
 pub mod posts;
