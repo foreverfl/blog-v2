@@ -14,4 +14,8 @@ pub fn router() -> Router<AppState> {
             "/{classification}/{category}/{slug}/{comment_id}",
             patch(handlers::comments::update).delete(handlers::comments::remove),
         )
+        .route(
+            "/{classification}/{category}/{slug}/{comment_id}/admin",
+            patch(handlers::comments::update_reply).delete(handlers::comments::delete_reply),
+        )
 }

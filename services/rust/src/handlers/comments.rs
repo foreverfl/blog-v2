@@ -14,6 +14,11 @@ pub struct CreateCommentRequest {
     pub content: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct AdminReplyRequest {
+    pub reply: String,
+}
+
 /// GET /comments/{classification}/{category}/{slug}
 /// Response: 200 [CommentResponse] (oldest first), 404 when the post is unknown.
 pub async fn list(
@@ -83,6 +88,43 @@ pub async fn remove(
     let user_id = auth::extract_user_id(&state.config, &headers)?;
 
     if store::delete(&state.db, comment_id, user_id).await? {
+        Ok(StatusCode::NO_CONTENT)
+    } else {
+        Err(ApiError::NotFound)
+    }
+}
+
+/// PATCH /comments/{classification}/{category}/{slug}/{comment_id}/admin
+/// Admin-only (ADMIN_EMAILS allowlist). Request: { reply }. Sets the reply.
+/// Response: 200 CommentResponse, 401, 403 non-admin, 404, 400 empty.
+pub async fn update_reply(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path((_classification, _category, _slug, comment_id)): Path<(String, String, String, Uuid)>,
+    Json(req): Json<AdminReplyRequest>,
+) -> Result<Json<CommentResponse>, ApiError> {
+    auth::require_admin(&state.config, &headers)?;
+
+    if req.reply.trim().is_empty() {
+        return Err(ApiError::BadRequest("reply is required".into()));
+    }
+
+    let comment = store::upsert_reply(&state.db, comment_id, &req.reply)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+    Ok(Json(comment))
+}
+
+/// DELETE /comments/{classification}/{category}/{slug}/{comment_id}/admin
+/// Admin-only. Clears the reply. Response: 204, 401, 403 non-admin, 404.
+pub async fn delete_reply(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path((_classification, _category, _slug, comment_id)): Path<(String, String, String, Uuid)>,
+) -> Result<StatusCode, ApiError> {
+    auth::require_admin(&state.config, &headers)?;
+
+    if store::delete_reply(&state.db, comment_id).await? {
         Ok(StatusCode::NO_CONTENT)
     } else {
         Err(ApiError::NotFound)

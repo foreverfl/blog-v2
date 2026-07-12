@@ -55,7 +55,6 @@ pub fn extract_user_id(config: &AppConfig, headers: &HeaderMap) -> Result<Uuid, 
 
 /// Require the caller to be an admin: a valid JWT whose email is in the
 /// `ADMIN_EMAILS` allowlist. 401 on a bad token, 403 on a non-admin user.
-#[allow(dead_code)] // wired into admin comment reply endpoints
 pub fn require_admin(config: &AppConfig, headers: &HeaderMap) -> Result<(), ApiError> {
     let claims = decode_claims(config, headers)?;
     if config.admin_emails.iter().any(|email| email == &claims.email) {

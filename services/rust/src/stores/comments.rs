@@ -101,3 +101,47 @@ pub async fn delete(pool: &PgPool, comment_id: Uuid, user_id: Uuid) -> Result<bo
 
     Ok(result.rows_affected() > 0)
 }
+
+/// Set (or replace) the admin reply on any comment. Admin-only — no ownership
+/// check. Returns the updated comment, or `None` if the comment is missing.
+pub async fn upsert_reply(
+    pool: &PgPool,
+    comment_id: Uuid,
+    reply: &str,
+) -> Result<Option<CommentResponse>, ApiError> {
+    let comment = sqlx::query_as::<_, CommentResponse>(&format!(
+        r#"
+        WITH updated AS (
+            UPDATE comments
+            SET reply = $2, replied_at = now()
+            WHERE id = $1
+            RETURNING id, user_id, content, created_at, reply, replied_at
+        )
+        SELECT {SELECT_COLUMNS}
+        FROM updated c
+        JOIN users u ON c.user_id = u.id
+        "#
+    ))
+    .bind(comment_id)
+    .bind(reply)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(comment)
+}
+
+/// Clear the admin reply on a comment. Returns whether a comment was updated.
+pub async fn delete_reply(pool: &PgPool, comment_id: Uuid) -> Result<bool, ApiError> {
+    let result = sqlx::query(
+        r#"
+        UPDATE comments
+        SET reply = NULL, replied_at = NULL
+        WHERE id = $1
+        "#,
+    )
+    .bind(comment_id)
+    .execute(pool)
+    .await?;
+
+    Ok(result.rows_affected() > 0)
+}

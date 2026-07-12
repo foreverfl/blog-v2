@@ -100,6 +100,7 @@ services:
       TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY}
       DISCORD_BOT_TOKEN: ${DISCORD_BOT_TOKEN}
       DISCORD_USER_ID: ${DISCORD_USER_ID}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
     volumes:
       - ../../services/rust:/app
       - rust_cargo_cache:/usr/local/cargo/registry
