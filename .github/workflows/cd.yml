@@ -166,3 +166,20 @@ jobs:
 
             # Cleanup old images
             docker image prune -f
+
+  notify-failure:
+    name: Notify CD failure
+    needs: [build-auth, build-rust, build-go, build-haskell, deploy]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -sf -H "Content-Type: application/json" -d '{
+            "content": "@everyone CD failed",
+            "embeds": [{
+              "title": "❌ CD failed — ${{ github.repository }}",
+              "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+              "description": "release `${{ github.event.release.tag_name }}`",
+              "color": 15548997
+            }]
+          }' "${{ secrets.DISCORD_GITHUB_WEBHOOK }}"
