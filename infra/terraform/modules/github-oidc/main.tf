@@ -57,7 +57,7 @@ data "aws_iam_policy_document" "readonly" {
 }
 
 resource "aws_iam_role_policy" "readonly" {
-  name   = "${var.role_name}-readonly"
+  name   = "${var.role_name}-policy"
   role   = aws_iam_role.github_actions_readonly.id
   policy = data.aws_iam_policy_document.readonly.json
 }
