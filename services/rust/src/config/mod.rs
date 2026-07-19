@@ -24,8 +24,6 @@ pub struct AppConfig {
     pub redis_url: String,
     pub bucket_prefix: String,
     pub turnstile_secret: String,
-    pub discord_bot_token: String,
-    pub discord_user_id: String,
     pub discord_comments_webhook: Option<String>,
     pub discord_bug_reports_webhook: Option<String>,
     pub admin_emails: Vec<String>,
@@ -51,8 +49,6 @@ impl AppConfig {
             bucket_prefix: env::var("BUCKET_PREFIX").unwrap_or_default(),
             turnstile_secret: env::var("TURNSTILE_SECRET_KEY")
                 .expect("TURNSTILE_SECRET_KEY required"),
-            discord_bot_token: env::var("DISCORD_BOT_TOKEN").expect("DISCORD_BOT_TOKEN required"),
-            discord_user_id: env::var("DISCORD_USER_ID").expect("DISCORD_USER_ID required"),
             // compose injects these as "" when unset — treat empty as absent
             discord_comments_webhook: env::var("DISCORD_COMMENTS_WEBHOOK")
                 .ok()
@@ -105,8 +101,6 @@ mod tests {
             redis_url: String::new(),
             bucket_prefix: prefix.into(),
             turnstile_secret: String::new(),
-            discord_bot_token: String::new(),
-            discord_user_id: String::new(),
             discord_comments_webhook: None,
             discord_bug_reports_webhook: None,
             admin_emails: Vec::new(),
