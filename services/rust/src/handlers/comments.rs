@@ -31,6 +31,7 @@ fn notify_admin(config: &AppConfig, message: String) {
 }
 
 fn comment_message(
+    frontend_url: &str,
     action: &str,
     classification: &str,
     category: &str,
@@ -39,8 +40,9 @@ fn comment_message(
     content: Option<&str>,
 ) -> String {
     let now_kst = Utc::now().with_timezone(&FixedOffset::east_opt(9 * 3600).unwrap());
+    let base = frontend_url.trim_end_matches('/');
     let mut message = format!(
-        "[{}]\n# {action}\n\n## Post\n{classification}/{category}/{slug}\n\n## User\n{username}",
+        "[{}]\n# {action}\n\n## Post\n{base}/ko/{classification}/{category}/{slug}\n\n## User\n{username}",
         now_kst.format("%Y-%m-%d %H:%M:%S"),
     );
     if let Some(body) = content {
@@ -91,6 +93,7 @@ pub async fn create(
     notify_admin(
         &state.config,
         comment_message(
+            &state.config.frontend_url,
             "New Comment",
             &classification,
             &category,
@@ -123,6 +126,7 @@ pub async fn update(
     notify_admin(
         &state.config,
         comment_message(
+            &state.config.frontend_url,
             "Update Comment",
             &classification,
             &category,
@@ -149,6 +153,7 @@ pub async fn remove(
             notify_admin(
                 &state.config,
                 comment_message(
+                    &state.config.frontend_url,
                     "Delete Comment",
                     &classification,
                     &category,
