@@ -53,8 +53,13 @@ impl AppConfig {
                 .expect("TURNSTILE_SECRET_KEY required"),
             discord_bot_token: env::var("DISCORD_BOT_TOKEN").expect("DISCORD_BOT_TOKEN required"),
             discord_user_id: env::var("DISCORD_USER_ID").expect("DISCORD_USER_ID required"),
-            discord_comments_webhook: env::var("DISCORD_COMMENTS_WEBHOOK").ok(),
-            discord_bug_reports_webhook: env::var("DISCORD_BUG_REPORTS_WEBHOOK").ok(),
+            // compose injects these as "" when unset — treat empty as absent
+            discord_comments_webhook: env::var("DISCORD_COMMENTS_WEBHOOK")
+                .ok()
+                .filter(|url| !url.is_empty()),
+            discord_bug_reports_webhook: env::var("DISCORD_BUG_REPORTS_WEBHOOK")
+                .ok()
+                .filter(|url| !url.is_empty()),
             admin_emails: env::var("ADMIN_EMAILS")
                 .unwrap_or_default()
                 .split(',')

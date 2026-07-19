@@ -16,13 +16,15 @@ pub struct CreateCommentRequest {
     pub content: String,
 }
 
-/// Best-effort admin DM about a comment event. Spawned so it never blocks or
-/// fails the request — a Discord outage must not break commenting.
+/// Best-effort admin notification about a comment event. Spawned so it never
+/// blocks or fails the request — a Discord outage must not break commenting.
 fn notify_admin(config: &AppConfig, message: String) {
-    let bot_token = config.discord_bot_token.clone();
-    let user_id = config.discord_user_id.clone();
+    let Some(webhook_url) = config.discord_comments_webhook.clone() else {
+        tracing::warn!("DISCORD_COMMENTS_WEBHOOK not set — comment notify skipped");
+        return;
+    };
     tokio::spawn(async move {
-        if let Err(e) = discord::send_dm(&bot_token, &user_id, &message).await {
+        if let Err(e) = discord::send_webhook(&webhook_url, &message).await {
             tracing::warn!("comment discord notify failed: {e}");
         }
     });

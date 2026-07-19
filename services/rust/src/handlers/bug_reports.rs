@@ -45,12 +45,12 @@ pub async fn create(
         req.content,
     );
 
-    discord::send_dm(
-        &state.config.discord_bot_token,
-        &state.config.discord_user_id,
-        &message,
-    )
-    .await?;
+    // Reports are not persisted — the webhook is the only delivery path, so a
+    // missing URL must fail loudly instead of silently dropping the report.
+    let Some(webhook_url) = state.config.discord_bug_reports_webhook.as_deref() else {
+        return Err(ApiError::Internal("DISCORD_BUG_REPORTS_WEBHOOK not set".into()));
+    };
+    discord::send_webhook(webhook_url, &message).await?;
 
     Ok(StatusCode::ACCEPTED)
 }
