@@ -1,0 +1,71 @@
+name: AWS Daily Digest
+
+on:
+  schedule:
+    - cron: "0 19 * * *" # daily at 04:00 JST (19:00 UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # required for OIDC federation with AWS
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ap-northeast-1
+
+      - name: Verify assumed identity
+        run: aws sts get-caller-identity
+
+      - name: Collect metrics
+        id: metrics
+        run: |
+          MONTH_START=$(date -u +'%Y-%m-01')
+          TOMORROW=$(date -u -d '+1 day' +'%Y-%m-%d')
+          YESTERDAY=$(date -u -d '-1 day' +'%Y-%m-%d')
+          TODAY=$(date -u +'%Y-%m-%d')
+
+          # Cost Explorer only lives in us-east-1, regardless of where resources run
+          COST=$(aws ce get-cost-and-usage --region us-east-1 \
+            --time-period "Start=${MONTH_START},End=${TOMORROW}" \
+            --granularity MONTHLY --metrics UnblendedCost \
+            | jq -r '.ResultsByTime[0].Total.UnblendedCost.Amount // "0"')
+
+          ANOMALIES=$(aws ce get-anomalies --region us-east-1 \
+            --date-interval "StartDate=${YESTERDAY},EndDate=${TODAY}" \
+            | jq '.Anomalies | length')
+
+          RUNNING=$(aws ec2 describe-instances \
+            --filters Name=instance-state-name,Values=running \
+            | jq '[.Reservations[].Instances[]] | length')
+
+          {
+            echo "cost=$(printf '%.2f' "$COST")"
+            echo "anomalies=${ANOMALIES}"
+            echo "running=${RUNNING}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Post digest to Discord
+        env:
+          COST: ${{ steps.metrics.outputs.cost }}
+          ANOMALIES: ${{ steps.metrics.outputs.anomalies }}
+          RUNNING: ${{ steps.metrics.outputs.running }}
+        # jq builds the payload so numbers never break the JSON
+        run: |
+          jq -n --arg cost "$COST" --arg anomalies "$ANOMALIES" --arg running "$RUNNING" '{
+            embeds: [{
+              title: "AWS 일일 다이제스트",
+              color: 16750848,
+              fields: [
+                {name: "월 누적 비용", value: "$\($cost)", inline: true},
+                {name: "비용 이상탐지", value: "\($anomalies)건", inline: true},
+                {name: "EC2 running", value: "\($running)대", inline: true}
+              ]
+            }]
+          }' | curl -sf -H "Content-Type: application/json" -d @- "${{ secrets.DISCORD_AWS_WEBHOOK }}"
