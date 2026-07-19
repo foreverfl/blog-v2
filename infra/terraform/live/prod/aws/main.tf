@@ -46,6 +46,15 @@ module "observability" {
 }
 
 # =============================================================================
+# 5. GitHub OIDC Module
+# =============================================================================
+module "github_oidc" {
+  source = "../../../modules/github-oidc"
+
+  github_repos = var.github_oidc_repos
+}
+
+# =============================================================================
 # 1. Outputs - Network
 # =============================================================================
 
@@ -190,3 +199,12 @@ output "network_nat_gateway" {
 #   description = "Useful CloudWatch Logs Insights query examples"
 #   value       = module.observability.useful_log_insights_queries
 # }
+
+# =============================================================================
+# 5. Outputs - GitHub OIDC
+# =============================================================================
+
+output "github_actions_role_arn" {
+  description = "IAM role ARN for GitHub Actions OIDC"
+  value       = module.github_oidc.role_arn
+}

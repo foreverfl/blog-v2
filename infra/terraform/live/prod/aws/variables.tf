@@ -62,3 +62,12 @@ variable "log_group_prefix" {
   type        = string
   default     = ""
 }
+
+# =============================================================================
+# GitHub OIDC Module Variables
+# =============================================================================
+variable "github_oidc_repos" {
+  description = "GitHub repos (owner/name) allowed to assume the Actions role"
+  type        = list(string)
+  default     = ["foreverfl/blog-v2"]
+}
