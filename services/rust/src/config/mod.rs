@@ -26,6 +26,8 @@ pub struct AppConfig {
     pub turnstile_secret: String,
     pub discord_bot_token: String,
     pub discord_user_id: String,
+    pub discord_comments_webhook: Option<String>,
+    pub discord_bug_reports_webhook: Option<String>,
     pub admin_emails: Vec<String>,
 }
 
@@ -51,6 +53,8 @@ impl AppConfig {
                 .expect("TURNSTILE_SECRET_KEY required"),
             discord_bot_token: env::var("DISCORD_BOT_TOKEN").expect("DISCORD_BOT_TOKEN required"),
             discord_user_id: env::var("DISCORD_USER_ID").expect("DISCORD_USER_ID required"),
+            discord_comments_webhook: env::var("DISCORD_COMMENTS_WEBHOOK").ok(),
+            discord_bug_reports_webhook: env::var("DISCORD_BUG_REPORTS_WEBHOOK").ok(),
             admin_emails: env::var("ADMIN_EMAILS")
                 .unwrap_or_default()
                 .split(',')
@@ -98,6 +102,8 @@ mod tests {
             turnstile_secret: String::new(),
             discord_bot_token: String::new(),
             discord_user_id: String::new(),
+            discord_comments_webhook: None,
+            discord_bug_reports_webhook: None,
             admin_emails: Vec::new(),
         }
     }
