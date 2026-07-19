@@ -37,9 +37,10 @@ jobs:
             --granularity MONTHLY --metrics UnblendedCost \
             | jq -r '.ResultsByTime[0].Total.UnblendedCost.Amount // "0"')
 
-          ANOMALIES=$(aws ce get-anomalies --region us-east-1 \
+          # kept as a file, not an output — the digest renders one line per anomaly
+          aws ce get-anomalies --region us-east-1 \
             --date-interval "StartDate=${YESTERDAY},EndDate=${TODAY}" \
-            | jq '.Anomalies | length')
+            | jq '.Anomalies' > "${RUNNER_TEMP}/anomalies.json"
 
           RUNNING=$(aws ec2 describe-instances \
             --filters Name=instance-state-name,Values=running \
@@ -47,25 +48,33 @@ jobs:
 
           {
             echo "cost=$(printf '%.2f' "$COST")"
-            echo "anomalies=${ANOMALIES}"
             echo "running=${RUNNING}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Post digest to Discord
         env:
           COST: ${{ steps.metrics.outputs.cost }}
-          ANOMALIES: ${{ steps.metrics.outputs.anomalies }}
           RUNNING: ${{ steps.metrics.outputs.running }}
         # jq builds the payload so numbers never break the JSON
         run: |
-          jq -n --arg cost "$COST" --arg anomalies "$ANOMALIES" --arg running "$RUNNING" '{
-            embeds: [{
-              title: "AWS 일일 다이제스트",
-              color: 16750848,
-              fields: [
-                {name: "월 누적 비용", value: "$\($cost)", inline: true},
-                {name: "비용 이상탐지", value: "\($anomalies)건", inline: true},
-                {name: "EC2 running", value: "\($running)대", inline: true}
-              ]
-            }]
-          }' | curl -sf -H "Content-Type: application/json" -d @- "${{ secrets.DISCORD_AWS_WEBHOOK }}"
+          jq -n --arg cost "$COST" --arg running "$RUNNING" \
+            --slurpfile anomalies "${RUNNER_TEMP}/anomalies.json" '
+            ($anomalies[0] // []) as $found |
+            {
+              embeds: [{
+                title: "AWS 일일 다이제스트",
+                color: 16750848,
+                fields: (
+                  [
+                    {name: "월 누적 비용", value: "$\($cost)", inline: true},
+                    {name: "비용 이상탐지", value: "\($found | length)건", inline: true},
+                    {name: "EC2 running", value: "\($running)대", inline: true}
+                  ]
+                  + ($found | map({
+                      name: (.DimensionValue // "unknown"),
+                      value: "+$\(.Impact.TotalImpact // 0 | . * 100 | round / 100) (평소 대비 \(.Impact.TotalImpactPercentage // 0 | round)%)",
+                      inline: false
+                    }))
+                )
+              }]
+            }' | curl -sf -H "Content-Type: application/json" -d @- "${{ secrets.DISCORD_AWS_WEBHOOK }}"
