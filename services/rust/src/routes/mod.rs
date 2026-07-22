@@ -63,7 +63,12 @@ pub fn create_router(state: AppState) -> Router {
                 })
                 .on_response(
                     |res: &axum::http::Response<_>, latency: std::time::Duration, _span: &Span| {
-                        tracing::info!(status = %res.status(), latency = ?latency, "response");
+                        // Numeric field so Loki can filter on it (| json | latency_ms > 100)
+                        tracing::info!(
+                            status = res.status().as_u16(),
+                            latency_ms = latency.as_millis() as u64,
+                            "response"
+                        );
                     },
                 ),
         )

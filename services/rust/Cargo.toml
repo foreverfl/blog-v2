@@ -18,7 +18,7 @@ hex = "0.4.3"
 dotenvy = "0.15"
 thiserror = "2.0.18"
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 aws-sdk-s3 = "1.127.0"
 aws-config = { version = "1", features = ["behavior-version-latest"] }
 reqwest = { version = "0.13.2", default-features = false, features = ["json", "rustls"] }
