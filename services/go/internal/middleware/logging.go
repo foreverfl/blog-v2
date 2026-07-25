@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/netip"
@@ -83,15 +83,15 @@ func Logging(next http.Handler) http.Handler {
 		if fwd == "" {
 			fwd = "-"
 		}
-		log.Printf("%s %q %d %dB %s ip=%s fwd=%s ua=%q",
-			r.Method,
-			r.URL.Path,
-			rec.status,
-			rec.bytes,
-			time.Since(start),
-			remoteIP(r),
-			fwd,
-			r.UserAgent(),
+		slog.Info("response",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", rec.status,
+			"bytes", rec.bytes,
+			"latency_ms", time.Since(start).Milliseconds(),
+			"ip", remoteIP(r),
+			"fwd", fwd,
+			"ua", r.UserAgent(),
 		)
 	})
 }

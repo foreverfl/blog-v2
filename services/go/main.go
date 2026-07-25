@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 
 	"blog-go-api/internal/common"
 	"blog-go-api/internal/config"
@@ -15,6 +16,13 @@ import (
 )
 
 func main() {
+	level := slog.LevelInfo
+	if v := os.Getenv("LOG_LEVEL"); v != "" {
+		// Bad values keep the info default
+		_ = level.UnmarshalText([]byte(v))
+	}
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})))
+
 	cfg := config.Load()
 
 	hackernewsClient := r2.NewClient(cfg.S3Endpoint, cfg.S3BucketBlogHackernews, cfg.AWSAccessKeyID, cfg.AWSSecretAccessKey, cfg.AWSRegion)
@@ -22,7 +30,8 @@ func main() {
 
 	redis, err := redisclient.New(cfg.RedisURL)
 	if err != nil {
-		log.Fatalf("Failed to connect to Redis: %v", err)
+		slog.Error("failed to connect to redis", "err", err)
+		os.Exit(1)
 	}
 	defer redis.Close()
 
@@ -83,6 +92,7 @@ func main() {
 	mux.HandleFunc("GET /hackernews/inspect/webp", handler.InspectWebpHandler(cfg, hackernewsImagesClient))
 	mux.HandleFunc("GET /hackernews/inspect/db", handler.InspectDBHandler(cfg))
 
-	log.Println("go-api listening on :8003")
-	log.Fatal(http.ListenAndServe(":8003", middleware.Logging(mux)))
+	slog.Info("go-api listening on :8003")
+	slog.Error("server exited", "err", http.ListenAndServe(":8003", middleware.Logging(mux)))
+	os.Exit(1)
 }
