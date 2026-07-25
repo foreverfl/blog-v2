@@ -2,6 +2,8 @@ use axum::http::{header, Method};
 use axum::routing::{get, post};
 use axum::Router;
 use tower_http::cors::CorsLayer;
+use tower_http::trace::TraceLayer;
+use tracing::Span;
 
 use crate::config::AppState;
 use crate::handlers;
@@ -31,6 +33,26 @@ pub fn create_router(state: AppState) -> Router {
         .route("/refresh", post(handlers::refresh))
         .route("/logout", post(handlers::logout))
         .route("/me", get(handlers::me))
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(|req: &axum::http::Request<_>| {
+                    tracing::info_span!(
+                        "request",
+                        method = %req.method(),
+                        uri = %req.uri(),
+                    )
+                })
+                .on_response(
+                    |res: &axum::http::Response<_>, latency: std::time::Duration, _span: &Span| {
+                        // Numeric field so Loki can filter on it (| json | latency_ms > 100)
+                        tracing::info!(
+                            status = res.status().as_u16(),
+                            latency_ms = latency.as_millis() as u64,
+                            "response"
+                        );
+                    },
+                ),
+        )
         .layer(cors)
         .with_state(state)
 }
