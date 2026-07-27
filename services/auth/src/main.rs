@@ -9,8 +9,15 @@ mod types;
 use std::sync::Arc;
 use std::time::Duration;
 
+use opentelemetry::trace::TracerProvider as _;
+use opentelemetry_otlp::SpanExporter;
+use opentelemetry_sdk::Resource;
+use opentelemetry_sdk::trace::SdkTracerProvider;
 use tokio::net::TcpListener;
 use tokio::signal;
+use tracing_subscriber::EnvFilter;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
 
 async fn shutdown_signal() {
     let ctrl_c = signal::ctrl_c();
@@ -27,13 +34,30 @@ async fn shutdown_signal() {
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt()
-        .json()
-        .with_current_span(true)
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "blog_auth_api=debug,info".into()),
+    let otlp_exporter = SpanExporter::builder()
+        .with_tonic()
+        .build()
+        .expect("failed to build otlp span exporter");
+    let tracer_provider = SdkTracerProvider::builder()
+        .with_batch_exporter(otlp_exporter)
+        .with_resource(
+            Resource::builder()
+                .with_service_name("blog-auth-api")
+                .build(),
         )
+        .build();
+    let tracer = tracer_provider.tracer("blog-auth-api");
+
+    tracing_subscriber::registry()
+        .with(
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| "blog_auth_api=debug,info".into()),
+        )
+        .with(
+            tracing_subscriber::fmt::layer()
+                .json()
+                .with_current_span(true),
+        )
+        .with(tracing_opentelemetry::layer().with_tracer(tracer))
         .init();
 
     let _ = dotenvy::dotenv();
@@ -72,4 +96,7 @@ async fn main() {
         .with_graceful_shutdown(shutdown_signal())
         .await
         .unwrap();
+
+    // Flush spans still buffered in the batch exporter
+    let _ = tracer_provider.shutdown();
 }
