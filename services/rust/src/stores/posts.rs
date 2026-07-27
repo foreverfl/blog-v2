@@ -5,6 +5,7 @@ use crate::types::{
     ApiError, CreatePostRequest, PostRow, PostSummaryRow, UpdatePostRequest,
 };
 
+#[tracing::instrument(name = "posts.create", skip(pool, req))]
 pub async fn create(
     pool: &PgPool,
     req: &CreatePostRequest,
@@ -39,6 +40,7 @@ pub async fn create(
     Ok(post)
 }
 
+#[tracing::instrument(name = "posts.list", skip(pool))]
 pub async fn list(
     pool: &PgPool,
     lang: Option<&str>,
@@ -85,6 +87,7 @@ pub async fn list(
     Ok((rows, total.0))
 }
 
+#[tracing::instrument(name = "posts.list_excluding_classification", skip(pool))]
 pub async fn list_excluding_classification(
     pool: &PgPool,
     lang: Option<&str>,
@@ -126,6 +129,7 @@ pub async fn list_excluding_classification(
     Ok((rows, total.0))
 }
 
+#[tracing::instrument(name = "posts.get_by_slug", skip(pool))]
 pub async fn get_by_slug(
     pool: &PgPool,
     classification: &str,
@@ -149,6 +153,7 @@ pub async fn get_by_slug(
     Ok(row)
 }
 
+#[tracing::instrument(name = "posts.list_unindexed", skip(pool))]
 pub async fn list_unindexed(
     pool: &PgPool,
     page: i64,
@@ -179,6 +184,7 @@ pub async fn list_unindexed(
     Ok((rows, total.0))
 }
 
+#[tracing::instrument(name = "posts.mark_indexed", skip(pool, ids))]
 pub async fn mark_indexed(
     pool: &PgPool,
     ids: &[Uuid],
@@ -198,6 +204,7 @@ pub async fn mark_indexed(
     Ok(rows)
 }
 
+#[tracing::instrument(name = "posts.update", skip(pool, req))]
 pub async fn update(
     pool: &PgPool,
     id: Uuid,
@@ -240,6 +247,7 @@ pub async fn update(
     Ok(post)
 }
 
+#[tracing::instrument(name = "posts.delete", skip(pool))]
 pub async fn delete(pool: &PgPool, id: Uuid) -> Result<bool, ApiError> {
     let result = sqlx::query("DELETE FROM posts WHERE id = $1")
         .bind(id)
@@ -249,6 +257,7 @@ pub async fn delete(pool: &PgPool, id: Uuid) -> Result<bool, ApiError> {
     Ok(result.rows_affected() > 0)
 }
 
+#[tracing::instrument(name = "posts.upsert", skip(pool))]
 pub async fn upsert(
     pool: &PgPool,
     classification: &str,

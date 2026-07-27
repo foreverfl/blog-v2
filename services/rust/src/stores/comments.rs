@@ -7,6 +7,7 @@ const SELECT_COLUMNS: &str =
     "c.id, u.email, u.username, u.photo, c.content, c.created_at, c.reply, c.replied_at";
 
 /// All comments for a post, oldest first, joined with their authors.
+#[tracing::instrument(name = "comments.list_for_post", skip(pool))]
 pub async fn list_for_post(
     pool: &PgPool,
     post_id: Uuid,
@@ -29,6 +30,7 @@ pub async fn list_for_post(
 
 /// Insert a comment (snapshotting the author's avatar) and return it joined
 /// with the author, matching the list-item shape.
+#[tracing::instrument(name = "comments.create", skip(pool, content))]
 pub async fn create(
     pool: &PgPool,
     post_id: Uuid,
@@ -58,6 +60,7 @@ pub async fn create(
 
 /// Update a comment the user owns. Returns `None` when the comment does not
 /// exist or belongs to someone else (indistinguishable on purpose).
+#[tracing::instrument(name = "comments.update", skip(pool, content))]
 pub async fn update(
     pool: &PgPool,
     comment_id: Uuid,
@@ -88,6 +91,7 @@ pub async fn update(
 
 /// Delete a comment the user owns. Returns the deleted comment (so the caller
 /// can notify), or `None` when it's missing or owned by someone else.
+#[tracing::instrument(name = "comments.delete", skip(pool))]
 pub async fn delete(
     pool: &PgPool,
     comment_id: Uuid,
@@ -115,6 +119,7 @@ pub async fn delete(
 
 /// Set (or replace) the admin reply on any comment. Admin-only — no ownership
 /// check. Returns the updated comment, or `None` if the comment is missing.
+#[tracing::instrument(name = "comments.upsert_reply", skip(pool, reply))]
 pub async fn upsert_reply(
     pool: &PgPool,
     comment_id: Uuid,
@@ -142,6 +147,7 @@ pub async fn upsert_reply(
 }
 
 /// Clear the admin reply on a comment. Returns whether a comment was updated.
+#[tracing::instrument(name = "comments.delete_reply", skip(pool))]
 pub async fn delete_reply(pool: &PgPool, comment_id: Uuid) -> Result<bool, ApiError> {
     let result = sqlx::query(
         r#"
