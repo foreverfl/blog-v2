@@ -14,9 +14,11 @@ mod recipe_sauce_usage_types;
 use axum::http::{header, Method};
 use axum::routing::get;
 use axum::Router;
+use opentelemetry::trace::TraceContextExt;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing::Span;
+use tracing_opentelemetry::OpenTelemetrySpanExt;
 
 use crate::config::AppState;
 
@@ -55,11 +57,16 @@ pub fn create_router(state: AppState) -> Router {
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(|req: &axum::http::Request<_>| {
-                    tracing::info_span!(
+                    let span = tracing::info_span!(
                         "request",
                         method = %req.method(),
                         uri = %req.uri(),
-                    )
+                        trace_id = tracing::field::Empty,
+                    );
+                    // Otel assigns the id at span creation; expose it for log↔trace links
+                    let trace_id = span.context().span().span_context().trace_id();
+                    span.record("trace_id", tracing::field::display(trace_id));
+                    span
                 })
                 .on_response(
                     |res: &axum::http::Response<_>, latency: std::time::Duration, _span: &Span| {

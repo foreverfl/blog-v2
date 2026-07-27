@@ -104,6 +104,17 @@ grpcurl -plaintext -d '{"id":"123"}' localhost:50051 blog.v1.PostService/GetPost
 openssl rand -base64 32
 ```
 
+### Rust API (`services/rust`)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | No | OTLP gRPC endpoint for trace export (default: `http://localhost:4317`) |
+| `RUST_LOG` | No | Log filter directives (default: `blog_rust_api=debug,info`) |
+
+Traces are exported over OTLP/gRPC under the service name `blog-rust-api`, and
+each request log line carries a `trace_id` field so Loki can link logs to the
+matching Tempo trace.
+
 ## Development
 
 ```bash
