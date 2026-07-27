@@ -2,6 +2,7 @@ use crate::types::ApiError;
 
 /// Post `content` to a channel via an incoming webhook URL.
 /// No bot token or DM channel needed — the URL itself carries the auth.
+#[tracing::instrument(name = "discord.send_webhook", skip_all)]
 pub async fn send_webhook(webhook_url: &str, content: &str) -> Result<(), ApiError> {
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(10))

@@ -192,6 +192,7 @@ enum BatchResult {
     Error(String),
 }
 
+#[tracing::instrument(name = "import.fetch_batch", skip(client))]
 async fn fetch_batch(client: &reqwest::Client, batch_id: &str) -> BatchResult {
     let json_url = format!("{}/{}.json", HN_JSON_BASE, batch_id);
     tracing::info!(batch_id = %batch_id, url = %json_url, "fetching batch from R2");

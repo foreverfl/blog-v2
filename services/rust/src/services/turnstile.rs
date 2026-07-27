@@ -10,6 +10,7 @@ struct SiteverifyResponse {
 /// Verify a Cloudflare Turnstile token against the siteverify API.
 /// `remote_ip` is the client IP — optional, but recommended by Cloudflare.
 /// Returns whether the token is valid for the given secret.
+#[tracing::instrument(name = "turnstile.verify", skip_all)]
 pub async fn verify(
     secret: &str,
     token: &str,

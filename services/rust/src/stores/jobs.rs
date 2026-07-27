@@ -3,6 +3,7 @@ use crate::types::ApiError;
 const JOB_TTL_SECS: i64 = 86400; // 24h
 
 /// Store a job status in Redis with 24h TTL.
+#[tracing::instrument(name = "jobs.set", skip(redis, payload))]
 pub async fn set(
     redis: &redis::Client,
     prefix: &str,
@@ -25,6 +26,7 @@ pub async fn set(
 }
 
 /// Best-effort store (for background tasks where we can't propagate errors).
+#[tracing::instrument(name = "jobs.set_silent", skip(redis, payload))]
 pub async fn set_silent(redis: &redis::Client, prefix: &str, job_id: &str, payload: &serde_json::Value) {
     if let Ok(mut conn) = redis.get_multiplexed_async_connection().await {
         let key = format!("import:{prefix}:{job_id}");
@@ -38,6 +40,7 @@ pub async fn set_silent(redis: &redis::Client, prefix: &str, job_id: &str, paylo
 }
 
 /// Get a job status from Redis. Tries multiple prefixes in order.
+#[tracing::instrument(name = "jobs.get", skip(redis))]
 pub async fn get(
     redis: &redis::Client,
     job_id: &str,
