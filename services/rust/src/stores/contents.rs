@@ -3,6 +3,7 @@ use uuid::Uuid;
 
 use crate::types::{ApiError, ContentPayload, PostContentRow};
 
+#[tracing::instrument(name = "contents.insert", skip(tx, c))]
 pub async fn insert(
     tx: &mut sqlx::PgConnection,
     post_id: Uuid,
@@ -40,6 +41,7 @@ pub async fn insert(
     Ok(())
 }
 
+#[tracing::instrument(name = "contents.upsert", skip(tx, c))]
 pub async fn upsert(
     tx: &mut sqlx::PgConnection,
     post_id: Uuid,
@@ -80,6 +82,7 @@ pub async fn upsert(
     Ok(())
 }
 
+#[tracing::instrument(name = "contents.get_by_post", skip(pool))]
 pub async fn get_by_post(
     pool: &PgPool,
     post_id: Uuid,
@@ -114,6 +117,7 @@ pub async fn get_by_post(
     Ok(rows)
 }
 
+#[tracing::instrument(name = "contents.upsert_batch_json", skip(pool, title, body_json))]
 pub async fn upsert_batch_json(
     pool: &PgPool,
     post_id: Uuid,

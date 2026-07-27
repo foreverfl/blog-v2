@@ -4,6 +4,7 @@ use uuid::Uuid;
 use crate::types::ApiError;
 
 /// Number of likes on a post.
+#[tracing::instrument(name = "likes.count", skip(pool))]
 pub async fn count(pool: &PgPool, post_id: Uuid) -> Result<i64, ApiError> {
     let (count,): (i64,) = sqlx::query_as(
         r#"
@@ -20,6 +21,7 @@ pub async fn count(pool: &PgPool, post_id: Uuid) -> Result<i64, ApiError> {
 }
 
 /// Whether a user has liked a post.
+#[tracing::instrument(name = "likes.has_liked", skip(pool))]
 pub async fn has_liked(pool: &PgPool, post_id: Uuid, user_id: Uuid) -> Result<bool, ApiError> {
     let (liked,): (bool,) = sqlx::query_as(
         r#"
@@ -37,6 +39,7 @@ pub async fn has_liked(pool: &PgPool, post_id: Uuid, user_id: Uuid) -> Result<bo
 }
 
 /// Add a like (idempotent — a repeat like is a no-op).
+#[tracing::instrument(name = "likes.add", skip(pool))]
 pub async fn add(pool: &PgPool, post_id: Uuid, user_id: Uuid) -> Result<(), ApiError> {
     sqlx::query(
         r#"
@@ -54,6 +57,7 @@ pub async fn add(pool: &PgPool, post_id: Uuid, user_id: Uuid) -> Result<(), ApiE
 }
 
 /// Remove a like.
+#[tracing::instrument(name = "likes.remove", skip(pool))]
 pub async fn remove(pool: &PgPool, post_id: Uuid, user_id: Uuid) -> Result<(), ApiError> {
     sqlx::query(
         r#"

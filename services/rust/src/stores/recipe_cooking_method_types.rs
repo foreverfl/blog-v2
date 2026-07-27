@@ -2,6 +2,7 @@ use sqlx::PgPool;
 
 use crate::types::{ApiError, CookingMethodType};
 
+#[tracing::instrument(name = "recipe_cooking_method_types.list", skip(pool))]
 pub async fn list(pool: &PgPool) -> Result<Vec<CookingMethodType>, ApiError> {
     let types = sqlx::query_as::<_, CookingMethodType>(
         r#"

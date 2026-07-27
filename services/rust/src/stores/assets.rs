@@ -3,6 +3,7 @@ use uuid::Uuid;
 
 use crate::types::{ApiError, AssetRow, PostAssetRow};
 
+#[tracing::instrument(name = "assets.find_by_sha256", skip(pool))]
 pub async fn find_by_sha256(
     pool: &PgPool,
     sha256: &str,
@@ -20,6 +21,7 @@ pub async fn find_by_sha256(
     Ok(row)
 }
 
+#[tracing::instrument(name = "assets.get_by_id", skip(pool))]
 pub async fn get_by_id(pool: &PgPool, id: Uuid) -> Result<Option<AssetRow>, ApiError> {
     let row = sqlx::query_as::<_, AssetRow>(
         r#"
@@ -34,6 +36,7 @@ pub async fn get_by_id(pool: &PgPool, id: Uuid) -> Result<Option<AssetRow>, ApiE
     Ok(row)
 }
 
+#[tracing::instrument(name = "assets.list", skip(pool))]
 pub async fn list(
     pool: &PgPool,
     bucket: Option<&str>,
@@ -66,6 +69,7 @@ pub async fn list(
     Ok((rows, total.0))
 }
 
+#[tracing::instrument(name = "assets.insert", skip(pool))]
 pub async fn insert(
     pool: &PgPool,
     bucket: &str,
@@ -100,6 +104,7 @@ pub async fn insert(
 
 /// Partial update: None keeps the current value via COALESCE.
 /// Returns None when no row matched.
+#[tracing::instrument(name = "assets.update", skip(pool))]
 pub async fn update(
     pool: &PgPool,
     id: Uuid,
@@ -125,6 +130,7 @@ pub async fn update(
     Ok(row)
 }
 
+#[tracing::instrument(name = "assets.list_object_keys", skip(pool))]
 pub async fn list_object_keys(pool: &PgPool, bucket: &str) -> Result<Vec<String>, ApiError> {
     let rows: Vec<(String,)> = sqlx::query_as("SELECT object_key FROM assets WHERE bucket = $1")
         .bind(bucket)
@@ -136,6 +142,7 @@ pub async fn list_object_keys(pool: &PgPool, bucket: &str) -> Result<Vec<String>
 
 /// Insert a row discovered in R2 by sync: no sha256 (would require a full
 /// download), so these rows sit outside upload deduplication.
+#[tracing::instrument(name = "assets.insert_synced", skip(pool))]
 pub async fn insert_synced(
     pool: &PgPool,
     bucket: &str,
@@ -165,6 +172,7 @@ pub async fn insert_synced(
 }
 
 /// Drop rows whose R2 object no longer exists. Returns the deleted count.
+#[tracing::instrument(name = "assets.delete_missing", skip(pool, object_keys))]
 pub async fn delete_missing(
     pool: &PgPool,
     bucket: &str,
@@ -183,6 +191,7 @@ pub async fn delete_missing(
     Ok(result.rows_affected())
 }
 
+#[tracing::instrument(name = "assets.delete", skip(pool))]
 pub async fn delete(pool: &PgPool, id: Uuid) -> Result<(), ApiError> {
     sqlx::query("DELETE FROM assets WHERE id = $1")
         .bind(id)
@@ -192,6 +201,7 @@ pub async fn delete(pool: &PgPool, id: Uuid) -> Result<(), ApiError> {
     Ok(())
 }
 
+#[tracing::instrument(name = "assets.get_post_assets", skip(pool))]
 pub async fn get_post_assets(
     pool: &PgPool,
     post_id: Uuid,

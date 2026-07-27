@@ -3,6 +3,7 @@ use uuid::Uuid;
 
 use crate::types::ApiError;
 
+#[tracing::instrument(name = "hackernews_likes.list", skip(pool))]
 pub async fn list(pool: &PgPool, user_id: Uuid) -> Result<Vec<i64>, ApiError> {
     let rows: Vec<(i64,)> = sqlx::query_as(
         r#"
@@ -19,6 +20,7 @@ pub async fn list(pool: &PgPool, user_id: Uuid) -> Result<Vec<i64>, ApiError> {
     Ok(rows.into_iter().map(|(id,)| id).collect())
 }
 
+#[tracing::instrument(name = "hackernews_likes.insert", skip(pool))]
 pub async fn insert(pool: &PgPool, user_id: Uuid, hn_id: i64) -> Result<(), ApiError> {
     sqlx::query(
         r#"
@@ -35,6 +37,7 @@ pub async fn insert(pool: &PgPool, user_id: Uuid, hn_id: i64) -> Result<(), ApiE
     Ok(())
 }
 
+#[tracing::instrument(name = "hackernews_likes.delete", skip(pool))]
 pub async fn delete(pool: &PgPool, user_id: Uuid, hn_id: i64) -> Result<(), ApiError> {
     sqlx::query(
         r#"

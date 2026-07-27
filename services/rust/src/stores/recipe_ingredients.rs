@@ -3,6 +3,7 @@ use uuid::Uuid;
 
 use crate::types::{ApiError, CreateIngredientRequest, Ingredient, UpdateIngredientRequest};
 
+#[tracing::instrument(name = "recipe_ingredients.create", skip(pool, req))]
 pub async fn create(
     pool: &PgPool,
     req: &CreateIngredientRequest,
@@ -33,6 +34,7 @@ pub async fn create(
 }
 
 /// Fetch a single ingredient by id. Returns NotFound when no row matched.
+#[tracing::instrument(name = "recipe_ingredients.get", skip(pool))]
 pub async fn get(pool: &PgPool, id: Uuid) -> Result<Ingredient, ApiError> {
     sqlx::query_as::<_, Ingredient>(
         r#"
@@ -49,6 +51,7 @@ pub async fn get(pool: &PgPool, id: Uuid) -> Result<Ingredient, ApiError> {
 
 /// Partially update an ingredient by id. Omitted (NULL) fields keep their
 /// current value via COALESCE. Returns NotFound when no row matched.
+#[tracing::instrument(name = "recipe_ingredients.update", skip(pool, req))]
 pub async fn update(
     pool: &PgPool,
     id: Uuid,
@@ -89,6 +92,7 @@ pub async fn update(
 }
 
 /// Delete an ingredient by id. Returns NotFound when no row matched.
+#[tracing::instrument(name = "recipe_ingredients.delete", skip(pool))]
 pub async fn delete(pool: &PgPool, id: Uuid) -> Result<(), ApiError> {
     let result = sqlx::query("DELETE FROM recipe.ingredients WHERE id = $1")
         .bind(id)
