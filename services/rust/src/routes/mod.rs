@@ -57,11 +57,20 @@ pub fn create_router(state: AppState) -> Router {
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(|req: &axum::http::Request<_>| {
+                    // Route template, not the real path — keeps span names low-cardinality
+                    let route = req
+                        .extensions()
+                        .get::<axum::extract::MatchedPath>()
+                        .map(axum::extract::MatchedPath::as_str)
+                        .unwrap_or("unmatched");
                     let span = tracing::info_span!(
                         "request",
                         method = %req.method(),
                         uri = %req.uri(),
                         trace_id = tracing::field::Empty,
+                        otel.name = %format!("{} {}", req.method(), route),
+                        otel.kind = "server",
+                        otel.status_code = tracing::field::Empty,
                     );
                     // Otel assigns the id at span creation; expose it for log↔trace links
                     let trace_id = span.context().span().span_context().trace_id();
@@ -69,7 +78,10 @@ pub fn create_router(state: AppState) -> Router {
                     span
                 })
                 .on_response(
-                    |res: &axum::http::Response<_>, latency: std::time::Duration, _span: &Span| {
+                    |res: &axum::http::Response<_>, latency: std::time::Duration, span: &Span| {
+                        if res.status().is_server_error() {
+                            span.record("otel.status_code", "ERROR");
+                        }
                         // Numeric field so Loki can filter on it (| json | latency_ms > 100)
                         tracing::info!(
                             status = res.status().as_u16(),
