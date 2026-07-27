@@ -4,6 +4,7 @@ use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::Json;
 use sha2::{Digest, Sha256};
+use tracing::Instrument;
 use uuid::Uuid;
 
 use std::collections::HashSet;
@@ -65,6 +66,7 @@ pub async fn list_buckets(
         .s3
         .list_buckets()
         .send()
+        .instrument(tracing::info_span!("s3.list_buckets"))
         .await
         .map_err(|e| ApiError::S3(e.to_string()))?;
 
@@ -152,6 +154,7 @@ pub async fn delete_asset(
         .bucket(&row.bucket)
         .key(&row.object_key)
         .send()
+        .instrument(tracing::info_span!("s3.delete_object"))
         .await
         .map_err(|e| ApiError::S3(e.to_string()))?;
 
@@ -162,6 +165,7 @@ pub async fn delete_asset(
 
 /// Every object (key, size) in a bucket, following ListObjectsV2 continuation
 /// tokens. page_size is 1000 in production; tests shrink it to force paging.
+#[tracing::instrument(name = "s3.list_objects", skip(s3))]
 async fn collect_bucket_inventory(
     s3: &aws_sdk_s3::Client,
     bucket: &str,
@@ -197,6 +201,7 @@ async fn collect_bucket_inventory(
 
 /// Resolve a logical `?bucket=` to its physical name, verified against the
 /// live R2 bucket list; the default bucket when omitted.
+#[tracing::instrument(name = "s3.resolve_bucket", skip(state))]
 async fn resolve_bucket(
     state: &AppState,
     logical: Option<&str>,
@@ -296,6 +301,7 @@ pub async fn upload(
             .body(ByteStream::from(data))
             .content_type(&mime_type)
             .send()
+            .instrument(tracing::info_span!("s3.put_object"))
             .await
             .map_err(|e| ApiError::S3(e.to_string()))?;
 
