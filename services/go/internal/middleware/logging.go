@@ -7,6 +7,8 @@ import (
 	"net/netip"
 	"strings"
 	"time"
+
+	"go.opentelemetry.io/otel/trace"
 )
 
 type responseRecorder struct {
@@ -83,7 +85,7 @@ func Logging(next http.Handler) http.Handler {
 		if fwd == "" {
 			fwd = "-"
 		}
-		slog.Info("response",
+		args := []any{
 			"method", r.Method,
 			"path", r.URL.Path,
 			"status", rec.status,
@@ -92,6 +94,10 @@ func Logging(next http.Handler) http.Handler {
 			"ip", remoteIP(r),
 			"fwd", fwd,
 			"ua", r.UserAgent(),
-		)
+		}
+		if sc := trace.SpanFromContext(r.Context()).SpanContext(); sc.IsValid() {
+			args = append(args, "trace_id", sc.TraceID().String())
+		}
+		slog.Info("response", args...)
 	})
 }
