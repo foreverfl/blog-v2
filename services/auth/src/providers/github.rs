@@ -32,6 +32,7 @@ struct GitHubEmail {
     verified: bool,
 }
 
+#[tracing::instrument(name = "github.authenticate", skip_all)]
 pub async fn authenticate(
     params: &ProviderParams<'_>,
     code: &str,

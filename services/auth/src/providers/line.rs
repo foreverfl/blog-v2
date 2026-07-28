@@ -33,6 +33,7 @@ struct IdTokenPayload {
     email: Option<String>,
 }
 
+#[tracing::instrument(name = "line.authenticate", skip_all)]
 pub async fn authenticate(
     params: &ProviderParams<'_>,
     code: &str,

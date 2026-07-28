@@ -41,6 +41,7 @@ pub async fn run_health_loop(mut conn: RedisConn, interval: Duration) {
 
 // --- Refresh tokens ---
 
+#[tracing::instrument(name = "redis.store_refresh_token", skip_all)]
 pub async fn store_refresh_token(
     conn: &mut RedisConn,
     token_hash: &str,
@@ -57,6 +58,7 @@ pub async fn store_refresh_token(
     Ok(())
 }
 
+#[tracing::instrument(name = "redis.get_refresh_token_user", skip_all)]
 pub async fn get_refresh_token_user(
     conn: &mut RedisConn,
     token_hash: &str,
@@ -65,6 +67,7 @@ pub async fn get_refresh_token_user(
     Ok(val.and_then(|v| v.parse().ok()))
 }
 
+#[tracing::instrument(name = "redis.delete_refresh_token", skip_all)]
 pub async fn delete_refresh_token(
     conn: &mut RedisConn,
     token_hash: &str,
@@ -81,6 +84,7 @@ pub struct OAuthState {
     pub is_cli: bool,
 }
 
+#[tracing::instrument(name = "redis.store_oauth_state", skip_all)]
 pub async fn store_oauth_state(
     conn: &mut RedisConn,
     state: &str,
@@ -99,6 +103,7 @@ pub async fn store_oauth_state(
     Ok(())
 }
 
+#[tracing::instrument(name = "redis.get_and_delete_oauth_state", skip_all)]
 pub async fn get_and_delete_oauth_state(
     conn: &mut RedisConn,
     state: &str,

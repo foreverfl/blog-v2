@@ -3,6 +3,7 @@ use uuid::Uuid;
 
 use crate::types::{AuthError, OAuthUserInfo, UserRow};
 
+#[tracing::instrument(name = "postgres.upsert_user", skip_all)]
 pub async fn upsert_user(pool: &PgPool, info: &OAuthUserInfo) -> Result<UserRow, AuthError> {
     let row = sqlx::query_as::<_, UserRow>(
         r#"
@@ -25,6 +26,7 @@ pub async fn upsert_user(pool: &PgPool, info: &OAuthUserInfo) -> Result<UserRow,
     Ok(row)
 }
 
+#[tracing::instrument(name = "postgres.find_user_by_id", skip(pool))]
 pub async fn find_user_by_id(pool: &PgPool, id: Uuid) -> Result<Option<UserRow>, AuthError> {
     let row = sqlx::query_as::<_, UserRow>(
         "SELECT id, email, auth_provider, username, photo, created_at FROM users WHERE id = $1",

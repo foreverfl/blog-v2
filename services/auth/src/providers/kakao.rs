@@ -36,6 +36,7 @@ struct KakaoProfile {
     profile_image_url: Option<String>,
 }
 
+#[tracing::instrument(name = "kakao.authenticate", skip_all)]
 pub async fn authenticate(
     params: &ProviderParams<'_>,
     code: &str,

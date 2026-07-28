@@ -27,6 +27,7 @@ struct UserInfo {
     picture: Option<String>,
 }
 
+#[tracing::instrument(name = "google.authenticate", skip_all)]
 pub async fn authenticate(
     params: &ProviderParams<'_>,
     code: &str,

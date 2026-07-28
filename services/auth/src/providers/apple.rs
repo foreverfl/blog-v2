@@ -27,6 +27,7 @@ struct IdTokenPayload {
     email: Option<String>,
 }
 
+#[tracing::instrument(name = "apple.authenticate", skip_all)]
 pub async fn authenticate(
     params: &ProviderParams<'_>,
     code: &str,
