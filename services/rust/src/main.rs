@@ -47,6 +47,12 @@ async fn main() {
         .build();
     let tracer = tracer_provider.tracer("blog-rust-api");
 
+    // Without a registered propagator, extract() in the request layer is a no-op
+    // and browser traceparent headers are silently ignored
+    opentelemetry::global::set_text_map_propagator(
+        opentelemetry_sdk::propagation::TraceContextPropagator::new(),
+    );
+
     tracing_subscriber::registry()
         .with(
             EnvFilter::try_from_default_env().unwrap_or_else(|_| "blog_rust_api=debug,info".into()),
