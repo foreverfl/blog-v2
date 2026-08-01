@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"rsc.io/pdf"
 )
 
@@ -20,7 +21,7 @@ var (
 
 // FetchPDFContent downloads a PDF from the given URL and extracts text (first 10 pages).
 func FetchPDFContent(url string) (string, error) {
-	client := &http.Client{Timeout: 30 * time.Second}
+	client := &http.Client{Timeout: 30 * time.Second, Transport: otelhttp.NewTransport(nil)}
 
 	resp, err := client.Get(url)
 	if err != nil {

@@ -9,6 +9,8 @@ import (
 	"blog-go-api/internal/common"
 	"blog-go-api/internal/config"
 	"blog-go-api/internal/r2"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 var kst = time.FixedZone("KST", 9*60*60)
@@ -155,7 +157,7 @@ func InspectWebpHandler(cfg *config.Config, r2c *r2.Client) http.HandlerFunc {
 
 // InspectDBHandler checks the Rust API for missing HN posts and language completeness.
 func InspectDBHandler(cfg *config.Config) http.HandlerFunc {
-	client := &http.Client{Timeout: 30 * time.Second}
+	client := &http.Client{Timeout: 30 * time.Second, Transport: otelhttp.NewTransport(nil)}
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !common.CheckAuth(r, cfg.ApiSecret) {
@@ -185,7 +187,8 @@ func InspectDBHandler(cfg *config.Config) http.HandlerFunc {
 		// fetchOne returns (notFound, missingLangs, err). notFound==true means the post is missing.
 		fetchOne := func(d string) (bool, []string, error) {
 			url := fmt.Sprintf("%s/posts/trends/hackernews/%s", cfg.RustAPIURL, d)
-			resp, err := client.Get(url)
+			fetchReq, _ := http.NewRequestWithContext(r.Context(), http.MethodGet, url, nil)
+			resp, err := client.Do(fetchReq)
 			if err != nil {
 				return false, nil, fmt.Errorf("failed to call rust api for %s: %v", d, err)
 			}

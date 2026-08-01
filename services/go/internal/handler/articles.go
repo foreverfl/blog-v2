@@ -15,6 +15,8 @@ import (
 	"blog-go-api/internal/config"
 	"blog-go-api/internal/dateutil"
 	"blog-go-api/internal/r2"
+
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 const hnAPIBase = "https://hacker-news.firebaseio.com/v0"
@@ -59,8 +61,10 @@ func ArticlesHandler(cfg *config.Config, r2c *r2.Client) http.HandlerFunc {
 
 		// Fetch top 100 story IDs from HN
 		log.Println("Fetching new data from HackerNews API...")
-		httpClient := &http.Client{Timeout: 30 * time.Second}
-		resp, err := httpClient.Get(hnAPIBase + "/topstories.json")
+		httpClient := &http.Client{Timeout: 30 * time.Second, Transport: otelhttp.NewTransport(nil)}
+		// URL is constant, so NewRequestWithContext cannot fail here
+		req, _ := http.NewRequestWithContext(r.Context(), http.MethodGet, hnAPIBase+"/topstories.json", nil)
+		resp, err := httpClient.Do(req)
 		if err != nil {
 			common.WriteJSON(w, 500, map[string]string{"error": "Failed to fetch top stories"})
 			return
@@ -96,7 +100,8 @@ func ArticlesHandler(cfg *config.Config, r2c *r2.Client) http.HandlerFunc {
 			go func(idx, id int) {
 				defer wg.Done()
 				url := fmt.Sprintf("%s/item/%d.json", hnAPIBase, id)
-				resp, err := httpClient.Get(url)
+				itemReq, _ := http.NewRequestWithContext(r.Context(), http.MethodGet, url, nil)
+				resp, err := httpClient.Do(itemReq)
 				if err != nil {
 					log.Printf("Failed to fetch item %d: %v", id, err)
 					return
@@ -120,11 +125,11 @@ func ArticlesHandler(cfg *config.Config, r2c *r2.Client) http.HandlerFunc {
 						"ko": nil,
 						"ja": nil,
 					},
-					"type":  item.Type,
-					"url":   nilIfEmpty(item.URL),
-					"score": nilIfZero(item.Score),
-					"by":    nilIfEmpty(item.By),
-					"time":  nilIfZeroInt64(item.Time),
+					"type":    item.Type,
+					"url":     nilIfEmpty(item.URL),
+					"score":   nilIfZero(item.Score),
+					"by":      nilIfEmpty(item.By),
+					"time":    nilIfZeroInt64(item.Time),
 					"content": nilIfEmpty(item.Text),
 					"summary": map[string]any{
 						"en": nil,
@@ -178,4 +183,3 @@ func nilIfZeroInt64(n int64) any {
 	}
 	return n
 }
-

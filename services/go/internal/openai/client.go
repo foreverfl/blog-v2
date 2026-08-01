@@ -3,8 +3,10 @@ package openai
 import (
 	"embed"
 	"fmt"
+	"net/http"
 
 	oai "github.com/sashabaranov/go-openai"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 //go:embed prompts/*.md
@@ -15,8 +17,10 @@ type Service struct {
 }
 
 func NewService(apiKey string) *Service {
+	cfg := oai.DefaultConfig(apiKey)
+	cfg.HTTPClient = &http.Client{Transport: otelhttp.NewTransport(nil)}
 	return &Service{
-		client: oai.NewClient(apiKey),
+		client: oai.NewClientWithConfig(cfg),
 	}
 }
 

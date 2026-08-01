@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -21,7 +22,11 @@ func New(redisURL string) (*Client, error) {
 	opts.WriteTimeout = 3 * time.Second
 	opts.MaxRetries = 1
 
-	return &Client{rdb: redis.NewClient(opts)}, nil
+	rdb := redis.NewClient(opts)
+	if err := redisotel.InstrumentTracing(rdb); err != nil {
+		return nil, err
+	}
+	return &Client{rdb: rdb}, nil
 }
 
 func (client *Client) Ping(ctx context.Context) error {

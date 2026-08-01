@@ -8,11 +8,12 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 // FetchStatic does HTTP GET + goquery-based content extraction.
 func FetchStatic(rawURL, domain string) (string, error) {
-	client := &http.Client{Timeout: 15 * time.Second}
+	client := &http.Client{Timeout: 15 * time.Second, Transport: otelhttp.NewTransport(nil)}
 
 	req, err := http.NewRequest("GET", rawURL, nil)
 	if err != nil {

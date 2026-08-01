@@ -100,6 +100,9 @@ services:
     ports:
       - "${GO_PORT:-8003}:8003"
     env_file: .env.local
+    environment:
+      # Cross-service call inside the compose network, not host localhost
+      RUST_API_URL: http://rust-api:8002
     volumes:
       - ../../services/go:/app
       - go_mod_cache:/go/pkg/mod
