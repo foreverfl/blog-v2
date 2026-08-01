@@ -1,4 +1,4 @@
-use axum::http::{header, Method};
+use axum::http::{header, HeaderName, Method};
 use axum::routing::{get, post};
 use axum::Router;
 use opentelemetry::trace::TraceContextExt;
@@ -24,6 +24,8 @@ pub fn create_router(state: AppState) -> Router {
             header::AUTHORIZATION,
             header::CONTENT_TYPE,
             header::COOKIE,
+            // W3C trace context from the browser (Faro) — same as rust-api
+            HeaderName::from_static("traceparent"),
         ])
         .allow_credentials(true);
 
@@ -53,7 +55,12 @@ pub fn create_router(state: AppState) -> Router {
                         otel.kind = "server",
                         otel.status_code = tracing::field::Empty,
                     );
-                    // Otel assigns the id at span creation; expose it for log↔trace links
+                    // Adopt the caller's trace (browser traceparent) BEFORE reading
+                    // the id — set_parent rewrites the span's trace id
+                    let parent_context = opentelemetry::global::get_text_map_propagator(
+                        |propagator| propagator.extract(&HeaderExtractor(req.headers())),
+                    );
+                    span.set_parent(parent_context);
                     let trace_id = span.context().span().span_context().trace_id();
                     span.record("trace_id", tracing::field::display(trace_id));
                     span
@@ -78,4 +85,17 @@ pub fn create_router(state: AppState) -> Router {
 
 async fn health() -> &'static str {
     "ok"
+}
+
+// Minimal W3C trace-context extractor — saves the opentelemetry-http dependency
+struct HeaderExtractor<'a>(&'a axum::http::HeaderMap);
+
+impl opentelemetry::propagation::Extractor for HeaderExtractor<'_> {
+    fn get(&self, key: &str) -> Option<&str> {
+        self.0.get(key).and_then(|value| value.to_str().ok())
+    }
+
+    fn keys(&self) -> Vec<&str> {
+        self.0.keys().map(|key| key.as_str()).collect()
+    }
 }
