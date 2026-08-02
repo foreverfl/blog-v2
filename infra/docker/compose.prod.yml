@@ -23,7 +23,7 @@ services:
     env_file: .env.prod
     environment:
       # Host-level obs toolkit (work/observability) replaced the bundled stack
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://host.docker.internal:4317
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_OTLP_ENDPOINT:-http://host.docker.internal:4317}
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: unless-stopped
@@ -39,7 +39,7 @@ services:
       - "8002:8002"
     env_file: .env.prod
     environment:
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://host.docker.internal:4317
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_OTLP_ENDPOINT:-http://host.docker.internal:4317}
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: unless-stopped
@@ -57,7 +57,7 @@ services:
     environment:
       # Cross-service call inside the compose network, not host localhost
       RUST_API_URL: http://rust-api:8002
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://host.docker.internal:4317
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_OTLP_ENDPOINT:-http://host.docker.internal:4317}
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: unless-stopped
@@ -73,7 +73,7 @@ services:
       - "8004:8004"
     env_file: .env.prod
     environment:
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://host.docker.internal:4317
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_OTLP_ENDPOINT:-http://host.docker.internal:4317}
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: unless-stopped
