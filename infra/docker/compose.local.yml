@@ -62,6 +62,11 @@ services:
     ports:
       - "${AUTH_PORT:-8001}:8001"
     env_file: .env.local
+    environment:
+      # Host-level obs toolkit (work/observability) collects OTLP on the host
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://host.docker.internal:4317
+    extra_hosts:
+      - host.docker.internal:host-gateway
     volumes:
       - ../../services/auth:/app
       - auth_cargo_cache:/usr/local/cargo/registry
@@ -81,6 +86,10 @@ services:
     ports:
       - "${RUST_PORT:-8002}:8002"
     env_file: .env.local
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://host.docker.internal:4317
+    extra_hosts:
+      - host.docker.internal:host-gateway
     volumes:
       - ../../services/rust:/app
       - rust_cargo_cache:/usr/local/cargo/registry
@@ -103,6 +112,9 @@ services:
     environment:
       # Cross-service call inside the compose network, not host localhost
       RUST_API_URL: http://rust-api:8002
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://host.docker.internal:4317
+    extra_hosts:
+      - host.docker.internal:host-gateway
     volumes:
       - ../../services/go:/app
       - go_mod_cache:/go/pkg/mod
@@ -121,6 +133,10 @@ services:
     ports:
       - "${HASKELL_PORT:-8004}:8004"
     env_file: .env.local
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://host.docker.internal:4317
+    extra_hosts:
+      - host.docker.internal:host-gateway
     volumes:
       - ../../services/haskell:/app
       - haskell_cabal_cache:/root/.cabal
