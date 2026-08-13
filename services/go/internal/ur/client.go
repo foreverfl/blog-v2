@@ -16,14 +16,15 @@ import (
 // Undocumented API behind the ur-net search pages; shape captured in
 // work/hurl/ur-net. Empty form fields the browser sends are omitted —
 // verified the server answers the same without them.
-const searchURL = "https://chintai.r6.ur-net.go.jp/chintai/api/bukken/result/bukken_result/"
+const (
+	searchURL = "https://chintai.r6.ur-net.go.jp/chintai/api/bukken/result/bukken_result/"
+	roomURL   = "https://chintai.r6.ur-net.go.jp/chintai/api/bukken/detail/detail_bukken_room/"
+)
 
 // FetchAreaPage posts one area-mode search (one Tokyo ward, one page) and
 // returns the raw JSON body.
 func FetchAreaPage(ctx context.Context, wardCode string, pageIndex int) ([]byte, error) {
-	client := &http.Client{Timeout: 15 * time.Second, Transport: otelhttp.NewTransport(nil)}
-
-	form := url.Values{
+	return postForm(ctx, searchURL, url.Values{
 		"mode":          {"area"},
 		"skcs":          {wardCode},
 		"block":         {"kanto"},
@@ -32,8 +33,41 @@ func FetchAreaPage(ctx context.Context, wardCode string, pageIndex int) ([]byte,
 		"pageSize":      {"10"},
 		"pageIndex":     {strconv.Itoa(pageIndex)},
 		"pageIndexRoom": {"0"},
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, searchURL, strings.NewReader(form.Encode()))
+	})
+}
+
+// FetchVacantPage posts one detail-mode search: every vacant room in the
+// prefecture, paginated. Out-of-range pages return an empty array.
+// prefCode is a JIS prefecture code ("13" = Tokyo, "14" = Kanagawa).
+func FetchVacantPage(ctx context.Context, prefCode string, pageIndex int) ([]byte, error) {
+	return postForm(ctx, searchURL, url.Values{
+		"mode":          {"detail"},
+		"block":         {"kanto"},
+		"tdfk":          {prefCode},
+		"orderByField":  {"1"},
+		"pageSize":      {"10"},
+		"pageIndex":     {strconv.Itoa(pageIndex)},
+		"pageIndexRoom": {"0"},
+	})
+}
+
+// FetchDanchiRoomPage posts the room-list API: the vacant rooms of one
+// danchi, 5 per page.
+func FetchDanchiRoomPage(ctx context.Context, danchi Danchi, pageIndex int) ([]byte, error) {
+	return postForm(ctx, roomURL, url.Values{
+		"shisya":       {danchi.Shisya},
+		"danchi":       {danchi.DanchiID},
+		"shikibetu":    {danchi.Shikibetu},
+		"orderByField": {"0"},
+		"orderBySort":  {"0"},
+		"pageIndex":    {strconv.Itoa(pageIndex)},
+	})
+}
+
+func postForm(ctx context.Context, apiURL string, form url.Values) ([]byte, error) {
+	client := &http.Client{Timeout: 15 * time.Second, Transport: otelhttp.NewTransport(nil)}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL, strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, err
 	}

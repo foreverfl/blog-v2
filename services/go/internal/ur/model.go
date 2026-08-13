@@ -6,17 +6,25 @@ import "encoding/json"
 // Values are kept as the API sends them (strings); numeric conversion
 // happens where a filter actually needs a number.
 type Danchi struct {
-	Name    string `json:"danchiNm"`
-	Address string `json:"place"`
-	Traffic string `json:"traffic"` // station walk, HTML <li> list
-	Rooms   []Room `json:"room"`
+	Name      string `json:"danchiNm"`
+	Address   string `json:"place"`
+	Traffic   string `json:"traffic"`  // station walk, HTML <li> list
+	AllCount  string `json:"allCount"` // total vacant rooms in the prefecture
+	Shisya    string `json:"shisya"`
+	DanchiID  string `json:"danchi"`
+	Shikibetu string `json:"shikibetu"`
+	RoomCount string `json:"roomCount"` // vacant rooms here; Rooms is truncated to 5
+	Rooms     []Room `json:"room"`
 }
 
-// Room is one vacant room inside a Danchi.
+// Room is one vacant room inside a Danchi. Exactly one of Rent/RentNormal
+// is non-empty (rent carries discounted listings, rent_normal the rest).
 type Room struct {
 	Building   string `json:"roomNmMain"` // "7-1-1号棟"
 	RoomNo     string `json:"roomNmSub"`  // "1305号室"
+	Name       string `json:"name"`       // room-list API only: "5-7号棟402号室"
 	Rent       string `json:"rent"`       // "118,300円"
+	RentNormal string `json:"rent_normal"`
 	CommonFee  string `json:"commonfee"`  // "3,600円"
 	Layout     string `json:"type"`       // "1K"
 	FloorSpace string `json:"floorspace"` // "45&#13217;" (㎡)
@@ -31,4 +39,14 @@ func ParseBukkenResult(body []byte) ([]Danchi, error) {
 		return nil, err
 	}
 	return danchis, nil
+}
+
+// ParseDetailRooms unmarshals one room-list API response body (a flat array
+// of rooms, no danchi wrapper).
+func ParseDetailRooms(body []byte) ([]Room, error) {
+	var rooms []Room
+	if err := json.Unmarshal(body, &rooms); err != nil {
+		return nil, err
+	}
+	return rooms, nil
 }
