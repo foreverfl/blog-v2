@@ -1,6 +1,8 @@
 mod assets;
 mod bug_reports;
 mod comments;
+mod diet;
+mod diet_profiles;
 mod hackernews;
 mod import;
 mod likes;
@@ -52,6 +54,7 @@ pub fn create_router(state: AppState) -> Router {
         .route("/health", get(health))
         .nest("/assets", assets::router(upload_limit))
         .nest("/posts", posts::router())
+        .nest("/diet", diet::router())
         .nest("/recipe", recipe::router())
         .nest("/import", import::router())
         .nest("/hackernews", hackernews::router())

@@ -1,0 +1,85 @@
+openapi: 3.1.0
+info:
+  title: Diet API
+  version: 1.0.0
+  description: |
+    Calorie tracking for mogumogu.dev. Every row belongs to one user, so each
+    endpoint reads the caller from their JWT and only ever touches that user's
+    own rows. Derived numbers (BMI, the deficit needed to reach a goal) are
+    computed on read and never stored.
+  x-api-id: diet
+
+servers:
+  - url: https://api.mogumogu.dev/rust
+    description: Production
+  - url: http://localhost:8002
+    description: Local development (direct to the Rust service)
+
+tags:
+  - name: Diet
+    description: The caller's body profile and calorie records.
+
+paths:
+  /diet/profile:
+    get:
+      tags: [Diet]
+      operationId: getDietProfile
+      summary: Get my body profile
+      description: |
+        Returns the caller's height, goal weight and basal metabolic rate — the
+        inputs every derived number is computed from. 404 until the profile has
+        been created.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The caller's profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DietProfile'
+        '401':
+          description: Missing, malformed or expired token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The caller has not created a profile yet.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    DietProfile:
+      type: object
+      required: [height_cm, updated_at]
+      properties:
+        height_cm:
+          type: number
+          format: double
+          examples: [176.0]
+        target_weight_kg:
+          type: [number, 'null']
+          format: double
+          examples: [65.0]
+        bmr_kcal:
+          type: [integer, 'null']
+          examples: [1700]
+        updated_at:
+          type: string
+          format: date-time
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string

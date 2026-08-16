@@ -1,6 +1,7 @@
 pub mod assets;
 pub mod bug_reports;
 pub mod comments;
+pub mod diet_profiles;
 pub mod hackernews;
 pub mod import;
 pub mod likes;
