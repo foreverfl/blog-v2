@@ -51,6 +51,48 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+    put:
+      tags: [Diet]
+      operationId: upsertDietProfile
+      summary: Save my body profile
+      description: |
+        Creates the caller's profile on the first call and replaces it after
+        that. The body carries the whole profile, so an omitted optional field
+        clears the stored value.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpsertDietProfile'
+      responses:
+        '200':
+          description: The stored profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DietProfile'
+        '400':
+          description: height_cm or bmr_kcal is not greater than zero.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing, malformed or expired token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          description: The body is not valid JSON or height_cm is missing.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -77,6 +119,21 @@ components:
         updated_at:
           type: string
           format: date-time
+    UpsertDietProfile:
+      type: object
+      required: [height_cm]
+      properties:
+        height_cm:
+          type: number
+          format: double
+          examples: [176.0]
+        target_weight_kg:
+          type: [number, 'null']
+          format: double
+          examples: [65.0]
+        bmr_kcal:
+          type: [integer, 'null']
+          examples: [1700]
     Error:
       type: object
       required: [error]
