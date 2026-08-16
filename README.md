@@ -26,6 +26,7 @@ A polyglot monorepo for my personal blog platform. Migrating from [Next.js blog]
 ├── doc-source/
 │   └── openapi/specs/       # OpenAPI specs (one standalone doc per domain)
 ├── infra/
+│   ├── db/migrations/       # Flyway SQL migrations (V0001, V0002, …)
 │   ├── docker/              # Docker Compose files
 │   └── terraform/           # Infrastructure as Code
 ├── docs/
@@ -34,7 +35,7 @@ A polyglot monorepo for my personal blog platform. Migrating from [Next.js blog]
 ├── scripts/
 │   ├── dev/                 # Local development scripts
 │   ├── deploy/              # Deployment scripts
-│   └── db/                  # Database migrations/backups
+│   └── db/                  # Database helper scripts
 └── .github/
     ├── workflows/           # CI/CD pipelines
     └── PULL_REQUEST_TEMPLATE/  # PR templates per branch type
@@ -81,6 +82,34 @@ buf generate
 grpcurl -plaintext localhost:50051 list
 grpcurl -plaintext -d '{"id":"123"}' localhost:50051 blog.v1.PostService/GetPost
 ```
+
+## Database
+
+PostgreSQL, migrated with Flyway. Migrations live in `infra/db/migrations` and
+are named `V####__snake_case_description.sql`; Flyway applies them in order and
+records a checksum, so an applied file must never be edited in place — add the
+next version instead.
+
+```bash
+# Apply pending migrations to the local database
+make local-flyway
+```
+
+Most tables sit in `public`; the recipe domain has its own `recipe` schema.
+
+| Version | Adds |
+|---------|------|
+| `V0001` | `users`, `posts`, `likes`, `comments`, `api_usage`, `anime`, `visitor_fingerprint` |
+| `V0002` | Performance indexes for the base tables |
+| `V0003` | `post_contents`, `assets`, `post_assets` |
+| `V0004` | Unique constraint on `assets.sha256` |
+| `V0005` | Renames `posts.body` to `posts.image` |
+| `V0006` | `hackernews_likes` |
+| `V0007` | `recipe` schema + `cuisines`, `sauce_usage_types`, `cooking_method_types` (seeded) |
+| `V0008` | `recipe.ingredients` (seeded) |
+| `V0009` | `diet_profiles` — one body profile per user |
+| `V0010` | `diet_tdee_cases`, `diet_daily_logs` — the burn side of calorie tracking |
+| `V0011` | `diet_dishes`, `diet_meals` — the intake side, with a dish seed |
 
 ## Environment Variables
 
