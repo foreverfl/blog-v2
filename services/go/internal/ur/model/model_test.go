@@ -32,6 +32,9 @@ func TestParseBukkenResult(t *testing.T) {
 	if !strings.Contains(kibo.Traffic, "徒歩") {
 		t.Errorf("traffic = %q", kibo.Traffic)
 	}
+	if kibo.FloorAll != "14" {
+		t.Errorf("floorAll = %q", kibo.FloorAll)
+	}
 	if len(kibo.Rooms) != 1 {
 		t.Fatalf("expected 1 room, got %d", len(kibo.Rooms))
 	}

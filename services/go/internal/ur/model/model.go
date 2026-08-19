@@ -9,6 +9,7 @@ type Danchi struct {
 	Name      string `json:"danchiNm"`
 	Address   string `json:"place"`
 	Traffic   string `json:"traffic"`  // station walk, HTML <li> list
+	FloorAll  string `json:"floorAll"` // building floors, "14"
 	AllCount  string `json:"allCount"` // total vacant rooms in the prefecture
 	Shisya    string `json:"shisya"`
 	DanchiID  string `json:"danchi"`
