@@ -1,9 +1,11 @@
-package ur
+package service
 
 import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"blog-go-api/internal/ur/model"
 )
 
 // Conditions selects rooms; a zero/empty field skips that check.
@@ -22,8 +24,8 @@ var DefaultConditions = Conditions{
 
 // Filter returns the rooms passing every condition. A value that fails to
 // parse passes its check — over-filtering at collection is worse than noise.
-func Filter(rooms []Room, conditions Conditions) []Room {
-	var passed []Room
+func Filter(rooms []model.Room, conditions Conditions) []model.Room {
+	var passed []model.Room
 	for _, room := range rooms {
 		if roomPasses(room, conditions) {
 			passed = append(passed, room)
@@ -32,7 +34,7 @@ func Filter(rooms []Room, conditions Conditions) []Room {
 	return passed
 }
 
-func roomPasses(room Room, conditions Conditions) bool {
+func roomPasses(room model.Room, conditions Conditions) bool {
 	if conditions.MaxRentYen > 0 {
 		// The API fills exactly one of rent (discounted) / rent_normal (regular).
 		rent, err := parseYen(firstNonEmpty(room.Rent, room.RentNormal))

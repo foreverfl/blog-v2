@@ -1,4 +1,4 @@
-package ur
+package model
 
 import (
 	"os"

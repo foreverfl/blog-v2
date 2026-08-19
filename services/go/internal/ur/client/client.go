@@ -1,4 +1,4 @@
-package ur
+package client
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"blog-go-api/internal/ur/model"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
@@ -53,7 +54,7 @@ func FetchVacantPage(ctx context.Context, prefCode string, pageIndex int) ([]byt
 
 // FetchDanchiRoomPage posts the room-list API: the vacant rooms of one
 // danchi, 5 per page.
-func FetchDanchiRoomPage(ctx context.Context, danchi Danchi, pageIndex int) ([]byte, error) {
+func FetchDanchiRoomPage(ctx context.Context, danchi model.Danchi, pageIndex int) ([]byte, error) {
 	return postForm(ctx, roomURL, url.Values{
 		"shisya":       {danchi.Shisya},
 		"danchi":       {danchi.DanchiID},

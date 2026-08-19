@@ -1,4 +1,4 @@
-package ur
+package client
 
 import (
 	"context"
@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"strconv"
 	"time"
+
+	"blog-go-api/internal/ur/model"
 )
 
 // pageCap stops a runaway loop if the API ever stops returning empty pages.
@@ -13,8 +15,8 @@ const pageCap = 100
 
 // CollectVacant pages through the prefecture's vacant rooms until an empty
 // page, waiting politely between requests.
-func CollectVacant(ctx context.Context, prefCode string) ([]Danchi, error) {
-	var all []Danchi
+func CollectVacant(ctx context.Context, prefCode string) ([]model.Danchi, error) {
+	var all []model.Danchi
 	for page := 0; ; page++ {
 		if page >= pageCap {
 			return nil, fmt.Errorf("page cap %d reached for pref %s", pageCap, prefCode)
@@ -31,7 +33,7 @@ func CollectVacant(ctx context.Context, prefCode string) ([]Danchi, error) {
 		if err != nil {
 			return nil, err
 		}
-		danchis, err := ParseBukkenResult(body)
+		danchis, err := model.ParseBukkenResult(body)
 		if err != nil {
 			return nil, err
 		}
@@ -54,13 +56,13 @@ func CollectVacant(ctx context.Context, prefCode string) ([]Danchi, error) {
 
 // refetchTruncatedRooms refetches the danchi's full room list (replacing
 // the listing's max-5 slice) when roomCount says some rooms are missing.
-func refetchTruncatedRooms(ctx context.Context, danchi *Danchi) error {
+func refetchTruncatedRooms(ctx context.Context, danchi *model.Danchi) error {
 	declaredCount, err := strconv.Atoi(danchi.RoomCount)
 	if err != nil || len(danchi.Rooms) >= declaredCount {
 		return nil
 	}
 
-	var rooms []Room
+	var rooms []model.Room
 	for page := 0; len(rooms) < declaredCount && page < pageCap; page++ {
 		select {
 		case <-ctx.Done():
@@ -72,7 +74,7 @@ func refetchTruncatedRooms(ctx context.Context, danchi *Danchi) error {
 		if err != nil {
 			return err
 		}
-		pageRooms, err := ParseDetailRooms(body)
+		pageRooms, err := model.ParseDetailRooms(body)
 		if err != nil {
 			return err
 		}

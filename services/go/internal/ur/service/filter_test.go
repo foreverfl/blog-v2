@@ -1,15 +1,19 @@
-package ur
+package service
 
-import "testing"
+import (
+	"testing"
 
-func room(rent, rentNormal, commonFee, layout, floorSpace string) Room {
-	return Room{Rent: rent, RentNormal: rentNormal, CommonFee: commonFee, Layout: layout, FloorSpace: floorSpace}
+	"blog-go-api/internal/ur/model"
+)
+
+func room(rent, rentNormal, commonFee, layout, floorSpace string) model.Room {
+	return model.Room{Rent: rent, RentNormal: rentNormal, CommonFee: commonFee, Layout: layout, FloorSpace: floorSpace}
 }
 
 func TestFilterDefaultConditions(t *testing.T) {
 	tests := []struct {
 		name string
-		room Room
+		room model.Room
 		want bool
 	}{
 		{"01 sum exactly 120,000 passes", room("116,400円", "", "3,600円", "1LDK", "45&#13217;"), true},
@@ -26,7 +30,7 @@ func TestFilterDefaultConditions(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := Filter([]Room{tt.room}, DefaultConditions)
+			got := Filter([]model.Room{tt.room}, DefaultConditions)
 			if passed := len(got) == 1; passed != tt.want {
 				t.Errorf("passed = %v, want %v", passed, tt.want)
 			}
@@ -35,7 +39,7 @@ func TestFilterDefaultConditions(t *testing.T) {
 }
 
 func TestFilterZeroConditionsPassEverything(t *testing.T) {
-	rooms := []Room{room("999,999円", "", "9,999円", "1K", "10&#13217;")}
+	rooms := []model.Room{room("999,999円", "", "9,999円", "1K", "10&#13217;")}
 	if got := Filter(rooms, Conditions{}); len(got) != 1 {
 		t.Errorf("zero conditions filtered out %d rooms", len(rooms)-len(got))
 	}
