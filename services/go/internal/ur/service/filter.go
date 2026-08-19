@@ -22,7 +22,6 @@ type Conditions struct {
 var DefaultConditions = Conditions{
 	MaxRentYen:        120_000,
 	MinFloorSpace:     40,
-	Layouts:           []string{"1LDK", "2DK", "2LDK"},
 	MinFloor:          3,
 	ExcludeTopFloor:   true,
 	MaxStationWalkMin: 10,

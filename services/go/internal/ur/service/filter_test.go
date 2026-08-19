@@ -32,10 +32,9 @@ func TestFilterDefaultConditions(t *testing.T) {
 		{"05 empty common fee judges on rent alone", room("118,300円", "", "", "2LDK", "45&#13217;"), true},
 		{"06 floor space exactly 40 passes", room("100,000円", "", "3,600円", "1LDK", "40&#13217;"), true},
 		{"07 floor space 39.9 fails", room("100,000円", "", "3,600円", "1LDK", "39.9&#13217;"), false},
-		{"08 layout 1K fails", room("100,000円", "", "3,600円", "1K", "45&#13217;"), false},
-		{"09 layout 2LDK passes", room("100,000円", "", "3,600円", "2LDK", "45&#13217;"), true},
-		{"10 unparseable rent passes through", room("要相談", "", "3,600円", "1LDK", "45&#13217;"), true},
-		{"11 unparseable floor space passes through", room("100,000円", "", "3,600円", "1LDK", "広め"), true},
+		{"08 any layout passes by default", room("100,000円", "", "3,600円", "1K", "45&#13217;"), true},
+		{"09 unparseable rent passes through", room("要相談", "", "3,600円", "1LDK", "45&#13217;"), true},
+		{"10 unparseable floor space passes through", room("100,000円", "", "3,600円", "1LDK", "広め"), true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -77,6 +76,17 @@ func TestFilterFloorAndStationWalk(t *testing.T) {
 				t.Errorf("passed = %v, want %v", passed, tt.want)
 			}
 		})
+	}
+}
+
+func TestFilterLayoutsWhenSet(t *testing.T) {
+	conditions := DefaultConditions
+	conditions.Layouts = []string{"1LDK", "2DK", "2LDK"}
+	kitchenette := passingRoom()
+	kitchenette.Layout = "1K"
+	danchi := model.Danchi{Rooms: []model.Room{kitchenette}}
+	if len(Filter([]model.Danchi{danchi}, conditions)) != 0 {
+		t.Error("1K passed a 1LDK/2DK/2LDK layout filter")
 	}
 }
 
