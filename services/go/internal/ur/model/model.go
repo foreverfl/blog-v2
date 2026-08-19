@@ -18,9 +18,18 @@ type Danchi struct {
 	Rooms     []Room `json:"room"`
 }
 
+// DanchiDetail holds crawled danchi attributes; nil = unreadable.
+// 棟数 is published nowhere, so it is deliberately absent.
+type DanchiDetail struct {
+	UnitCount *int `json:"unitCount"` // 総戸数
+	Floors    *int `json:"floors"`    // building floors of the sampled room
+	BuiltYear *int `json:"builtYear"` // completion year, current year - age
+}
+
 // Room is one vacant room inside a Danchi. Exactly one of Rent/RentNormal
 // is non-empty (rent carries discounted listings, rent_normal the rest).
 type Room struct {
+	ID         string `json:"id"`         // "000050602", keys the room-detail API
 	Building   string `json:"roomNmMain"` // "7-1-1号棟"
 	RoomNo     string `json:"roomNmSub"`  // "1305号室"
 	Name       string `json:"name"`       // room-list API only: "5-7号棟402号室"

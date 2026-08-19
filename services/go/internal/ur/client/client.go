@@ -65,24 +65,37 @@ func FetchDanchiRoomPage(ctx context.Context, danchi model.Danchi, pageIndex int
 	})
 }
 
-func postForm(ctx context.Context, apiURL string, form url.Values) ([]byte, error) {
-	client := &http.Client{Timeout: 15 * time.Second, Transport: otelhttp.NewTransport(nil)}
+var httpClient = &http.Client{Timeout: 15 * time.Second, Transport: otelhttp.NewTransport(nil)}
 
+func postForm(ctx context.Context, apiURL string, form url.Values) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL, strings.NewReader(form.Encode()))
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
+	return send(req)
+}
+
+func getPage(ctx context.Context, pageURL string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, pageURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	return send(req)
+}
+
+// send runs the request with a browser User-Agent and returns the 200 body.
+func send(req *http.Request) ([]byte, error) {
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36")
 
-	resp, err := client.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP %d from ur search api", resp.StatusCode)
+		return nil, fmt.Errorf("HTTP %d from %s", resp.StatusCode, req.URL)
 	}
 	return io.ReadAll(resp.Body)
 }
