@@ -61,3 +61,22 @@ pub async fn upsert(
         other => ApiError::Database(other),
     })
 }
+
+/// The most recent weight this user wrote down, if they ever have.
+/// Days without a weight are skipped rather than treated as the latest.
+#[tracing::instrument(name = "diet_profiles.latest_weight", skip(pool))]
+pub async fn latest_weight(pool: &PgPool, user_id: Uuid) -> Result<Option<f64>, ApiError> {
+    sqlx::query_scalar::<_, f64>(
+        r#"
+        SELECT weight_kg::float8
+        FROM public.diet_daily_logs
+        WHERE user_id = $1 AND weight_kg IS NOT NULL
+        ORDER BY log_date DESC
+        LIMIT 1
+        "#,
+    )
+    .bind(user_id)
+    .fetch_optional(pool)
+    .await
+    .map_err(ApiError::from)
+}

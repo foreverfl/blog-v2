@@ -20,3 +20,25 @@ pub struct UpsertDietProfileRequest {
     pub target_weight_kg: Option<f64>,
     pub bmr_kcal: Option<i32>,
 }
+
+/// GET /diet/profile/stats query. `weight` previews a value the user is still
+/// typing; without it the latest recorded weight is used.
+#[derive(Debug, Deserialize)]
+pub struct DietProfileStatsQuery {
+    pub weight: Option<f64>,
+}
+
+/// GET /diet/profile/stats response. Everything here is computed on read from
+/// the profile plus one weight — none of it is stored.
+#[derive(Debug, Serialize)]
+pub struct DietProfileStats {
+    pub weight_kg: f64,
+    pub bmi: f64,
+    pub target_weight_kg: Option<f64>,
+    pub remaining_kg: Option<f64>,
+    pub remaining_kcal: Option<f64>,
+    pub walk_hours: Option<f64>,
+    pub walk_km: Option<f64>,
+    pub run_hours: Option<f64>,
+    pub run_km: Option<f64>,
+}

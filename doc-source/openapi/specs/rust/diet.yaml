@@ -93,6 +93,53 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /diet/profile/stats:
+    get:
+      tags: [Diet]
+      operationId: getDietProfileStats
+      summary: Get my derived numbers
+      description: |
+        BMI, and how far the goal weight is in kilograms, in kcal, and in hours
+        of walking or running. All computed on read from the profile plus one
+        weight, never stored. The weight comes from `?weight=` when given —
+        that is how the edit modal previews a value being typed — and otherwise
+        from the most recent recorded day.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: weight
+          in: query
+          required: false
+          description: Weight in kg to compute with instead of the recorded one.
+          schema:
+            type: number
+            format: double
+      responses:
+        '200':
+          description: The derived numbers.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DietProfileStats'
+        '400':
+          description: No weight was given and none has been recorded, or the weight is not above zero.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing, malformed or expired token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The caller has not created a profile yet.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -134,6 +181,49 @@ components:
         bmr_kcal:
           type: [integer, 'null']
           examples: [1700]
+    DietProfileStats:
+      type: object
+      required: [weight_kg, bmi]
+      description: |
+        Everything below `bmi` needs a goal weight, so those are null until one
+        is set.
+      properties:
+        weight_kg:
+          type: number
+          format: double
+          examples: [80.0]
+        bmi:
+          type: number
+          format: double
+          examples: [25.8]
+        target_weight_kg:
+          type: [number, 'null']
+          format: double
+          examples: [65.0]
+        remaining_kg:
+          type: [number, 'null']
+          format: double
+          examples: [15.0]
+        remaining_kcal:
+          type: [number, 'null']
+          format: double
+          examples: [115500.0]
+        walk_hours:
+          type: [number, 'null']
+          format: double
+          examples: [525.0]
+        walk_km:
+          type: [number, 'null']
+          format: double
+          examples: [2887.5]
+        run_hours:
+          type: [number, 'null']
+          format: double
+          examples: [160.4]
+        run_km:
+          type: [number, 'null']
+          format: double
+          examples: [1443.8]
     Error:
       type: object
       required: [error]
