@@ -14,6 +14,7 @@ import (
 	oaiservice "blog-go-api/internal/openai"
 	"blog-go-api/internal/r2"
 	"blog-go-api/internal/redisclient"
+	urhandler "blog-go-api/internal/ur/handler"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
@@ -125,6 +126,9 @@ func main() {
 	draw := handler.DrawHandler(cfg, hackernewsClient, hackernewsImagesClient, openai, statusManager)
 	handle("POST /hackernews/draw", draw)
 	handle("POST /hackernews/draw/{date}", draw)
+
+	// UR vacant rooms
+	handle("GET /ur/listings", urhandler.ListingsHandler(cfg))
 
 	// Inspect
 	handle("GET /hackernews/inspect/json", handler.InspectJSONHandler(cfg, hackernewsClient))

@@ -1,0 +1,173 @@
+openapi: 3.1.0
+info:
+  title: UR Vacant Rooms API
+  version: 1.0.0
+  description: |
+    Crawls the UR (Urban Renaissance Agency) rental listing API for every vacant
+    room in Tokyo (13) and Kanagawa (14), then returns the danchis whose rooms
+    pass the filter conditions. The crawl runs synchronously with polite waits
+    between upstream requests, so a response takes on the order of two minutes.
+    All values are returned as the UR API sends them (formatted strings).
+  x-api-id: ur
+
+servers:
+  - url: https://api.mogumogu.dev/go
+    description: Production
+  - url: http://localhost:8003
+    description: Local development (direct to the Go service)
+
+tags:
+  - name: UR
+    description: UR vacant-room collection and filtering.
+
+paths:
+  /ur/listings:
+    get:
+      tags: [UR]
+      operationId: listVacantRooms
+      summary: Collect vacant UR rooms passing the filter
+      description: |
+        Collects every vacant room in Tokyo and Kanagawa and returns the danchis
+        whose rooms pass the filter. Each query parameter overrides one default
+        condition; `0` (or an empty `types`) disables that check. A value that
+        fails to parse on the UR side passes its check rather than being dropped.
+      security:
+        - apiSecret: []
+      parameters:
+        - name: max_rent
+          in: query
+          description: Max rent + common fee in yen, inclusive (default 120000).
+          schema:
+            type: integer
+        - name: min_area
+          in: query
+          description: Min floor space in square meters, inclusive (default 40).
+          schema:
+            type: number
+        - name: min_floor
+          in: query
+          description: Lowest acceptable floor, inclusive (default 3).
+          schema:
+            type: integer
+        - name: max_walk
+          in: query
+          description: Max station walk in minutes, inclusive (default 10).
+          schema:
+            type: integer
+        - name: types
+          in: query
+          description: Comma-separated accepted 間取り values, exact match (default none — every layout passes).
+          schema:
+            type: string
+          example: 1LDK,2DK,2LDK
+      responses:
+        '200':
+          description: Danchis with at least one room passing the conditions.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Danchi'
+        '400':
+          description: Malformed query parameter.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '502':
+          description: The UR upstream crawl failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    apiSecret:
+      type: http
+      scheme: bearer
+      description: Static secret shared with the Go service (`API_SECRET`).
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+
+    Danchi:
+      type: object
+      description: One housing complex, values as the UR API sends them.
+      properties:
+        danchiNm:
+          type: string
+          description: Danchi name.
+        place:
+          type: string
+          description: Address.
+        traffic:
+          type: string
+          description: Station access as an HTML `<li>` list.
+        floorAll:
+          type: string
+          description: Building floors, e.g. "14".
+        allCount:
+          type: string
+          description: Total vacant rooms in the prefecture at crawl time.
+        shisya:
+          type: string
+        danchi:
+          type: string
+          description: Danchi ID.
+        shikibetu:
+          type: string
+        roomCount:
+          type: string
+          description: Vacant rooms in this danchi.
+        room:
+          type: array
+          items:
+            $ref: '#/components/schemas/Room'
+
+    Room:
+      type: object
+      description: One vacant room. Exactly one of rent / rent_normal is non-empty.
+      properties:
+        roomNmMain:
+          type: string
+          description: Building label, e.g. "7-1-1号棟".
+        roomNmSub:
+          type: string
+          description: Room label, e.g. "1305号室".
+        name:
+          type: string
+          description: Combined label (room-list API only).
+        rent:
+          type: string
+          description: Rent for discounted listings, e.g. "118,300円".
+        rent_normal:
+          type: string
+          description: Rent for regular listings.
+        commonfee:
+          type: string
+          description: Common fee, e.g. "3,600円".
+        type:
+          type: string
+          description: 間取り, e.g. "1LDK".
+        floorspace:
+          type: string
+          description: Floor space with ㎡ as an HTML entity, e.g. "45&#13217;".
+        floor:
+          type: string
+          description: Floor, e.g. "13階".
+        roomLinkPc:
+          type: string
+          description: Detail page path.
