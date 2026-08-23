@@ -18,6 +18,12 @@ type Danchi struct {
 	Rooms     []Room `json:"room"`
 }
 
+// Key identifies a danchi across crawls — the same "20_2520" slug the
+// danchi page URL uses.
+func (d Danchi) Key() string {
+	return d.Shisya + "_" + d.DanchiID + d.Shikibetu
+}
+
 // DanchiDetail holds crawled danchi attributes; nil = unreadable.
 // 棟数 is published nowhere, so it is deliberately absent.
 type DanchiDetail struct {
