@@ -85,3 +85,42 @@ pub async fn record_view(pool: &PgPool, id: i64) -> Result<Option<ClipRow>, ApiE
 
     Ok(row)
 }
+
+/// Fetch one clip by id.
+///
+/// @return the row, or None when the id does not exist.
+pub async fn get_by_id(pool: &PgPool, id: i64) -> Result<Option<ClipRow>, ApiError> {
+    let row = sqlx::query_as::<_, ClipRow>(
+        r#"
+        SELECT id, r2_key, series_slug, episode, start_sec, duration_sec, jellyfin_item, is_opening, liked, view_count, last_viewed_at, created_at
+        FROM anime.clips
+        WHERE id = $1
+        "#,
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(row)
+}
+
+/// Set the liked flag and the r2_key it moved to.
+///
+/// @return the updated row.
+pub async fn set_liked(pool: &PgPool, id: i64, liked: bool, r2_key: &str) -> Result<ClipRow, ApiError> {
+    let row = sqlx::query_as::<_, ClipRow>(
+        r#"
+        UPDATE anime.clips
+        SET liked = $2, r2_key = $3
+        WHERE id = $1
+        RETURNING id, r2_key, series_slug, episode, start_sec, duration_sec, jellyfin_item, is_opening, liked, view_count, last_viewed_at, created_at
+        "#,
+    )
+    .bind(id)
+    .bind(liked)
+    .bind(r2_key)
+    .fetch_one(pool)
+    .await?;
+
+    Ok(row)
+}

@@ -158,3 +158,84 @@ pub async fn view_clip(
 
     Ok(Json(row))
 }
+
+// POST /anime/clips/{id}/like
+//
+// Request: Authorization: Bearer <API_SECRET>, path id (bigint).
+// Response: 200 with the updated row — liked TRUE and the R2 object moved
+//           feed/ → liked/ (r2_key updated). Already-liked is a no-op 200.
+//           400 non-numeric id, 401 missing/bad token, 404 unknown id.
+pub async fn like_clip(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<i64>,
+) -> Result<Json<crate::types::ClipRow>, ApiError> {
+    auth::verify_bearer_secret(&headers, &state.config.api_secret)?;
+    Ok(Json(move_and_flag(&state, id, true).await?))
+}
+
+// DELETE /anime/clips/{id}/like
+//
+// Request: Authorization: Bearer <API_SECRET>, path id (bigint).
+// Response: 200 with the updated row — liked FALSE and the R2 object moved
+//           back liked/ → feed/. Not-liked is a no-op 200.
+//           400 non-numeric id, 401 missing/bad token, 404 unknown id.
+pub async fn unlike_clip(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<i64>,
+) -> Result<Json<crate::types::ClipRow>, ApiError> {
+    auth::verify_bearer_secret(&headers, &state.config.api_secret)?;
+    Ok(Json(move_and_flag(&state, id, false).await?))
+}
+
+/// Flip the liked flag, moving the R2 object between feed/ and liked/
+/// (copy + delete — R2 has no rename). No-op when already in the wanted state.
+///
+/// @return the updated (or unchanged) row.
+async fn move_and_flag(
+    state: &AppState,
+    id: i64,
+    liked: bool,
+) -> Result<crate::types::ClipRow, ApiError> {
+    let row = clip_store::get_by_id(&state.db, id)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+    if row.liked == liked {
+        return Ok(row);
+    }
+
+    let (from_prefix, to_prefix) = if liked {
+        ("feed/", "liked/")
+    } else {
+        ("liked/", "feed/")
+    };
+    let new_key = format!(
+        "{}{}",
+        to_prefix,
+        row.r2_key.strip_prefix(from_prefix).unwrap_or(&row.r2_key)
+    );
+
+    let bucket = &state.config.s3_bucket_anime_clips;
+    state
+        .s3
+        .copy_object()
+        .bucket(bucket)
+        .copy_source(format!("{bucket}/{}", row.r2_key))
+        .key(&new_key)
+        .send()
+        .instrument(tracing::info_span!("s3.copy_object"))
+        .await
+        .map_err(|e| ApiError::S3(e.to_string()))?;
+    state
+        .s3
+        .delete_object()
+        .bucket(bucket)
+        .key(&row.r2_key)
+        .send()
+        .instrument(tracing::info_span!("s3.delete_object"))
+        .await
+        .map_err(|e| ApiError::S3(e.to_string()))?;
+
+    clip_store::set_liked(&state.db, id, liked, &new_key).await
+}
