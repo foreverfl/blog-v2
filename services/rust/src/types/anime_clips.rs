@@ -1,6 +1,8 @@
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 
+use crate::config::ASSET_URL_PATTERN;
+
 // ── Database rows ──
 
 #[derive(Debug, Clone, Serialize, sqlx::FromRow)]
@@ -17,6 +19,22 @@ pub struct ClipRow {
     pub view_count: i32,
     pub last_viewed_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
+    // Not a column — filled by with_url() before the row goes out.
+    #[sqlx(default)]
+    pub url: Option<String>,
+}
+
+impl ClipRow {
+    /// Fill `url` from r2_key and the physical clips bucket.
+    ///
+    /// @param bucket - physical bucket name (e.g. "dev-anime-clips")
+    /// @return self with url set, or url None when the media was cleared.
+    pub fn with_url(mut self, bucket: &str) -> Self {
+        self.url = self.r2_key.as_ref().map(|key| {
+            format!("{}/{}", ASSET_URL_PATTERN.replace("{bucket}", bucket), key)
+        });
+        self
+    }
 }
 
 // ── Query types ──

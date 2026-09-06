@@ -113,7 +113,7 @@ pub async fn upload_clip(
     )
     .await?;
 
-    Ok((StatusCode::CREATED, Json(row)))
+    Ok((StatusCode::CREATED, Json(row.with_url(&state.config.s3_bucket_anime_clips))))
 }
 
 // GET /anime/clips
@@ -132,8 +132,9 @@ pub async fn list_clips(
 
     let limit = query.limit.unwrap_or(100).clamp(1, 1000);
     let rows = clip_store::list(&state.db, query.viewed, limit).await?;
+    let bucket = &state.config.s3_bucket_anime_clips;
 
-    Ok(Json(rows))
+    Ok(Json(rows.into_iter().map(|row| row.with_url(bucket)).collect()))
 }
 
 // POST /anime/clips/{id}/view
@@ -152,7 +153,7 @@ pub async fn view_clip(
         .await?
         .ok_or(ApiError::NotFound)?;
 
-    Ok(Json(row))
+    Ok(Json(row.with_url(&state.config.s3_bucket_anime_clips)))
 }
 
 // POST /anime/clips/{id}/like
@@ -167,7 +168,11 @@ pub async fn like_clip(
     Path(id): Path<i64>,
 ) -> Result<Json<crate::types::ClipRow>, ApiError> {
     auth::verify_secret_or_admin(&state.config, &headers)?;
-    Ok(Json(move_and_flag(&state, id, true).await?))
+    Ok(Json(
+        move_and_flag(&state, id, true)
+            .await?
+            .with_url(&state.config.s3_bucket_anime_clips),
+    ))
 }
 
 // DELETE /anime/clips/{id}/like
@@ -182,7 +187,11 @@ pub async fn unlike_clip(
     Path(id): Path<i64>,
 ) -> Result<Json<crate::types::ClipRow>, ApiError> {
     auth::verify_secret_or_admin(&state.config, &headers)?;
-    Ok(Json(move_and_flag(&state, id, false).await?))
+    Ok(Json(
+        move_and_flag(&state, id, false)
+            .await?
+            .with_url(&state.config.s3_bucket_anime_clips),
+    ))
 }
 
 // DELETE /anime/clips/{id}/media
