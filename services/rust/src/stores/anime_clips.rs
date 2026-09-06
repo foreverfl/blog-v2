@@ -66,3 +66,22 @@ pub async fn list(pool: &PgPool, viewed: Option<bool>, limit: i64) -> Result<Vec
 
     Ok(rows)
 }
+
+/// Count one viewing of a clip: view_count + 1, last_viewed_at = now.
+///
+/// @return the updated row, or None when the id does not exist.
+pub async fn record_view(pool: &PgPool, id: i64) -> Result<Option<ClipRow>, ApiError> {
+    let row = sqlx::query_as::<_, ClipRow>(
+        r#"
+        UPDATE anime.clips
+        SET view_count = view_count + 1, last_viewed_at = now()
+        WHERE id = $1
+        RETURNING id, r2_key, series_slug, episode, start_sec, duration_sec, jellyfin_item, is_opening, liked, view_count, last_viewed_at, created_at
+        "#,
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(row)
+}

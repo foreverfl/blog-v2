@@ -12,4 +12,5 @@ pub fn router(upload_limit: usize) -> Router<AppState> {
             .get(handlers::anime_clips::list_clips)
             .layer(DefaultBodyLimit::max(upload_limit)),
     )
+    .route("/clips/{id}/view", post(handlers::anime_clips::view_clip))
 }

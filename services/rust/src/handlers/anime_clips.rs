@@ -1,6 +1,6 @@
 use aws_sdk_s3::primitives::ByteStream;
 use axum::body::Bytes;
-use axum::extract::{Multipart, Query, State};
+use axum::extract::{Multipart, Path, Query, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::Json;
@@ -138,4 +138,23 @@ pub async fn list_clips(
     let rows = clip_store::list(&state.db, query.viewed, limit).await?;
 
     Ok(Json(rows))
+}
+
+// POST /anime/clips/{id}/view
+//
+// Request: Authorization: Bearer <API_SECRET>, path id (bigint).
+// Response: 200 with the updated clip row (view_count + 1, last_viewed_at set).
+//           400 non-numeric id, 401 missing/bad token, 404 unknown id.
+pub async fn view_clip(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<i64>,
+) -> Result<Json<crate::types::ClipRow>, ApiError> {
+    auth::verify_bearer_secret(&headers, &state.config.api_secret)?;
+
+    let row = clip_store::record_view(&state.db, id)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+
+    Ok(Json(row))
 }
