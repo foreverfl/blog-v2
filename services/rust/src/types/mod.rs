@@ -1,3 +1,4 @@
+mod anime_clips;
 mod assets;
 mod auth;
 mod comments;
@@ -11,6 +12,7 @@ mod recipe_cuisines;
 mod recipe_ingredients;
 mod recipe_sauce_usage_types;
 
+pub use anime_clips::*;
 pub use assets::*;
 pub use auth::*;
 pub use comments::*;

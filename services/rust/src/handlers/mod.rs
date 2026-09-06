@@ -1,3 +1,4 @@
+pub mod anime_clips;
 pub mod assets;
 pub mod bug_reports;
 pub mod comments;

@@ -17,6 +17,7 @@ pub struct AppConfig {
     pub jwt_secret: String,
     pub frontend_url: String,
     pub s3_bucket_blog_posts_assets: String,
+    pub s3_bucket_anime_clips: String,
     pub max_upload_size: usize,
     pub api_secret: String,
     pub github_token: Option<String>,
@@ -31,6 +32,7 @@ pub struct AppConfig {
 
 impl AppConfig {
     pub fn from_env() -> Self {
+        let bucket_prefix = env::var("BUCKET_PREFIX").unwrap_or_default();
         Self {
             database_url: env::var("DATABASE_URL").expect("DATABASE_URL required"),
             jwt_secret: env::var("JWT_SECRET").expect("JWT_SECRET required"),
@@ -38,6 +40,9 @@ impl AppConfig {
                 .unwrap_or_else(|_| "http://localhost:3000".into()),
             s3_bucket_blog_posts_assets: env::var("S3_BUCKET_BLOG_POSTS_ASSETS")
                 .expect("S3_BUCKET_BLOG_POSTS_ASSETS required"),
+            // Physical name; defaults to the env-prefixed clips bucket when unset.
+            s3_bucket_anime_clips: env::var("S3_BUCKET_ANIME_CLIPS")
+                .unwrap_or_else(|_| format!("{bucket_prefix}anime-clips")),
             max_upload_size: env::var("MAX_UPLOAD_SIZE")
                 .ok()
                 .and_then(|v| v.parse().ok())
@@ -46,7 +51,7 @@ impl AppConfig {
             github_token: env::var("GITHUB_TOKEN").ok(),
             openai_api_key: env::var("OPENAI_API_KEY").expect("OPENAI_API_KEY required"),
             redis_url: env::var("REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1:6379".into()),
-            bucket_prefix: env::var("BUCKET_PREFIX").unwrap_or_default(),
+            bucket_prefix,
             turnstile_secret: env::var("TURNSTILE_SECRET_KEY")
                 .expect("TURNSTILE_SECRET_KEY required"),
             // compose injects these as "" when unset — treat empty as absent
@@ -94,6 +99,7 @@ mod tests {
             jwt_secret: String::new(),
             frontend_url: String::new(),
             s3_bucket_blog_posts_assets: String::new(),
+            s3_bucket_anime_clips: String::new(),
             max_upload_size: 0,
             api_secret: String::new(),
             github_token: None,

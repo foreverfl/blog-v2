@@ -1,3 +1,4 @@
+mod anime;
 mod assets;
 mod bug_reports;
 mod comments;
@@ -52,6 +53,7 @@ pub fn create_router(state: AppState) -> Router {
 
     Router::new()
         .route("/health", get(health))
+        .nest("/anime", anime::router(upload_limit))
         .nest("/assets", assets::router(upload_limit))
         .nest("/posts", posts::router())
         .nest("/diet", diet::router())
