@@ -30,6 +30,16 @@ pub fn verify_secret_or_user(config: &AppConfig, headers: &HeaderMap) -> Result<
     extract_user_id(config, headers).map(|_| ())
 }
 
+/// Authorize via the shared `API_SECRET` Bearer token or an admin user JWT
+/// (email in `ADMIN_EMAILS`). For personal endpoints the browser can reach
+/// with a login instead of the secret.
+pub fn verify_secret_or_admin(config: &AppConfig, headers: &HeaderMap) -> Result<(), ApiError> {
+    if verify_bearer_secret(headers, &config.api_secret).is_ok() {
+        return Ok(());
+    }
+    require_admin(config, headers)
+}
+
 fn decode_claims(config: &AppConfig, headers: &HeaderMap) -> Result<Claims, ApiError> {
     let token = headers
         .get(header::AUTHORIZATION)

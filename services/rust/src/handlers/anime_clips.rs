@@ -13,7 +13,7 @@ use crate::types::{ApiError, ListClipsQuery};
 
 // POST /anime/clips
 //
-// Request: Authorization: Bearer <API_SECRET>, multipart/form-data with a
+// Request: Authorization: Bearer <API_SECRET or admin JWT>, multipart/form-data with a
 //          `file` field (the clip video) and text fields: series_slug,
 //          episode (SxxEyy), start_sec, duration_sec, and optionally
 //          jellyfin_item and is_opening ("true"/"false").
@@ -25,7 +25,7 @@ pub async fn upload_clip(
     headers: HeaderMap,
     mut multipart: Multipart,
 ) -> Result<impl IntoResponse, ApiError> {
-    auth::verify_bearer_secret(&headers, &state.config.api_secret)?;
+    auth::verify_secret_or_admin(&state.config, &headers)?;
 
     let mut file: Option<(String, String, Bytes)> = None; // (file_name, mime, data)
     let mut series_slug: Option<String> = None;
@@ -116,13 +116,9 @@ pub async fn upload_clip(
     Ok((StatusCode::CREATED, Json(row)))
 }
 
-fn missing(field: &str) -> ApiError {
-    ApiError::BadRequest(format!("missing field '{field}'"))
-}
-
 // GET /anime/clips
 //
-// Request: Authorization: Bearer <API_SECRET>, optional query
+// Request: Authorization: Bearer <API_SECRET or admin JWT>, optional query
 //          ?viewed=false (only unviewed — view_count = 0; true = only viewed)
 //          &limit= (default 100, max 1000).
 // Response: 200 array of clip rows in random order.
@@ -132,7 +128,7 @@ pub async fn list_clips(
     headers: HeaderMap,
     Query(query): Query<ListClipsQuery>,
 ) -> Result<Json<Vec<crate::types::ClipRow>>, ApiError> {
-    auth::verify_bearer_secret(&headers, &state.config.api_secret)?;
+    auth::verify_secret_or_admin(&state.config, &headers)?;
 
     let limit = query.limit.unwrap_or(100).clamp(1, 1000);
     let rows = clip_store::list(&state.db, query.viewed, limit).await?;
@@ -142,7 +138,7 @@ pub async fn list_clips(
 
 // POST /anime/clips/{id}/view
 //
-// Request: Authorization: Bearer <API_SECRET>, path id (bigint).
+// Request: Authorization: Bearer <API_SECRET or admin JWT>, path id (bigint).
 // Response: 200 with the updated clip row (view_count + 1, last_viewed_at set).
 //           400 non-numeric id, 401 missing/bad token, 404 unknown id.
 pub async fn view_clip(
@@ -150,7 +146,7 @@ pub async fn view_clip(
     headers: HeaderMap,
     Path(id): Path<i64>,
 ) -> Result<Json<crate::types::ClipRow>, ApiError> {
-    auth::verify_bearer_secret(&headers, &state.config.api_secret)?;
+    auth::verify_secret_or_admin(&state.config, &headers)?;
 
     let row = clip_store::record_view(&state.db, id)
         .await?
@@ -161,7 +157,7 @@ pub async fn view_clip(
 
 // POST /anime/clips/{id}/like
 //
-// Request: Authorization: Bearer <API_SECRET>, path id (bigint).
+// Request: Authorization: Bearer <API_SECRET or admin JWT>, path id (bigint).
 // Response: 200 with the updated row — liked TRUE and the R2 object moved
 //           feed/ → liked/ (r2_key updated). Already-liked is a no-op 200.
 //           400 non-numeric id, 401 missing/bad token, 404 unknown id.
@@ -170,13 +166,13 @@ pub async fn like_clip(
     headers: HeaderMap,
     Path(id): Path<i64>,
 ) -> Result<Json<crate::types::ClipRow>, ApiError> {
-    auth::verify_bearer_secret(&headers, &state.config.api_secret)?;
+    auth::verify_secret_or_admin(&state.config, &headers)?;
     Ok(Json(move_and_flag(&state, id, true).await?))
 }
 
 // DELETE /anime/clips/{id}/like
 //
-// Request: Authorization: Bearer <API_SECRET>, path id (bigint).
+// Request: Authorization: Bearer <API_SECRET or admin JWT>, path id (bigint).
 // Response: 200 with the updated row — liked FALSE and the R2 object moved
 //           back liked/ → feed/. Not-liked is a no-op 200.
 //           400 non-numeric id, 401 missing/bad token, 404 unknown id.
@@ -185,8 +181,46 @@ pub async fn unlike_clip(
     headers: HeaderMap,
     Path(id): Path<i64>,
 ) -> Result<Json<crate::types::ClipRow>, ApiError> {
-    auth::verify_bearer_secret(&headers, &state.config.api_secret)?;
+    auth::verify_secret_or_admin(&state.config, &headers)?;
     Ok(Json(move_and_flag(&state, id, false).await?))
+}
+
+// DELETE /anime/clips/{id}/media
+//
+// Request: Authorization: Bearer <API_SECRET or admin JWT>, path id (bigint).
+// Response: 200 with the updated row — the R2 object deleted, r2_key NULL,
+//           the row itself kept (view history survives, the clip can be
+//           re-cut). Already-cleared is a no-op 200.
+//           400 liked clip (kept forever) or non-numeric id,
+//           401 missing/bad token, 404 unknown id.
+pub async fn clear_clip_media(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<i64>,
+) -> Result<Json<crate::types::ClipRow>, ApiError> {
+    auth::verify_secret_or_admin(&state.config, &headers)?;
+
+    let row = clip_store::get_by_id(&state.db, id)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+    if row.liked {
+        return Err(ApiError::BadRequest("clip is liked - media is kept".into()));
+    }
+    let Some(key) = row.r2_key.clone() else {
+        return Ok(Json(row));
+    };
+
+    state
+        .s3
+        .delete_object()
+        .bucket(&state.config.s3_bucket_anime_clips)
+        .key(&key)
+        .send()
+        .instrument(tracing::info_span!("s3.delete_object"))
+        .await
+        .map_err(|e| ApiError::S3(e.to_string()))?;
+
+    Ok(Json(clip_store::clear_media(&state.db, id).await?))
 }
 
 /// Flip the liked flag, moving the R2 object between feed/ and liked/
@@ -244,40 +278,6 @@ async fn move_and_flag(
     clip_store::set_liked(&state.db, id, liked, &new_key).await
 }
 
-// DELETE /anime/clips/{id}/media
-//
-// Request: Authorization: Bearer <API_SECRET>, path id (bigint).
-// Response: 200 with the updated row — the R2 object deleted, r2_key NULL,
-//           the row itself kept (view history survives, the clip can be
-//           re-cut). Already-cleared is a no-op 200.
-//           400 liked clip (kept forever) or non-numeric id,
-//           401 missing/bad token, 404 unknown id.
-pub async fn clear_clip_media(
-    State(state): State<AppState>,
-    headers: HeaderMap,
-    Path(id): Path<i64>,
-) -> Result<Json<crate::types::ClipRow>, ApiError> {
-    auth::verify_bearer_secret(&headers, &state.config.api_secret)?;
-
-    let row = clip_store::get_by_id(&state.db, id)
-        .await?
-        .ok_or(ApiError::NotFound)?;
-    if row.liked {
-        return Err(ApiError::BadRequest("clip is liked - media is kept".into()));
-    }
-    let Some(key) = row.r2_key.clone() else {
-        return Ok(Json(row));
-    };
-
-    state
-        .s3
-        .delete_object()
-        .bucket(&state.config.s3_bucket_anime_clips)
-        .key(&key)
-        .send()
-        .instrument(tracing::info_span!("s3.delete_object"))
-        .await
-        .map_err(|e| ApiError::S3(e.to_string()))?;
-
-    Ok(Json(clip_store::clear_media(&state.db, id).await?))
+fn missing(field: &str) -> ApiError {
+    ApiError::BadRequest(format!("missing field '{field}'"))
 }
