@@ -205,6 +205,10 @@ async fn move_and_flag(
         return Ok(row);
     }
 
+    let Some(current_key) = row.r2_key.clone() else {
+        return Err(ApiError::BadRequest("clip has no media".into()));
+    };
+
     let (from_prefix, to_prefix) = if liked {
         ("feed/", "liked/")
     } else {
@@ -213,7 +217,7 @@ async fn move_and_flag(
     let new_key = format!(
         "{}{}",
         to_prefix,
-        row.r2_key.strip_prefix(from_prefix).unwrap_or(&row.r2_key)
+        current_key.strip_prefix(from_prefix).unwrap_or(&current_key)
     );
 
     let bucket = &state.config.s3_bucket_anime_clips;
@@ -221,7 +225,7 @@ async fn move_and_flag(
         .s3
         .copy_object()
         .bucket(bucket)
-        .copy_source(format!("{bucket}/{}", row.r2_key))
+        .copy_source(format!("{bucket}/{current_key}"))
         .key(&new_key)
         .send()
         .instrument(tracing::info_span!("s3.copy_object"))
@@ -231,11 +235,49 @@ async fn move_and_flag(
         .s3
         .delete_object()
         .bucket(bucket)
-        .key(&row.r2_key)
+        .key(&current_key)
         .send()
         .instrument(tracing::info_span!("s3.delete_object"))
         .await
         .map_err(|e| ApiError::S3(e.to_string()))?;
 
     clip_store::set_liked(&state.db, id, liked, &new_key).await
+}
+
+// DELETE /anime/clips/{id}/media
+//
+// Request: Authorization: Bearer <API_SECRET>, path id (bigint).
+// Response: 200 with the updated row — the R2 object deleted, r2_key NULL,
+//           the row itself kept (view history survives, the clip can be
+//           re-cut). Already-cleared is a no-op 200.
+//           400 liked clip (kept forever) or non-numeric id,
+//           401 missing/bad token, 404 unknown id.
+pub async fn clear_clip_media(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<i64>,
+) -> Result<Json<crate::types::ClipRow>, ApiError> {
+    auth::verify_bearer_secret(&headers, &state.config.api_secret)?;
+
+    let row = clip_store::get_by_id(&state.db, id)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+    if row.liked {
+        return Err(ApiError::BadRequest("clip is liked - media is kept".into()));
+    }
+    let Some(key) = row.r2_key.clone() else {
+        return Ok(Json(row));
+    };
+
+    state
+        .s3
+        .delete_object()
+        .bucket(&state.config.s3_bucket_anime_clips)
+        .key(&key)
+        .send()
+        .instrument(tracing::info_span!("s3.delete_object"))
+        .await
+        .map_err(|e| ApiError::S3(e.to_string()))?;
+
+    Ok(Json(clip_store::clear_media(&state.db, id).await?))
 }

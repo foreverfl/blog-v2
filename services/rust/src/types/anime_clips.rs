@@ -6,7 +6,7 @@ use serde::Serialize;
 #[derive(Debug, Clone, Serialize, sqlx::FromRow)]
 pub struct ClipRow {
     pub id: i64,
-    pub r2_key: String,
+    pub r2_key: Option<String>, // NULL once cleanup removed the R2 object
     pub series_slug: String,
     pub episode: String,
     pub start_sec: f32,
