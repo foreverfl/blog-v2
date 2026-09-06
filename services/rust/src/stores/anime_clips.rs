@@ -42,3 +42,27 @@ pub async fn upsert(
 
     Ok(row)
 }
+
+/// List clips for the feed, in random order (seeding cuts whole episodes,
+/// so id order would replay an episode front to back).
+///
+/// @param viewed - Some(false) = only unviewed (view_count = 0), Some(true) =
+///                 only viewed ones ("the ones already seen"), None = all.
+/// @return up to `limit` rows, randomly ordered.
+pub async fn list(pool: &PgPool, viewed: Option<bool>, limit: i64) -> Result<Vec<ClipRow>, ApiError> {
+    let rows = sqlx::query_as::<_, ClipRow>(
+        r#"
+        SELECT id, r2_key, series_slug, episode, start_sec, duration_sec, jellyfin_item, is_opening, liked, view_count, last_viewed_at, created_at
+        FROM anime.clips
+        WHERE $1::boolean IS NULL OR ($1 AND view_count > 0) OR (NOT $1 AND view_count = 0)
+        ORDER BY random()
+        LIMIT $2
+        "#,
+    )
+    .bind(viewed)
+    .bind(limit)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows)
+}

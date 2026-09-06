@@ -8,6 +8,8 @@ use crate::handlers;
 pub fn router(upload_limit: usize) -> Router<AppState> {
     Router::new().route(
         "/clips",
-        post(handlers::anime_clips::upload_clip).layer(DefaultBodyLimit::max(upload_limit)),
+        post(handlers::anime_clips::upload_clip)
+            .get(handlers::anime_clips::list_clips)
+            .layer(DefaultBodyLimit::max(upload_limit)),
     )
 }

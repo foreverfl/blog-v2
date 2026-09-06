@@ -18,3 +18,11 @@ pub struct ClipRow {
     pub last_viewed_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
 }
+
+// ── Query types ──
+
+#[derive(Debug, serde::Deserialize)]
+pub struct ListClipsQuery {
+    pub viewed: Option<bool>,
+    pub limit: Option<i64>,
+}

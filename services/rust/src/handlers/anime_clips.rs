@@ -1,6 +1,6 @@
 use aws_sdk_s3::primitives::ByteStream;
 use axum::body::Bytes;
-use axum::extract::{Multipart, State};
+use axum::extract::{Multipart, Query, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use axum::Json;
@@ -9,7 +9,7 @@ use tracing::Instrument;
 use crate::auth;
 use crate::config::AppState;
 use crate::stores::anime_clips as clip_store;
-use crate::types::ApiError;
+use crate::types::{ApiError, ListClipsQuery};
 
 // POST /anime/clips
 //
@@ -118,4 +118,24 @@ pub async fn upload_clip(
 
 fn missing(field: &str) -> ApiError {
     ApiError::BadRequest(format!("missing field '{field}'"))
+}
+
+// GET /anime/clips
+//
+// Request: Authorization: Bearer <API_SECRET>, optional query
+//          ?viewed=false (only unviewed — view_count = 0; true = only viewed)
+//          &limit= (default 100, max 1000).
+// Response: 200 array of clip rows in random order.
+//           401 missing/bad token.
+pub async fn list_clips(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Query(query): Query<ListClipsQuery>,
+) -> Result<Json<Vec<crate::types::ClipRow>>, ApiError> {
+    auth::verify_bearer_secret(&headers, &state.config.api_secret)?;
+
+    let limit = query.limit.unwrap_or(100).clamp(1, 1000);
+    let rows = clip_store::list(&state.db, query.viewed, limit).await?;
+
+    Ok(Json(rows))
 }
