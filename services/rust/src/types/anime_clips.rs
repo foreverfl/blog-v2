@@ -44,3 +44,8 @@ pub struct ListClipsQuery {
     pub viewed: Option<bool>,
     pub limit: Option<i64>,
 }
+
+#[derive(Debug, serde::Deserialize)]
+pub struct PatchClipBody {
+    pub jellyfin_item: String,
+}

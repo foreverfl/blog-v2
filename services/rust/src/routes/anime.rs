@@ -1,5 +1,5 @@
 use axum::extract::DefaultBodyLimit;
-use axum::routing::{delete, post};
+use axum::routing::{delete, patch, post};
 use axum::Router;
 
 use crate::config::AppState;
@@ -12,6 +12,7 @@ pub fn router(upload_limit: usize) -> Router<AppState> {
             .get(handlers::anime_clips::list_clips)
             .layer(DefaultBodyLimit::max(upload_limit)),
     )
+    .route("/clips/{id}", patch(handlers::anime_clips::patch_clip))
     .route("/clips/{id}/view", post(handlers::anime_clips::view_clip))
     .route(
         "/clips/{id}/like",

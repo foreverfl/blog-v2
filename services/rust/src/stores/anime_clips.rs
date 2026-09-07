@@ -86,6 +86,30 @@ pub async fn record_view(pool: &PgPool, id: i64) -> Result<Option<ClipRow>, ApiE
     Ok(row)
 }
 
+/// Fill a clip's jellyfin_item.
+///
+/// @return the updated row, or None when the id does not exist.
+pub async fn set_jellyfin_item(
+    pool: &PgPool,
+    id: i64,
+    jellyfin_item: &str,
+) -> Result<Option<ClipRow>, ApiError> {
+    let row = sqlx::query_as::<_, ClipRow>(
+        r#"
+        UPDATE anime.clips
+        SET jellyfin_item = $2
+        WHERE id = $1
+        RETURNING id, r2_key, series_slug, episode, start_sec, duration_sec, jellyfin_item, is_opening, liked, view_count, last_viewed_at, created_at
+        "#,
+    )
+    .bind(id)
+    .bind(jellyfin_item)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(row)
+}
+
 /// Fetch one clip by id.
 ///
 /// @return the row, or None when the id does not exist.

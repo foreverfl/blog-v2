@@ -156,6 +156,27 @@ pub async fn view_clip(
     Ok(Json(row.with_url(&state.config.s3_bucket_anime_clips)))
 }
 
+// PATCH /anime/clips/{id}
+//
+// Request: Authorization: Bearer <API_SECRET or admin JWT>, path id (bigint),
+//          JSON body {"jellyfin_item": "<jellyfin item id>"}.
+// Response: 200 with the updated clip row.
+//           400 non-numeric id or bad body, 401 missing/bad token, 404 unknown id.
+pub async fn patch_clip(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<i64>,
+    Json(body): Json<crate::types::PatchClipBody>,
+) -> Result<Json<crate::types::ClipRow>, ApiError> {
+    auth::verify_secret_or_admin(&state.config, &headers)?;
+
+    let row = clip_store::set_jellyfin_item(&state.db, id, &body.jellyfin_item)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+
+    Ok(Json(row.with_url(&state.config.s3_bucket_anime_clips)))
+}
+
 // POST /anime/clips/{id}/like
 //
 // Request: Authorization: Bearer <API_SECRET or admin JWT>, path id (bigint).
