@@ -113,7 +113,7 @@ pub async fn upload_clip(
     )
     .await?;
 
-    Ok((StatusCode::CREATED, Json(row.with_url(&state.config.s3_bucket_anime_clips))))
+    Ok((StatusCode::CREATED, Json(row.with_url(&state).await?)))
 }
 
 // GET /anime/clips
@@ -132,9 +132,14 @@ pub async fn list_clips(
 
     let limit = query.limit.unwrap_or(100).clamp(1, 1000);
     let rows = clip_store::list(&state.db, query.viewed, limit).await?;
-    let bucket = &state.config.s3_bucket_anime_clips;
 
-    Ok(Json(rows.into_iter().map(|row| row.with_url(bucket)).collect()))
+    // Signing is per row and async, so this is a loop rather than a map.
+    let mut signed = Vec::with_capacity(rows.len());
+    for row in rows {
+        signed.push(row.with_url(&state).await?);
+    }
+
+    Ok(Json(signed))
 }
 
 // POST /anime/clips/{id}/view
@@ -153,7 +158,7 @@ pub async fn view_clip(
         .await?
         .ok_or(ApiError::NotFound)?;
 
-    Ok(Json(row.with_url(&state.config.s3_bucket_anime_clips)))
+    Ok(Json(row.with_url(&state).await?))
 }
 
 // PATCH /anime/clips/{id}
@@ -174,7 +179,7 @@ pub async fn patch_clip(
         .await?
         .ok_or(ApiError::NotFound)?;
 
-    Ok(Json(row.with_url(&state.config.s3_bucket_anime_clips)))
+    Ok(Json(row.with_url(&state).await?))
 }
 
 // POST /anime/clips/{id}/like
@@ -192,7 +197,8 @@ pub async fn like_clip(
     Ok(Json(
         move_and_flag(&state, id, true)
             .await?
-            .with_url(&state.config.s3_bucket_anime_clips),
+            .with_url(&state)
+            .await?,
     ))
 }
 
@@ -211,7 +217,8 @@ pub async fn unlike_clip(
     Ok(Json(
         move_and_flag(&state, id, false)
             .await?
-            .with_url(&state.config.s3_bucket_anime_clips),
+            .with_url(&state)
+            .await?,
     ))
 }
 

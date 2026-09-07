@@ -1,7 +1,9 @@
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 
-use crate::config::ASSET_URL_PATTERN;
+use crate::config::AppState;
+use crate::services::signed_url;
+use crate::types::ApiError;
 
 // ── Database rows ──
 
@@ -25,15 +27,21 @@ pub struct ClipRow {
 }
 
 impl ClipRow {
-    /// Fill `url` from r2_key and the physical clips bucket.
+    /// Fill `url` with a temporary signed link to the clip's R2 object.
     ///
-    /// @param bucket - physical bucket name (e.g. "dev-anime-clips")
-    /// @return self with url set, or url None when the media was cleared.
-    pub fn with_url(mut self, bucket: &str) -> Self {
-        self.url = self.r2_key.as_ref().map(|key| {
-            format!("{}/{}", ASSET_URL_PATTERN.replace("{bucket}", bucket), key)
-        });
-        self
+    /// The bucket is private, so a plain public address would not open. Signing
+    /// is pure crypto — no request leaves the process.
+    ///
+    /// @param state - carries the S3 client and the clips bucket name
+    /// @return self with url set, or url None when the media was cleared
+    pub async fn with_url(mut self, state: &AppState) -> Result<Self, ApiError> {
+        self.url = match self.r2_key.as_deref() {
+            Some(key) => Some(
+                signed_url::get_object(&state.s3, &state.config.s3_bucket_anime_clips, key).await?,
+            ),
+            None => None,
+        };
+        Ok(self)
     }
 }
 
