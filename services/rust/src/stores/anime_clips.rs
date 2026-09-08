@@ -149,21 +149,14 @@ pub async fn set_liked(pool: &PgPool, id: i64, liked: bool, r2_key: &str) -> Res
     Ok(row)
 }
 
-/// Clear a clip's media reference after its R2 object was deleted.
+/// Delete a clip row outright, after its R2 object was deleted.
 ///
-/// @return the updated row (r2_key NULL, everything else kept).
-pub async fn clear_media(pool: &PgPool, id: i64) -> Result<ClipRow, ApiError> {
-    let row = sqlx::query_as::<_, ClipRow>(
-        r#"
-        UPDATE anime.clips
-        SET r2_key = NULL
-        WHERE id = $1
-        RETURNING id, r2_key, series_slug, episode, start_sec, duration_sec, jellyfin_item, is_opening, liked, view_count, last_viewed_at, created_at
-        "#,
-    )
-    .bind(id)
-    .fetch_one(pool)
-    .await?;
+/// @return nothing; deleting an already-gone id is a silent no-op.
+pub async fn delete_row(pool: &PgPool, id: i64) -> Result<(), ApiError> {
+    sqlx::query("DELETE FROM anime.clips WHERE id = $1")
+        .bind(id)
+        .execute(pool)
+        .await?;
 
-    Ok(row)
+    Ok(())
 }

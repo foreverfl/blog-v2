@@ -222,42 +222,42 @@ pub async fn unlike_clip(
     ))
 }
 
-// DELETE /anime/clips/{id}/media
+// DELETE /anime/clips/{id}
 //
 // Request: Authorization: Bearer <API_SECRET or admin JWT>, path id (bigint).
-// Response: 200 with the updated row — the R2 object deleted, r2_key NULL,
-//           the row itself kept (view history survives, the clip can be
-//           re-cut). Already-cleared is a no-op 200.
+// Response: 204 — the R2 object (if any) and the row are both deleted
+//           (2026-09-09 decision: liking is the only way to keep a clip,
+//           so a watched, unliked clip leaves no row behind).
 //           400 liked clip (kept forever) or non-numeric id,
 //           401 missing/bad token, 404 unknown id.
-pub async fn clear_clip_media(
+pub async fn delete_clip(
     State(state): State<AppState>,
     headers: HeaderMap,
     Path(id): Path<i64>,
-) -> Result<Json<crate::types::ClipRow>, ApiError> {
+) -> Result<StatusCode, ApiError> {
     auth::verify_secret_or_admin(&state.config, &headers)?;
 
     let row = clip_store::get_by_id(&state.db, id)
         .await?
         .ok_or(ApiError::NotFound)?;
     if row.liked {
-        return Err(ApiError::BadRequest("clip is liked - media is kept".into()));
+        return Err(ApiError::BadRequest("clip is liked - kept forever".into()));
     }
-    let Some(key) = row.r2_key.clone() else {
-        return Ok(Json(row));
-    };
 
-    state
-        .s3
-        .delete_object()
-        .bucket(&state.config.s3_bucket_anime_clips)
-        .key(&key)
-        .send()
-        .instrument(tracing::info_span!("s3.delete_object"))
-        .await
-        .map_err(|e| ApiError::S3(e.to_string()))?;
+    if let Some(key) = row.r2_key {
+        state
+            .s3
+            .delete_object()
+            .bucket(&state.config.s3_bucket_anime_clips)
+            .key(&key)
+            .send()
+            .instrument(tracing::info_span!("s3.delete_object"))
+            .await
+            .map_err(|e| ApiError::S3(e.to_string()))?;
+    }
 
-    Ok(Json(clip_store::clear_media(&state.db, id).await?))
+    clip_store::delete_row(&state.db, id).await?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 /// Flip the liked flag, moving the R2 object between feed/ and liked/
