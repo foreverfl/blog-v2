@@ -16,7 +16,7 @@ use crate::types::{ApiError, ListClipsQuery};
 // Request: Authorization: Bearer <API_SECRET or admin JWT>, multipart/form-data with a
 //          `file` field (the clip video) and text fields: series_slug,
 //          episode (SxxEyy), start_sec, duration_sec, and optionally
-//          jellyfin_item and is_opening ("true"/"false").
+//          jellyfin_item, series_title and is_opening ("true"/"false").
 // Response: 201 with the stored clip row. Re-posting the same clip overwrites
 //           the R2 object and refreshes the row (idempotent).
 //           400 missing/unknown field or bad multipart, 401 missing/bad token.
@@ -33,6 +33,7 @@ pub async fn upload_clip(
     let mut start_sec: Option<f32> = None;
     let mut duration_sec: Option<f32> = None;
     let mut jellyfin_item: Option<String> = None;
+    let mut series_title: Option<String> = None;
     let mut is_opening = false;
 
     while let Some(field) = multipart
@@ -61,6 +62,7 @@ pub async fn upload_clip(
             "start_sec" => start_sec = text.parse().ok(),
             "duration_sec" => duration_sec = text.parse().ok(),
             "jellyfin_item" => jellyfin_item = Some(text),
+            "series_title" => series_title = Some(text),
             "is_opening" => is_opening = text == "true",
             _ => return Err(ApiError::BadRequest(format!("unknown field '{name}'"))),
         }
@@ -110,6 +112,7 @@ pub async fn upload_clip(
         duration_sec,
         jellyfin_item.as_deref(),
         is_opening,
+        series_title.as_deref(),
     )
     .await?;
 
@@ -164,9 +167,11 @@ pub async fn view_clip(
 // PATCH /anime/clips/{id}
 //
 // Request: Authorization: Bearer <API_SECRET or admin JWT>, path id (bigint),
-//          JSON body {"jellyfin_item": "<jellyfin item id>"}.
+//          JSON body with jellyfin_item and/or series_title. A field left out
+//          keeps its stored value.
 // Response: 200 with the updated clip row.
-//           400 non-numeric id or bad body, 401 missing/bad token, 404 unknown id.
+//           400 non-numeric id, empty body or bad body, 401 missing/bad token,
+//           404 unknown id.
 pub async fn patch_clip(
     State(state): State<AppState>,
     headers: HeaderMap,
@@ -175,9 +180,18 @@ pub async fn patch_clip(
 ) -> Result<Json<crate::types::ClipRow>, ApiError> {
     auth::verify_secret_or_admin(&state.config, &headers)?;
 
-    let row = clip_store::set_jellyfin_item(&state.db, id, &body.jellyfin_item)
-        .await?
-        .ok_or(ApiError::NotFound)?;
+    if body.jellyfin_item.is_none() && body.series_title.is_none() {
+        return Err(ApiError::BadRequest("no field to patch".into()));
+    }
+
+    let row = clip_store::patch_metadata(
+        &state.db,
+        id,
+        body.jellyfin_item.as_deref(),
+        body.series_title.as_deref(),
+    )
+    .await?
+    .ok_or(ApiError::NotFound)?;
 
     Ok(Json(row.with_url(&state).await?))
 }

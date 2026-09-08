@@ -12,6 +12,7 @@ pub struct ClipRow {
     pub id: i64,
     pub r2_key: Option<String>, // NULL once cleanup removed the R2 object
     pub series_slug: String,
+    pub series_title: Option<String>, // Jellyfin's name for the series, NULL until filled
     pub episode: String,
     pub start_sec: f32,
     pub duration_sec: f32,
@@ -56,5 +57,6 @@ pub struct ListClipsQuery {
 
 #[derive(Debug, serde::Deserialize)]
 pub struct PatchClipBody {
-    pub jellyfin_item: String,
+    pub jellyfin_item: Option<String>,
+    pub series_title: Option<String>,
 }
