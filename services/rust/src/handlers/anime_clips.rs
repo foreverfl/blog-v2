@@ -329,6 +329,41 @@ async fn move_and_flag(
     clip_store::set_liked(&state.db, id, liked, &new_key).await
 }
 
+// POST /anime/clips/{id}/playback-event
+//
+// Request: Authorization: Bearer <API_SECRET or admin JWT>, path id (bigint),
+//          JSON body: event ("stall"|"recovered"|"error"|"muted") plus whatever
+//          the player could read — buffer_left_sec, downlink, effective_type,
+//          stall_ms, error_code, url_age_sec, muted, volume, session_id.
+// Response: 204. Nothing is stored — the line goes to the log, which Loki
+//           already collects, and Grafana is where it gets read.
+//           400 non-numeric id, 401 missing/bad token, 422 body without event.
+pub async fn log_playback_event(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<i64>,
+    Json(body): Json<crate::types::PlaybackEventBody>,
+) -> Result<StatusCode, ApiError> {
+    auth::verify_secret_or_admin(&state.config, &headers)?;
+
+    tracing::info!(
+        clip_id = id,
+        event = %body.event,
+        buffer_left_sec = body.buffer_left_sec,
+        downlink = body.downlink,
+        effective_type = body.effective_type.as_deref(),
+        stall_ms = body.stall_ms,
+        error_code = body.error_code,
+        url_age_sec = body.url_age_sec,
+        muted = body.muted,
+        volume = body.volume,
+        session_id = body.session_id.as_deref(),
+        "clip_playback"
+    );
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
 fn missing(field: &str) -> ApiError {
     ApiError::BadRequest(format!("missing field '{field}'"))
 }

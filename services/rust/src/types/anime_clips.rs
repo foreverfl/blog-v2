@@ -60,3 +60,19 @@ pub struct PatchClipBody {
     pub jellyfin_item: Option<String>,
     pub series_title: Option<String>,
 }
+
+// What the player saw when playback went wrong. Every field but `event` is
+// optional — a browser that cannot read one still sends the rest.
+#[derive(Debug, serde::Deserialize)]
+pub struct PlaybackEventBody {
+    pub event: String, // stall | recovered | error | muted
+    pub buffer_left_sec: Option<f64>,
+    pub downlink: Option<f64>,
+    pub effective_type: Option<String>,
+    pub stall_ms: Option<i64>,
+    pub error_code: Option<i32>,
+    pub url_age_sec: Option<i64>,
+    pub muted: Option<bool>,
+    pub volume: Option<f64>,
+    pub session_id: Option<String>,
+}
