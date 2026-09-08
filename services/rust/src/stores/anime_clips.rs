@@ -27,7 +27,7 @@ pub async fn upsert(
             duration_sec = EXCLUDED.duration_sec,
             jellyfin_item = EXCLUDED.jellyfin_item,
             is_opening = EXCLUDED.is_opening
-        RETURNING id, r2_key, series_slug, episode, start_sec, duration_sec, jellyfin_item, is_opening, liked, view_count, last_viewed_at, created_at
+        RETURNING id, r2_key, series_slug, episode, start_sec, duration_sec, jellyfin_item, is_opening, liked, liked_at, view_count, last_viewed_at, created_at
         "#,
     )
     .bind(r2_key)
@@ -52,7 +52,7 @@ pub async fn upsert(
 pub async fn list(pool: &PgPool, viewed: Option<bool>, limit: i64) -> Result<Vec<ClipRow>, ApiError> {
     let rows = sqlx::query_as::<_, ClipRow>(
         r#"
-        SELECT id, r2_key, series_slug, episode, start_sec, duration_sec, jellyfin_item, is_opening, liked, view_count, last_viewed_at, created_at
+        SELECT id, r2_key, series_slug, episode, start_sec, duration_sec, jellyfin_item, is_opening, liked, liked_at, view_count, last_viewed_at, created_at
         FROM anime.clips
         WHERE $1::boolean IS NULL OR ($1 AND view_count > 0) OR (NOT $1 AND view_count = 0)
         ORDER BY random()
@@ -76,7 +76,7 @@ pub async fn record_view(pool: &PgPool, id: i64) -> Result<Option<ClipRow>, ApiE
         UPDATE anime.clips
         SET view_count = view_count + 1, last_viewed_at = now()
         WHERE id = $1
-        RETURNING id, r2_key, series_slug, episode, start_sec, duration_sec, jellyfin_item, is_opening, liked, view_count, last_viewed_at, created_at
+        RETURNING id, r2_key, series_slug, episode, start_sec, duration_sec, jellyfin_item, is_opening, liked, liked_at, view_count, last_viewed_at, created_at
         "#,
     )
     .bind(id)
@@ -99,7 +99,7 @@ pub async fn set_jellyfin_item(
         UPDATE anime.clips
         SET jellyfin_item = $2
         WHERE id = $1
-        RETURNING id, r2_key, series_slug, episode, start_sec, duration_sec, jellyfin_item, is_opening, liked, view_count, last_viewed_at, created_at
+        RETURNING id, r2_key, series_slug, episode, start_sec, duration_sec, jellyfin_item, is_opening, liked, liked_at, view_count, last_viewed_at, created_at
         "#,
     )
     .bind(id)
@@ -116,7 +116,7 @@ pub async fn set_jellyfin_item(
 pub async fn get_by_id(pool: &PgPool, id: i64) -> Result<Option<ClipRow>, ApiError> {
     let row = sqlx::query_as::<_, ClipRow>(
         r#"
-        SELECT id, r2_key, series_slug, episode, start_sec, duration_sec, jellyfin_item, is_opening, liked, view_count, last_viewed_at, created_at
+        SELECT id, r2_key, series_slug, episode, start_sec, duration_sec, jellyfin_item, is_opening, liked, liked_at, view_count, last_viewed_at, created_at
         FROM anime.clips
         WHERE id = $1
         "#,
@@ -128,16 +128,17 @@ pub async fn get_by_id(pool: &PgPool, id: i64) -> Result<Option<ClipRow>, ApiErr
     Ok(row)
 }
 
-/// Set the liked flag and the r2_key it moved to.
+/// Set the liked flag, the r2_key it moved to, and when the like happened
+/// (now() on like, back to NULL on unlike).
 ///
 /// @return the updated row.
 pub async fn set_liked(pool: &PgPool, id: i64, liked: bool, r2_key: &str) -> Result<ClipRow, ApiError> {
     let row = sqlx::query_as::<_, ClipRow>(
         r#"
         UPDATE anime.clips
-        SET liked = $2, r2_key = $3
+        SET liked = $2, r2_key = $3, liked_at = CASE WHEN $2 THEN now() ELSE NULL END
         WHERE id = $1
-        RETURNING id, r2_key, series_slug, episode, start_sec, duration_sec, jellyfin_item, is_opening, liked, view_count, last_viewed_at, created_at
+        RETURNING id, r2_key, series_slug, episode, start_sec, duration_sec, jellyfin_item, is_opening, liked, liked_at, view_count, last_viewed_at, created_at
         "#,
     )
     .bind(id)

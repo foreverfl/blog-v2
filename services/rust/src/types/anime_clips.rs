@@ -18,6 +18,7 @@ pub struct ClipRow {
     pub jellyfin_item: Option<String>,
     pub is_opening: bool,
     pub liked: bool,
+    pub liked_at: Option<DateTime<Utc>>, // NULL until liked, back to NULL on unlike
     pub view_count: i32,
     pub last_viewed_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
