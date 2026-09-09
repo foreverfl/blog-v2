@@ -124,7 +124,11 @@ pub async fn upload_clip(
 // Request: Authorization: Bearer <API_SECRET or admin JWT>, optional query
 //          ?viewed=false (only unviewed — view_count = 0; true = only viewed)
 //          &limit= (default 100, max 1000).
-// Response: 200 array of clip rows in random order.
+//          ?liked=true switches to the profile listing instead: liked clips
+//          only, newest like first, paged with &offset= (default 0);
+//          viewed is ignored there.
+// Response: 200 array of clip rows — random order for the feed,
+//           liked_at descending for liked=true.
 //           401 missing/bad token.
 pub async fn list_clips(
     State(state): State<AppState>,
@@ -134,7 +138,12 @@ pub async fn list_clips(
     auth::verify_secret_or_admin(&state.config, &headers)?;
 
     let limit = query.limit.unwrap_or(100).clamp(1, 1000);
-    let rows = clip_store::list(&state.db, query.viewed, limit).await?;
+    let rows = if query.liked == Some(true) {
+        let offset = query.offset.unwrap_or(0).max(0);
+        clip_store::list_liked(&state.db, limit, offset).await?
+    } else {
+        clip_store::list(&state.db, query.viewed, limit).await?
+    };
 
     // Signing is per row and async, so this is a loop rather than a map.
     let mut signed = Vec::with_capacity(rows.len());

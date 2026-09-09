@@ -52,7 +52,9 @@ impl ClipRow {
 #[derive(Debug, serde::Deserialize)]
 pub struct ListClipsQuery {
     pub viewed: Option<bool>,
+    pub liked: Option<bool>,
     pub limit: Option<i64>,
+    pub offset: Option<i64>,
 }
 
 #[derive(Debug, serde::Deserialize)]

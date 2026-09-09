@@ -46,6 +46,28 @@ pub async fn upsert(
     Ok(row)
 }
 
+/// List liked clips for the profile grid, newest like first, one page at a
+/// time (offset paging is fine here — only one person ever likes clips).
+///
+/// @return up to `limit` rows starting at `offset`, liked_at descending.
+pub async fn list_liked(pool: &PgPool, limit: i64, offset: i64) -> Result<Vec<ClipRow>, ApiError> {
+    let rows = sqlx::query_as::<_, ClipRow>(
+        r#"
+        SELECT id, r2_key, series_slug, series_title, episode, start_sec, duration_sec, jellyfin_item, is_opening, liked, liked_at, view_count, last_viewed_at, created_at
+        FROM anime.clips
+        WHERE liked
+        ORDER BY liked_at DESC
+        LIMIT $1 OFFSET $2
+        "#,
+    )
+    .bind(limit)
+    .bind(offset)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows)
+}
+
 /// List clips for the feed, in random order (seeding cuts whole episodes,
 /// so id order would replay an episode front to back).
 ///
