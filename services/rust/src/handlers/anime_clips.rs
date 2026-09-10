@@ -392,6 +392,43 @@ async fn move_and_flag(
         .await
         .map_err(|e| ApiError::S3(e.to_string()))?;
 
+    // The thumbnail rides along — a clip from before thumbnails has none.
+    let current_thumb = thumbnail_key(&current_key);
+    let thumb_exists = match state
+        .s3
+        .head_object()
+        .bucket(bucket)
+        .key(&current_thumb)
+        .send()
+        .instrument(tracing::info_span!("s3.head_object"))
+        .await
+    {
+        Ok(_) => true,
+        Err(e) if e.as_service_error().is_some_and(|se| se.is_not_found()) => false,
+        Err(e) => return Err(ApiError::S3(e.to_string())),
+    };
+    if thumb_exists {
+        state
+            .s3
+            .copy_object()
+            .bucket(bucket)
+            .copy_source(format!("{bucket}/{current_thumb}"))
+            .key(thumbnail_key(&new_key))
+            .send()
+            .instrument(tracing::info_span!("s3.copy_object"))
+            .await
+            .map_err(|e| ApiError::S3(e.to_string()))?;
+        state
+            .s3
+            .delete_object()
+            .bucket(bucket)
+            .key(&current_thumb)
+            .send()
+            .instrument(tracing::info_span!("s3.delete_object"))
+            .await
+            .map_err(|e| ApiError::S3(e.to_string()))?;
+    }
+
     clip_store::set_liked(&state.db, id, liked, &new_key).await
 }
 
