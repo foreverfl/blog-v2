@@ -40,7 +40,22 @@ pub fn verify_secret_or_admin(config: &AppConfig, headers: &HeaderMap) -> Result
     require_admin(config, headers)
 }
 
+/// Claims for the `DEV_USER_ID` user, so local dev needs no login.
+/// The email is the first `ADMIN_EMAILS` entry so admin checks pass too.
+fn dev_claims(config: &AppConfig, user_id: Uuid) -> Claims {
+    Claims {
+        sub: user_id,
+        email: config.admin_emails.first().cloned().unwrap_or_default(),
+        iat: 0,
+        exp: 0,
+    }
+}
+
 fn decode_claims(config: &AppConfig, headers: &HeaderMap) -> Result<Claims, ApiError> {
+    if let Some(user_id) = config.dev_user_id {
+        return Ok(dev_claims(config, user_id));
+    }
+
     let token = headers
         .get(header::AUTHORIZATION)
         .and_then(|v| v.to_str().ok())

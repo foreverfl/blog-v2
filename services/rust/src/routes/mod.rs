@@ -18,7 +18,7 @@ use axum::http::{header, HeaderName, Method};
 use axum::routing::get;
 use axum::Router;
 use opentelemetry::trace::TraceContextExt;
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::trace::TraceLayer;
 use tracing::Span;
 use tracing_opentelemetry::OpenTelemetrySpanExt;
@@ -26,14 +26,21 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 use crate::config::AppState;
 
 pub fn create_router(state: AppState) -> Router {
-    let cors = CorsLayer::new()
-        .allow_origin(
+    // Local dev is reached from a phone too, so it can't pin one origin.
+    let allow_origin = if state.config.dev_user_id.is_some() {
+        AllowOrigin::mirror_request()
+    } else {
+        AllowOrigin::exact(
             state
                 .config
                 .frontend_url
-                .parse::<axum::http::HeaderValue>()
+                .parse()
                 .expect("FRONTEND_URL must be a valid header value"),
         )
+    };
+
+    let cors = CorsLayer::new()
+        .allow_origin(allow_origin)
         .allow_methods([
             Method::GET,
             Method::POST,

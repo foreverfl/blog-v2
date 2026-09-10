@@ -1,6 +1,8 @@
 use std::env;
 use std::sync::Arc;
 
+use uuid::Uuid;
+
 pub const ASSET_URL_PATTERN: &str = "https://assets-{bucket}.mogumogu.dev";
 
 #[derive(Clone)]
@@ -28,6 +30,7 @@ pub struct AppConfig {
     pub discord_comments_webhook: Option<String>,
     pub discord_bug_reports_webhook: Option<String>,
     pub admin_emails: Vec<String>,
+    pub dev_user_id: Option<Uuid>,
 }
 
 impl AppConfig {
@@ -67,6 +70,9 @@ impl AppConfig {
                 .map(|email| email.trim().to_string())
                 .filter(|email| !email.is_empty())
                 .collect(),
+            dev_user_id: env::var("DEV_USER_ID")
+                .ok()
+                .map(|id| id.parse().expect("DEV_USER_ID must be a uuid")),
         }
     }
 
@@ -110,6 +116,7 @@ mod tests {
             discord_comments_webhook: None,
             discord_bug_reports_webhook: None,
             admin_emails: Vec::new(),
+            dev_user_id: None,
         }
     }
 
