@@ -9,7 +9,7 @@ use tracing::Instrument;
 use crate::auth;
 use crate::config::AppState;
 use crate::stores::anime_clips as clip_store;
-use crate::types::{ApiError, ListClipsQuery};
+use crate::types::{thumbnail_key, ApiError, ListClipsQuery};
 
 // POST /anime/clips
 //
@@ -174,17 +174,6 @@ pub async fn upload_thumbnail(
         .map_err(|e| ApiError::S3(e.to_string()))?;
 
     Ok(StatusCode::NO_CONTENT)
-}
-
-/// A clip's thumbnail key: the video's own key with the extension swapped
-/// to .webp, so the pair always sits in the same feed//liked/ folder.
-///
-/// @return e.g. "feed/slug-s01e01-13.mp4" -> "feed/slug-s01e01-13.webp"
-fn thumbnail_key(r2_key: &str) -> String {
-    match r2_key.rsplit_once('.') {
-        Some((stem, _)) => format!("{stem}.webp"),
-        None => format!("{r2_key}.webp"),
-    }
 }
 
 // GET /anime/clips

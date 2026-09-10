@@ -23,25 +23,41 @@ pub struct ClipRow {
     pub view_count: i32,
     pub last_viewed_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
-    // Not a column — filled by with_url() before the row goes out.
+    // Not columns — filled by with_url() before the row goes out.
     #[sqlx(default)]
     pub url: Option<String>,
+    #[sqlx(default)]
+    pub thumbnail_url: Option<String>,
+}
+
+/// A clip's thumbnail key: the video's own key with the extension swapped
+/// to .webp, so the pair always sits in the same feed//liked/ folder.
+///
+/// @return e.g. "feed/slug-s01e01-13.mp4" -> "feed/slug-s01e01-13.webp"
+pub fn thumbnail_key(r2_key: &str) -> String {
+    match r2_key.rsplit_once('.') {
+        Some((stem, _)) => format!("{stem}.webp"),
+        None => format!("{r2_key}.webp"),
+    }
 }
 
 impl ClipRow {
-    /// Fill `url` with a temporary signed link to the clip's R2 object.
+    /// Fill `url` and `thumbnail_url` with temporary signed links to the
+    /// clip's R2 objects (the bucket is private; signing is offline crypto).
     ///
-    /// The bucket is private, so a plain public address would not open. Signing
-    /// is pure crypto — no request leaves the process.
+    /// The thumbnail link is signed without checking the object exists — a
+    /// clip from before thumbnails 404s there until the backfill runs.
     ///
     /// @param state - carries the S3 client and the clips bucket name
-    /// @return self with url set, or url None when the media was cleared
+    /// @return self with both urls set, or both None when the media was cleared
     pub async fn with_url(mut self, state: &AppState) -> Result<Self, ApiError> {
-        self.url = match self.r2_key.as_deref() {
-            Some(key) => Some(
-                signed_url::get_object(&state.s3, &state.config.s3_bucket_anime_clips, key).await?,
+        let bucket = &state.config.s3_bucket_anime_clips;
+        (self.url, self.thumbnail_url) = match self.r2_key.as_deref() {
+            Some(key) => (
+                Some(signed_url::get_object(&state.s3, bucket, key).await?),
+                Some(signed_url::get_object(&state.s3, bucket, &thumbnail_key(key)).await?),
             ),
-            None => None,
+            None => (None, None),
         };
         Ok(self)
     }
