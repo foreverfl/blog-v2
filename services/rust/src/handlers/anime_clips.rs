@@ -119,6 +119,74 @@ pub async fn upload_clip(
     Ok((StatusCode::CREATED, Json(row.with_url(&state).await?)))
 }
 
+// POST /anime/clips/{id}/thumbnail
+//
+// Request: Authorization: Bearer <API_SECRET or admin JWT>, path id (bigint),
+//          multipart/form-data with a `file` field (the webp image).
+// Response: 204 — the image lands next to the clip's video, same key with a
+//           .webp extension. Re-posting overwrites (idempotent).
+//           400 clip without media, missing field or bad multipart,
+//           401 missing/bad token, 404 unknown id.
+pub async fn upload_thumbnail(
+    State(state): State<AppState>,
+    headers: HeaderMap,
+    Path(id): Path<i64>,
+    mut multipart: Multipart,
+) -> Result<StatusCode, ApiError> {
+    auth::verify_secret_or_admin(&state.config, &headers)?;
+
+    let row = clip_store::get_by_id(&state.db, id)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+    let Some(r2_key) = row.r2_key else {
+        return Err(ApiError::BadRequest("clip has no media".into()));
+    };
+
+    let mut file: Option<Bytes> = None;
+    while let Some(field) = multipart
+        .next_field()
+        .await
+        .map_err(|e| ApiError::BadRequest(e.to_string()))?
+    {
+        let name = field.name().unwrap_or("").to_string();
+        if name != "file" {
+            return Err(ApiError::BadRequest(format!("unknown field '{name}'")));
+        }
+        file = Some(
+            field
+                .bytes()
+                .await
+                .map_err(|e| ApiError::BadRequest(e.to_string()))?,
+        );
+    }
+    let data = file.ok_or_else(|| missing("file"))?;
+
+    state
+        .s3
+        .put_object()
+        .bucket(&state.config.s3_bucket_anime_clips)
+        .key(thumbnail_key(&r2_key))
+        .body(ByteStream::from(data))
+        .content_type("image/webp")
+        .send()
+        .instrument(tracing::info_span!("s3.put_object"))
+        .await
+        .map_err(|e| ApiError::S3(e.to_string()))?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+/// A clip's thumbnail key: the video's own key with the extension swapped
+/// to .webp, so the pair always sits in the same feed//liked/ folder.
+///
+/// @return e.g. "feed/slug-s01e01-13.mp4" -> "feed/slug-s01e01-13.webp"
+fn thumbnail_key(r2_key: &str) -> String {
+    match r2_key.rsplit_once('.') {
+        Some((stem, _)) => format!("{stem}.webp"),
+        None => format!("{r2_key}.webp"),
+    }
+}
+
 // GET /anime/clips
 //
 // Request: Authorization: Bearer <API_SECRET or admin JWT>, optional query

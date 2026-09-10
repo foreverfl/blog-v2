@@ -18,6 +18,10 @@ pub fn router(upload_limit: usize) -> Router<AppState> {
     )
     .route("/clips/{id}/view", post(handlers::anime_clips::view_clip))
     .route(
+        "/clips/{id}/thumbnail",
+        post(handlers::anime_clips::upload_thumbnail),
+    )
+    .route(
         "/clips/{id}/playback-event",
         post(handlers::anime_clips::log_playback_event),
     )
