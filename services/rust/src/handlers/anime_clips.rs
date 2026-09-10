@@ -90,6 +90,16 @@ pub async fn upload_clip(
         start_sec.round() as u32,
         ext
     );
+    // Re-cutting a liked clip must land on its liked/ row, not a feed/ duplicate.
+    let liked_key = format!("liked/{}", r2_key.strip_prefix("feed/").unwrap_or(&r2_key));
+    let r2_key = if clip_store::get_by_r2_key(&state.db, &liked_key)
+        .await?
+        .is_some()
+    {
+        liked_key
+    } else {
+        r2_key
+    };
 
     state
         .s3

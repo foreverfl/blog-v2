@@ -139,6 +139,24 @@ pub async fn patch_metadata(
     Ok(row)
 }
 
+/// Fetch one clip by its r2_key.
+///
+/// @return the row, or None when no row holds that key.
+pub async fn get_by_r2_key(pool: &PgPool, r2_key: &str) -> Result<Option<ClipRow>, ApiError> {
+    let row = sqlx::query_as::<_, ClipRow>(
+        r#"
+        SELECT id, r2_key, series_slug, series_title, episode, start_sec, duration_sec, jellyfin_item, is_opening, liked, liked_at, view_count, last_viewed_at, created_at
+        FROM anime.clips
+        WHERE r2_key = $1
+        "#,
+    )
+    .bind(r2_key)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(row)
+}
+
 /// Fetch one clip by id.
 ///
 /// @return the row, or None when the id does not exist.
