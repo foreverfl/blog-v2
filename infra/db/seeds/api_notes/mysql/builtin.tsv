@@ -1,0 +1,693 @@
+Account Management	ALTER RESOURCE GROUP	https://dev.mysql.com/doc/refman/8.4/en/alter-resource-group.html
+Account Management	ALTER USER	https://dev.mysql.com/doc/refman/8.4/en/alter-user.html
+Account Management	CREATE RESOURCE GROUP	https://dev.mysql.com/doc/refman/8.4/en/create-resource-group.html
+Account Management	CREATE ROLE	https://dev.mysql.com/doc/refman/8.4/en/create-role.html
+Account Management	CREATE USER	https://dev.mysql.com/doc/refman/8.4/en/create-user.html
+Account Management	DROP RESOURCE GROUP	https://dev.mysql.com/doc/refman/8.4/en/drop-resource-group.html
+Account Management	DROP ROLE	https://dev.mysql.com/doc/refman/8.4/en/drop-role.html
+Account Management	DROP USER	https://dev.mysql.com/doc/refman/8.4/en/drop-user.html
+Account Management	GRANT	https://dev.mysql.com/doc/refman/8.4/en/grant.html
+Account Management	RENAME USER	https://dev.mysql.com/doc/refman/8.4/en/rename-user.html
+Account Management	REVOKE	https://dev.mysql.com/doc/refman/8.4/en/revoke.html
+Account Management	SET DEFAULT ROLE	https://dev.mysql.com/doc/refman/8.4/en/set-default-role.html
+Account Management	SET PASSWORD	https://dev.mysql.com/doc/refman/8.4/en/set-password.html
+Account Management	SET RESOURCE GROUP	https://dev.mysql.com/doc/refman/8.4/en/set-resource-group.html
+Account Management	SET ROLE	https://dev.mysql.com/doc/refman/8.4/en/set-role.html
+Administration	BINLOG	https://dev.mysql.com/doc/refman/8.4/en/binlog.html
+Administration	CACHE INDEX	https://dev.mysql.com/doc/refman/8.4/en/cache-index.html
+Administration	FLUSH	https://dev.mysql.com/doc/refman/8.4/en/flush.html
+Administration	HELP COMMAND	https://dev.mysql.com/doc/refman/8.4/en/mysql-server-side-help.html
+Administration	KILL	https://dev.mysql.com/doc/refman/8.4/en/kill.html
+Administration	LOAD INDEX	https://dev.mysql.com/doc/refman/8.4/en/load-index.html
+Administration	RESET	https://dev.mysql.com/doc/refman/8.4/en/reset.html
+Administration	RESET PERSIST	https://dev.mysql.com/doc/refman/8.4/en/reset-persist.html
+Administration	RESTART	https://dev.mysql.com/doc/refman/8.4/en/restart.html
+Administration	SET	https://dev.mysql.com/doc/refman/8.4/en/set-variable.html
+Administration	SET CHARACTER SET	https://dev.mysql.com/doc/refman/8.4/en/set-character-set.html
+Administration	SET CHARSET	https://dev.mysql.com/doc/refman/8.4/en/set-character-set.html
+Administration	SET NAMES	https://dev.mysql.com/doc/refman/8.4/en/set-names.html
+Administration	SHOW	https://dev.mysql.com/doc/refman/8.4/en/show.html
+Administration	SHOW BINARY LOG STATUS	https://dev.mysql.com/doc/refman/8.4/en/show-binary-log-status.html
+Administration	SHOW BINARY LOGS	https://dev.mysql.com/doc/refman/8.4/en/show-binary-logs.html
+Administration	SHOW BINLOG EVENTS	https://dev.mysql.com/doc/refman/8.4/en/show-binlog-events.html
+Administration	SHOW CHARACTER SET	https://dev.mysql.com/doc/refman/8.4/en/show-character-set.html
+Administration	SHOW COLLATION	https://dev.mysql.com/doc/refman/8.4/en/show-collation.html
+Administration	SHOW COLUMNS	https://dev.mysql.com/doc/refman/8.4/en/show-columns.html
+Administration	SHOW CREATE DATABASE	https://dev.mysql.com/doc/refman/8.4/en/show-create-database.html
+Administration	SHOW CREATE EVENT	https://dev.mysql.com/doc/refman/8.4/en/show-create-event.html
+Administration	SHOW CREATE FUNCTION	https://dev.mysql.com/doc/refman/8.4/en/show-create-function.html
+Administration	SHOW CREATE PROCEDURE	https://dev.mysql.com/doc/refman/8.4/en/show-create-procedure.html
+Administration	SHOW CREATE SCHEMA	https://dev.mysql.com/doc/refman/8.4/en/show-create-database.html
+Administration	SHOW CREATE TABLE	https://dev.mysql.com/doc/refman/8.4/en/show-create-table.html
+Administration	SHOW CREATE TRIGGER	https://dev.mysql.com/doc/refman/8.4/en/show-create-trigger.html
+Administration	SHOW CREATE USER	https://dev.mysql.com/doc/refman/8.4/en/show-create-user.html
+Administration	SHOW CREATE VIEW	https://dev.mysql.com/doc/refman/8.4/en/show-create-view.html
+Administration	SHOW DATABASES	https://dev.mysql.com/doc/refman/8.4/en/show-databases.html
+Administration	SHOW ENGINE	https://dev.mysql.com/doc/refman/8.4/en/show-engine.html
+Administration	SHOW ENGINES	https://dev.mysql.com/doc/refman/8.4/en/show-engines.html
+Administration	SHOW ERRORS	https://dev.mysql.com/doc/refman/8.4/en/show-errors.html
+Administration	SHOW EVENTS	https://dev.mysql.com/doc/refman/8.4/en/show-events.html
+Administration	SHOW FIELDS	https://dev.mysql.com/doc/refman/8.4/en/show-columns.html
+Administration	SHOW FUNCTION CODE	https://dev.mysql.com/doc/refman/8.4/en/show-function-code.html
+Administration	SHOW FUNCTION STATUS	https://dev.mysql.com/doc/refman/8.4/en/show-function-status.html
+Administration	SHOW GRANTS	https://dev.mysql.com/doc/refman/8.4/en/show-grants.html
+Administration	SHOW INDEX	https://dev.mysql.com/doc/refman/8.4/en/show-index.html
+Administration	SHOW OPEN TABLES	https://dev.mysql.com/doc/refman/8.4/en/show-open-tables.html
+Administration	SHOW PARSE_TREE	https://dev.mysql.com/doc/refman/8.4/en/show-parse-tree.html
+Administration	SHOW PLUGINS	https://dev.mysql.com/doc/refman/8.4/en/show-plugins.html
+Administration	SHOW PRIVILEGES	https://dev.mysql.com/doc/refman/8.4/en/show-privileges.html
+Administration	SHOW PROCEDURE CODE	https://dev.mysql.com/doc/refman/8.4/en/show-procedure-code.html
+Administration	SHOW PROCEDURE STATUS	https://dev.mysql.com/doc/refman/8.4/en/show-procedure-status.html
+Administration	SHOW PROCESSLIST	https://dev.mysql.com/doc/refman/8.4/en/show-processlist.html
+Administration	SHOW PROFILE	https://dev.mysql.com/doc/refman/8.4/en/show-profile.html
+Administration	SHOW PROFILES	https://dev.mysql.com/doc/refman/8.4/en/show-profiles.html
+Administration	SHOW RELAYLOG EVENTS	https://dev.mysql.com/doc/refman/8.4/en/show-relaylog-events.html
+Administration	SHOW REPLICA STATUS	https://dev.mysql.com/doc/refman/8.4/en/show-replica-status.html
+Administration	SHOW REPLICAS	https://dev.mysql.com/doc/refman/8.4/en/show-replicas.html
+Administration	SHOW SCHEMAS	https://dev.mysql.com/doc/refman/8.4/en/show-databases.html
+Administration	SHOW STATUS	https://dev.mysql.com/doc/refman/8.4/en/show-status.html
+Administration	SHOW TABLE STATUS	https://dev.mysql.com/doc/refman/8.4/en/show-table-status.html
+Administration	SHOW TABLES	https://dev.mysql.com/doc/refman/8.4/en/show-tables.html
+Administration	SHOW TRIGGERS	https://dev.mysql.com/doc/refman/8.4/en/show-triggers.html
+Administration	SHOW VARIABLES	https://dev.mysql.com/doc/refman/8.4/en/show-variables.html
+Administration	SHOW WARNINGS	https://dev.mysql.com/doc/refman/8.4/en/show-warnings.html
+Administration	SHUTDOWN	https://dev.mysql.com/doc/refman/8.4/en/shutdown.html
+Aggregate Functions and Modifiers	AVG	https://dev.mysql.com/doc/refman/8.4/en/aggregate-functions.html
+Aggregate Functions and Modifiers	BIT_AND	https://dev.mysql.com/doc/refman/8.4/en/aggregate-functions.html
+Aggregate Functions and Modifiers	BIT_OR	https://dev.mysql.com/doc/refman/8.4/en/aggregate-functions.html
+Aggregate Functions and Modifiers	BIT_XOR	https://dev.mysql.com/doc/refman/8.4/en/aggregate-functions.html
+Aggregate Functions and Modifiers	COUNT	https://dev.mysql.com/doc/refman/8.4/en/aggregate-functions.html
+Aggregate Functions and Modifiers	COUNT DISTINCT	https://dev.mysql.com/doc/refman/8.4/en/aggregate-functions.html
+Aggregate Functions and Modifiers	GROUP_CONCAT	https://dev.mysql.com/doc/refman/8.4/en/aggregate-functions.html
+Aggregate Functions and Modifiers	JSON_ARRAYAGG	https://dev.mysql.com/doc/refman/8.4/en/aggregate-functions.html
+Aggregate Functions and Modifiers	JSON_OBJECTAGG	https://dev.mysql.com/doc/refman/8.4/en/aggregate-functions.html
+Aggregate Functions and Modifiers	MAX	https://dev.mysql.com/doc/refman/8.4/en/aggregate-functions.html
+Aggregate Functions and Modifiers	MIN	https://dev.mysql.com/doc/refman/8.4/en/aggregate-functions.html
+Aggregate Functions and Modifiers	STD	https://dev.mysql.com/doc/refman/8.4/en/aggregate-functions.html
+Aggregate Functions and Modifiers	STDDEV	https://dev.mysql.com/doc/refman/8.4/en/aggregate-functions.html
+Aggregate Functions and Modifiers	STDDEV_POP	https://dev.mysql.com/doc/refman/8.4/en/aggregate-functions.html
+Aggregate Functions and Modifiers	STDDEV_SAMP	https://dev.mysql.com/doc/refman/8.4/en/aggregate-functions.html
+Aggregate Functions and Modifiers	SUM	https://dev.mysql.com/doc/refman/8.4/en/aggregate-functions.html
+Aggregate Functions and Modifiers	VARIANCE	https://dev.mysql.com/doc/refman/8.4/en/aggregate-functions.html
+Aggregate Functions and Modifiers	VAR_POP	https://dev.mysql.com/doc/refman/8.4/en/aggregate-functions.html
+Aggregate Functions and Modifiers	VAR_SAMP	https://dev.mysql.com/doc/refman/8.4/en/aggregate-functions.html
+Bit Functions	&	https://dev.mysql.com/doc/refman/8.4/en/bit-functions.html
+Bit Functions	<<	https://dev.mysql.com/doc/refman/8.4/en/bit-functions.html
+Bit Functions	>>	https://dev.mysql.com/doc/refman/8.4/en/bit-functions.html
+Bit Functions	BIT_COUNT	https://dev.mysql.com/doc/refman/8.4/en/bit-functions.html
+Bit Functions	^	https://dev.mysql.com/doc/refman/8.4/en/bit-functions.html
+Bit Functions	|	https://dev.mysql.com/doc/refman/8.4/en/bit-functions.html
+Bit Functions	~	https://dev.mysql.com/doc/refman/8.4/en/bit-functions.html
+Cast Functions and Operators	BINARY OPERATOR	https://dev.mysql.com/doc/refman/8.4/en/cast-functions.html
+Cast Functions and Operators	CAST	https://dev.mysql.com/doc/refman/8.4/en/cast-functions.html
+Cast Functions and Operators	CONVERT	https://dev.mysql.com/doc/refman/8.4/en/cast-functions.html
+Comparison Operators	!=	https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html
+Comparison Operators	<	https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html
+Comparison Operators	<=	https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html
+Comparison Operators	<=>	https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html
+Comparison Operators	=	https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html
+Comparison Operators	>	https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html
+Comparison Operators	>=	https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html
+Comparison Operators	BETWEEN AND	https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html
+Comparison Operators	COALESCE	https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html
+Comparison Operators	EXISTS	https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html
+Comparison Operators	GREATEST	https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html
+Comparison Operators	IN	https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html
+Comparison Operators	INTERVAL	https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html
+Comparison Operators	IS	https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html
+Comparison Operators	IS NOT	https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html
+Comparison Operators	IS NOT NULL	https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html
+Comparison Operators	IS NULL	https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html
+Comparison Operators	ISNULL	https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html
+Comparison Operators	LEAST	https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html
+Comparison Operators	NOT BETWEEN	https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html
+Comparison Operators	NOT EXISTS	https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html
+Comparison Operators	NOT IN	https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html
+Components	CLONE	https://dev.mysql.com/doc/refman/8.4/en/clone.html
+Components	INSTALL COMPONENT	https://dev.mysql.com/doc/refman/8.4/en/install-component.html
+Components	UNINSTALL COMPONENT	https://dev.mysql.com/doc/refman/8.4/en/uninstall-component.html
+Components	UNINSTALL PLUGIN	https://dev.mysql.com/doc/refman/8.4/en/uninstall-plugin.html
+Compound Statements	BEGIN END	https://dev.mysql.com/doc/refman/8.4/en/begin-end.html
+Compound Statements	CASE STATEMENT	https://dev.mysql.com/doc/refman/8.4/en/case.html
+Compound Statements	CLOSE	https://dev.mysql.com/doc/refman/8.4/en/close.html
+Compound Statements	DECLARE CONDITION	https://dev.mysql.com/doc/refman/8.4/en/declare-condition.html
+Compound Statements	DECLARE CURSOR	https://dev.mysql.com/doc/refman/8.4/en/declare-cursor.html
+Compound Statements	DECLARE HANDLER	https://dev.mysql.com/doc/refman/8.4/en/declare-handler.html
+Compound Statements	DECLARE VARIABLE	https://dev.mysql.com/doc/refman/8.4/en/declare-local-variable.html
+Compound Statements	FETCH	https://dev.mysql.com/doc/refman/8.4/en/fetch.html
+Compound Statements	GET DIAGNOSTICS	https://dev.mysql.com/doc/refman/8.4/en/get-diagnostics.html
+Compound Statements	IF STATEMENT	https://dev.mysql.com/doc/refman/8.4/en/if.html
+Compound Statements	ITERATE	https://dev.mysql.com/doc/refman/8.4/en/iterate.html
+Compound Statements	LABELS	https://dev.mysql.com/doc/refman/8.4/en/statement-labels.html
+Compound Statements	LEAVE	https://dev.mysql.com/doc/refman/8.4/en/leave.html
+Compound Statements	LOOP	https://dev.mysql.com/doc/refman/8.4/en/loop.html
+Compound Statements	OPEN	https://dev.mysql.com/doc/refman/8.4/en/open.html
+Compound Statements	REPEAT LOOP	https://dev.mysql.com/doc/refman/8.4/en/repeat.html
+Compound Statements	RESIGNAL	https://dev.mysql.com/doc/refman/8.4/en/resignal.html
+Compound Statements	RETURN	https://dev.mysql.com/doc/refman/8.4/en/return.html
+Compound Statements	SIGNAL	https://dev.mysql.com/doc/refman/8.4/en/signal.html
+Compound Statements	WHILE	https://dev.mysql.com/doc/refman/8.4/en/while.html
+Data Definition	ALTER DATABASE	https://dev.mysql.com/doc/refman/8.4/en/alter-database.html
+Data Definition	ALTER EVENT	https://dev.mysql.com/doc/refman/8.4/en/alter-event.html
+Data Definition	ALTER FUNCTION	https://dev.mysql.com/doc/refman/8.4/en/alter-function.html
+Data Definition	ALTER INSTANCE	https://dev.mysql.com/doc/refman/8.4/en/alter-instance.html
+Data Definition	ALTER LOGFILE GROUP	https://dev.mysql.com/doc/refman/8.4/en/alter-logfile-group.html
+Data Definition	ALTER PROCEDURE	https://dev.mysql.com/doc/refman/8.4/en/alter-procedure.html
+Data Definition	ALTER SCHEMA	https://dev.mysql.com/doc/refman/8.4/en/alter-database.html
+Data Definition	ALTER SERVER	https://dev.mysql.com/doc/refman/8.4/en/alter-server.html
+Data Definition	ALTER TABLE	https://dev.mysql.com/doc/refman/8.4/en/alter-table.html
+Data Definition	ALTER TABLESPACE	https://dev.mysql.com/doc/refman/8.4/en/alter-tablespace.html
+Data Definition	ALTER VIEW	https://dev.mysql.com/doc/refman/8.4/en/alter-view.html
+Data Definition	CREATE DATABASE	https://dev.mysql.com/doc/refman/8.4/en/create-database.html
+Data Definition	CREATE EVENT	https://dev.mysql.com/doc/refman/8.4/en/create-event.html
+Data Definition	CREATE FUNCTION	https://dev.mysql.com/doc/refman/8.4/en/create-procedure.html
+Data Definition	CREATE INDEX	https://dev.mysql.com/doc/refman/8.4/en/create-index.html
+Data Definition	CREATE LOGFILE GROUP	https://dev.mysql.com/doc/refman/8.4/en/create-logfile-group.html
+Data Definition	CREATE PROCEDURE	https://dev.mysql.com/doc/refman/8.4/en/create-procedure.html
+Data Definition	CREATE SCHEMA	https://dev.mysql.com/doc/refman/8.4/en/create-database.html
+Data Definition	CREATE SERVER	https://dev.mysql.com/doc/refman/8.4/en/create-server.html
+Data Definition	CREATE SPATIAL REFERENCE SYSTEM	https://dev.mysql.com/doc/refman/8.4/en/create-spatial-reference-system.html
+Data Definition	CREATE TABLE	https://dev.mysql.com/doc/refman/8.4/en/create-table.html
+Data Definition	CREATE TABLESPACE	https://dev.mysql.com/doc/refman/8.4/en/create-tablespace.html
+Data Definition	CREATE TRIGGER	https://dev.mysql.com/doc/refman/8.4/en/create-trigger.html
+Data Definition	CREATE VIEW	https://dev.mysql.com/doc/refman/8.4/en/create-view.html
+Data Definition	DROP DATABASE	https://dev.mysql.com/doc/refman/8.4/en/drop-database.html
+Data Definition	DROP EVENT	https://dev.mysql.com/doc/refman/8.4/en/drop-event.html
+Data Definition	DROP FUNCTION	https://dev.mysql.com/doc/refman/8.4/en/drop-procedure.html
+Data Definition	DROP INDEX	https://dev.mysql.com/doc/refman/8.4/en/drop-index.html
+Data Definition	DROP PROCEDURE	https://dev.mysql.com/doc/refman/8.4/en/drop-procedure.html
+Data Definition	DROP SCHEMA	https://dev.mysql.com/doc/refman/8.4/en/drop-database.html
+Data Definition	DROP SERVER	https://dev.mysql.com/doc/refman/8.4/en/drop-server.html
+Data Definition	DROP SPATIAL REFERENCE SYSTEM	https://dev.mysql.com/doc/refman/8.4/en/drop-spatial-reference-system.html
+Data Definition	DROP TABLE	https://dev.mysql.com/doc/refman/8.4/en/drop-table.html
+Data Definition	DROP TABLESPACE	https://dev.mysql.com/doc/refman/8.4/en/drop-tablespace.html
+Data Definition	DROP TRIGGER	https://dev.mysql.com/doc/refman/8.4/en/drop-trigger.html
+Data Definition	DROP VIEW	https://dev.mysql.com/doc/refman/8.4/en/drop-view.html
+Data Definition	FOREIGN KEY	https://dev.mysql.com/doc/refman/8.4/en/create-table-foreign-keys.html
+Data Definition	RENAME TABLE	https://dev.mysql.com/doc/refman/8.4/en/rename-table.html
+Data Definition	TRUNCATE TABLE	https://dev.mysql.com/doc/refman/8.4/en/truncate-table.html
+Data Manipulation	CALL	https://dev.mysql.com/doc/refman/8.4/en/call.html
+Data Manipulation	DELETE	https://dev.mysql.com/doc/refman/8.4/en/delete.html
+Data Manipulation	DO	https://dev.mysql.com/doc/refman/8.4/en/do.html
+Data Manipulation	DUAL	https://dev.mysql.com/doc/refman/8.4/en/select.html
+Data Manipulation	EXCEPT	https://dev.mysql.com/doc/refman/8.4/en/except.html
+Data Manipulation	HANDLER	https://dev.mysql.com/doc/refman/8.4/en/handler.html
+Data Manipulation	IMPORT TABLE	https://dev.mysql.com/doc/refman/8.4/en/import-table.html
+Data Manipulation	INSERT	https://dev.mysql.com/doc/refman/8.4/en/insert.html
+Data Manipulation	INSERT DELAYED	https://dev.mysql.com/doc/refman/8.4/en/insert-delayed.html
+Data Manipulation	INSERT SELECT	https://dev.mysql.com/doc/refman/8.4/en/insert-select.html
+Data Manipulation	INTERSECT	https://dev.mysql.com/doc/refman/8.4/en/intersect.html
+Data Manipulation	JOIN	https://dev.mysql.com/doc/refman/8.4/en/join.html
+Data Manipulation	LOAD DATA	https://dev.mysql.com/doc/refman/8.4/en/load-data.html
+Data Manipulation	LOAD XML	https://dev.mysql.com/doc/refman/8.4/en/load-xml.html
+Data Manipulation	PARENTHESIZED QUERY EXPRESSIONS	https://dev.mysql.com/doc/refman/8.4/en/parenthesized-query-expressions.html
+Data Manipulation	REPLACE	https://dev.mysql.com/doc/refman/8.4/en/replace.html
+Data Manipulation	SELECT	https://dev.mysql.com/doc/refman/8.4/en/select.html
+Data Manipulation	TABLE	https://dev.mysql.com/doc/refman/8.4/en/table.html
+Data Manipulation	UNION	https://dev.mysql.com/doc/refman/8.4/en/union.html
+Data Manipulation	UPDATE	https://dev.mysql.com/doc/refman/8.4/en/update.html
+Data Manipulation	VALUES STATEMENT	https://dev.mysql.com/doc/refman/8.4/en/values.html
+Data Types	AUTO_INCREMENT	https://dev.mysql.com/doc/refman/8.4/en/example-auto-increment.html
+Data Types	BIGINT	https://dev.mysql.com/doc/refman/8.4/en/numeric-type-syntax.html
+Data Types	BINARY	https://dev.mysql.com/doc/refman/8.4/en/string-type-syntax.html
+Data Types	BIT	https://dev.mysql.com/doc/refman/8.4/en/numeric-type-syntax.html
+Data Types	BLOB	https://dev.mysql.com/doc/refman/8.4/en/string-type-syntax.html
+Data Types	BLOB DATA TYPE	https://dev.mysql.com/doc/refman/8.4/en/blob.html
+Data Types	BOOLEAN	https://dev.mysql.com/doc/refman/8.4/en/numeric-type-syntax.html
+Data Types	CHAR	https://dev.mysql.com/doc/refman/8.4/en/string-type-syntax.html
+Data Types	CHAR BYTE	https://dev.mysql.com/doc/refman/8.4/en/string-type-syntax.html
+Data Types	DATE	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-type-syntax.html
+Data Types	DATETIME	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-type-syntax.html
+Data Types	DEC	https://dev.mysql.com/doc/refman/8.4/en/numeric-type-syntax.html
+Data Types	DECIMAL	https://dev.mysql.com/doc/refman/8.4/en/numeric-type-syntax.html
+Data Types	DOUBLE	https://dev.mysql.com/doc/refman/8.4/en/numeric-type-syntax.html
+Data Types	DOUBLE PRECISION	https://dev.mysql.com/doc/refman/8.4/en/numeric-type-syntax.html
+Data Types	ENUM	https://dev.mysql.com/doc/refman/8.4/en/string-type-syntax.html
+Data Types	FLOAT	https://dev.mysql.com/doc/refman/8.4/en/numeric-type-syntax.html
+Data Types	INT	https://dev.mysql.com/doc/refman/8.4/en/numeric-type-syntax.html
+Data Types	INTEGER	https://dev.mysql.com/doc/refman/8.4/en/numeric-type-syntax.html
+Data Types	LONGBLOB	https://dev.mysql.com/doc/refman/8.4/en/string-type-syntax.html
+Data Types	LONGTEXT	https://dev.mysql.com/doc/refman/8.4/en/string-type-syntax.html
+Data Types	MEDIUMBLOB	https://dev.mysql.com/doc/refman/8.4/en/string-type-syntax.html
+Data Types	MEDIUMINT	https://dev.mysql.com/doc/refman/8.4/en/numeric-type-syntax.html
+Data Types	MEDIUMTEXT	https://dev.mysql.com/doc/refman/8.4/en/string-type-syntax.html
+Data Types	SET DATA TYPE	https://dev.mysql.com/doc/refman/8.4/en/string-type-syntax.html
+Data Types	SMALLINT	https://dev.mysql.com/doc/refman/8.4/en/numeric-type-syntax.html
+Data Types	TEXT	https://dev.mysql.com/doc/refman/8.4/en/string-type-syntax.html
+Data Types	TIME	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-type-syntax.html
+Data Types	TIMESTAMP	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-type-syntax.html
+Data Types	TINYBLOB	https://dev.mysql.com/doc/refman/8.4/en/string-type-syntax.html
+Data Types	TINYINT	https://dev.mysql.com/doc/refman/8.4/en/numeric-type-syntax.html
+Data Types	TINYTEXT	https://dev.mysql.com/doc/refman/8.4/en/string-type-syntax.html
+Data Types	VARBINARY	https://dev.mysql.com/doc/refman/8.4/en/string-type-syntax.html
+Data Types	VARCHAR	https://dev.mysql.com/doc/refman/8.4/en/string-type-syntax.html
+Data Types	YEAR DATA TYPE	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-type-syntax.html
+Date and Time Functions	ADDDATE	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	ADDTIME	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	CONVERT_TZ	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	CURDATE	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	CURRENT_DATE	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	CURRENT_TIME	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	CURRENT_TIMESTAMP	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	CURTIME	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	DATE FUNCTION	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	DATEDIFF	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	DATE_ADD	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	DATE_FORMAT	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	DATE_SUB	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	DAY	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	DAYNAME	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	DAYOFMONTH	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	DAYOFWEEK	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	DAYOFYEAR	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	EXTRACT	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	FROM_DAYS	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	FROM_UNIXTIME	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	GET_FORMAT	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	HOUR	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	LAST_DAY	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	LOCALTIME	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	LOCALTIMESTAMP	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	MAKEDATE	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	MAKETIME	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	MICROSECOND	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	MINUTE	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	MONTH	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	MONTHNAME	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	NOW	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	PERIOD_ADD	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	PERIOD_DIFF	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	QUARTER	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	SECOND	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	SEC_TO_TIME	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	STR_TO_DATE	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	SUBDATE	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	SUBTIME	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	SYSDATE	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	TIME FUNCTION	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	TIMEDIFF	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	TIMESTAMP FUNCTION	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	TIMESTAMPADD	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	TIMESTAMPDIFF	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	TIME_FORMAT	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	TIME_TO_SEC	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	TO_DAYS	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	TO_SECONDS	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	UNIX_TIMESTAMP	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	UTC_DATE	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	UTC_TIME	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	UTC_TIMESTAMP	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	WEEK	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	WEEKDAY	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	WEEKOFYEAR	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	YEAR	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Date and Time Functions	YEARWEEK	https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+Encryption Functions	AES_DECRYPT	https://dev.mysql.com/doc/refman/8.4/en/encryption-functions.html
+Encryption Functions	AES_ENCRYPT	https://dev.mysql.com/doc/refman/8.4/en/encryption-functions.html
+Encryption Functions	COMPRESS	https://dev.mysql.com/doc/refman/8.4/en/encryption-functions.html
+Encryption Functions	MD5	https://dev.mysql.com/doc/refman/8.4/en/encryption-functions.html
+Encryption Functions	RANDOM_BYTES	https://dev.mysql.com/doc/refman/8.4/en/encryption-functions.html
+Encryption Functions	SHA1	https://dev.mysql.com/doc/refman/8.4/en/encryption-functions.html
+Encryption Functions	SHA2	https://dev.mysql.com/doc/refman/8.4/en/encryption-functions.html
+Encryption Functions	STATEMENT_DIGEST	https://dev.mysql.com/doc/refman/8.4/en/encryption-functions.html
+Encryption Functions	STATEMENT_DIGEST_TEXT	https://dev.mysql.com/doc/refman/8.4/en/encryption-functions.html
+Encryption Functions	UNCOMPRESS	https://dev.mysql.com/doc/refman/8.4/en/encryption-functions.html
+Encryption Functions	UNCOMPRESSED_LENGTH	https://dev.mysql.com/doc/refman/8.4/en/encryption-functions.html
+Encryption Functions	VALIDATE_PASSWORD_STRENGTH	https://dev.mysql.com/doc/refman/8.4/en/encryption-functions.html
+Enterprise Encryption Functions	ASYMMETRIC_DECRYPT	https://dev.mysql.com/doc/refman/8.4/en/enterprise-encryption-functions.html
+Enterprise Encryption Functions	ASYMMETRIC_ENCRYPT	https://dev.mysql.com/doc/refman/8.4/en/enterprise-encryption-functions.html
+Enterprise Encryption Functions	ASYMMETRIC_SIGN	https://dev.mysql.com/doc/refman/8.4/en/enterprise-encryption-functions.html
+Enterprise Encryption Functions	ASYMMETRIC_VERIFY	https://dev.mysql.com/doc/refman/8.4/en/enterprise-encryption-functions.html
+Enterprise Encryption Functions	CREATE_ASYMMETRIC_PRIV_KEY	https://dev.mysql.com/doc/refman/8.4/en/enterprise-encryption-functions.html
+Enterprise Encryption Functions	CREATE_ASYMMETRIC_PUB_KEY	https://dev.mysql.com/doc/refman/8.4/en/enterprise-encryption-functions.html
+Enterprise Encryption Functions	CREATE_DIGEST	https://dev.mysql.com/doc/refman/8.4/en/enterprise-encryption-functions.html
+Flow Control Functions	CASE OPERATOR	https://dev.mysql.com/doc/refman/8.4/en/flow-control-functions.html
+Flow Control Functions	IF FUNCTION	https://dev.mysql.com/doc/refman/8.4/en/flow-control-functions.html
+Flow Control Functions	IFNULL	https://dev.mysql.com/doc/refman/8.4/en/flow-control-functions.html
+Flow Control Functions	NULLIF	https://dev.mysql.com/doc/refman/8.4/en/flow-control-functions.html
+Geographic Features	GEOMETRY HIERARCHY	https://dev.mysql.com/doc/refman/8.4/en/gis-geometry-class-hierarchy.html
+Geographic Features	SPATIAL COLUMNS	https://dev.mysql.com/doc/refman/8.4/en/creating-spatial-columns.html
+Geographic Features	SPATIAL INDEXES	https://dev.mysql.com/doc/refman/8.4/en/creating-spatial-indexes.html
+Geometry Constructors	GEOMCOLLECTION	https://dev.mysql.com/doc/refman/8.4/en/gis-mysql-specific-functions.html
+Geometry Constructors	GEOMETRYCOLLECTION	https://dev.mysql.com/doc/refman/8.4/en/gis-mysql-specific-functions.html
+Geometry Constructors	LINESTRING	https://dev.mysql.com/doc/refman/8.4/en/gis-mysql-specific-functions.html
+Geometry Constructors	MULTILINESTRING	https://dev.mysql.com/doc/refman/8.4/en/gis-mysql-specific-functions.html
+Geometry Constructors	MULTIPOINT	https://dev.mysql.com/doc/refman/8.4/en/gis-mysql-specific-functions.html
+Geometry Constructors	MULTIPOLYGON	https://dev.mysql.com/doc/refman/8.4/en/gis-mysql-specific-functions.html
+Geometry Constructors	POINT	https://dev.mysql.com/doc/refman/8.4/en/gis-mysql-specific-functions.html
+Geometry Constructors	POLYGON	https://dev.mysql.com/doc/refman/8.4/en/gis-mysql-specific-functions.html
+Geometry Property Functions	ST_DIMENSION	https://dev.mysql.com/doc/refman/8.4/en/gis-general-property-functions.html
+Geometry Property Functions	ST_ENVELOPE	https://dev.mysql.com/doc/refman/8.4/en/gis-general-property-functions.html
+Geometry Property Functions	ST_GEOMETRYTYPE	https://dev.mysql.com/doc/refman/8.4/en/gis-general-property-functions.html
+Geometry Property Functions	ST_ISEMPTY	https://dev.mysql.com/doc/refman/8.4/en/gis-general-property-functions.html
+Geometry Property Functions	ST_ISSIMPLE	https://dev.mysql.com/doc/refman/8.4/en/gis-general-property-functions.html
+Geometry Property Functions	ST_SRID	https://dev.mysql.com/doc/refman/8.4/en/gis-general-property-functions.html
+Geometry Relation Functions	ST_CONTAINS	https://dev.mysql.com/doc/refman/8.4/en/spatial-relation-functions-object-shapes.html
+Geometry Relation Functions	ST_CROSSES	https://dev.mysql.com/doc/refman/8.4/en/spatial-relation-functions-object-shapes.html
+Geometry Relation Functions	ST_DISJOINT	https://dev.mysql.com/doc/refman/8.4/en/spatial-relation-functions-object-shapes.html
+Geometry Relation Functions	ST_DISTANCE	https://dev.mysql.com/doc/refman/8.4/en/spatial-relation-functions-object-shapes.html
+Geometry Relation Functions	ST_EQUALS	https://dev.mysql.com/doc/refman/8.4/en/spatial-relation-functions-object-shapes.html
+Geometry Relation Functions	ST_FRECHETDISTANCE	https://dev.mysql.com/doc/refman/8.4/en/spatial-relation-functions-object-shapes.html
+Geometry Relation Functions	ST_HAUSDORFFDISTANCE	https://dev.mysql.com/doc/refman/8.4/en/spatial-relation-functions-object-shapes.html
+Geometry Relation Functions	ST_INTERSECTS	https://dev.mysql.com/doc/refman/8.4/en/spatial-relation-functions-object-shapes.html
+Geometry Relation Functions	ST_OVERLAPS	https://dev.mysql.com/doc/refman/8.4/en/spatial-relation-functions-object-shapes.html
+Geometry Relation Functions	ST_TOUCHES	https://dev.mysql.com/doc/refman/8.4/en/spatial-relation-functions-object-shapes.html
+Geometry Relation Functions	ST_WITHIN	https://dev.mysql.com/doc/refman/8.4/en/spatial-relation-functions-object-shapes.html
+GeometryCollection Property Functions	ST_BUFFER	https://dev.mysql.com/doc/refman/8.4/en/spatial-operator-functions.html
+GeometryCollection Property Functions	ST_BUFFER_STRATEGY	https://dev.mysql.com/doc/refman/8.4/en/spatial-operator-functions.html
+GeometryCollection Property Functions	ST_CONVEXHULL	https://dev.mysql.com/doc/refman/8.4/en/spatial-operator-functions.html
+GeometryCollection Property Functions	ST_DIFFERENCE	https://dev.mysql.com/doc/refman/8.4/en/spatial-operator-functions.html
+GeometryCollection Property Functions	ST_GEOMETRYN	https://dev.mysql.com/doc/refman/8.4/en/gis-geometrycollection-property-functions.html
+GeometryCollection Property Functions	ST_INTERSECTION	https://dev.mysql.com/doc/refman/8.4/en/spatial-operator-functions.html
+GeometryCollection Property Functions	ST_LINEINTERPOLATEPOINT	https://dev.mysql.com/doc/refman/8.4/en/spatial-operator-functions.html
+GeometryCollection Property Functions	ST_LINEINTERPOLATEPOINTS	https://dev.mysql.com/doc/refman/8.4/en/spatial-operator-functions.html
+GeometryCollection Property Functions	ST_NUMGEOMETRIES	https://dev.mysql.com/doc/refman/8.4/en/gis-geometrycollection-property-functions.html
+GeometryCollection Property Functions	ST_POINTATDISTANCE	https://dev.mysql.com/doc/refman/8.4/en/spatial-operator-functions.html
+GeometryCollection Property Functions	ST_SYMDIFFERENCE	https://dev.mysql.com/doc/refman/8.4/en/spatial-operator-functions.html
+GeometryCollection Property Functions	ST_TRANSFORM	https://dev.mysql.com/doc/refman/8.4/en/spatial-operator-functions.html
+GeometryCollection Property Functions	ST_UNION	https://dev.mysql.com/doc/refman/8.4/en/spatial-operator-functions.html
+GTID	GTID_SUBSET	https://dev.mysql.com/doc/refman/8.4/en/gtid-functions.html
+GTID	GTID_SUBTRACT	https://dev.mysql.com/doc/refman/8.4/en/gtid-functions.html
+GTID	MASTER_POS_WAIT	https://dev.mysql.com/doc/refman/8.4/en/replication-functions-synchronization.html
+GTID	SOURCE_POS_WAIT	https://dev.mysql.com/doc/refman/8.4/en/replication-functions-synchronization.html
+GTID	WAIT_FOR_EXECUTED_GTID_SET	https://dev.mysql.com/doc/refman/8.4/en/gtid-functions.html
+Information Functions	BENCHMARK	https://dev.mysql.com/doc/refman/8.4/en/information-functions.html
+Information Functions	CHARSET	https://dev.mysql.com/doc/refman/8.4/en/information-functions.html
+Information Functions	COERCIBILITY	https://dev.mysql.com/doc/refman/8.4/en/information-functions.html
+Information Functions	COLLATION	https://dev.mysql.com/doc/refman/8.4/en/information-functions.html
+Information Functions	CONNECTION_ID	https://dev.mysql.com/doc/refman/8.4/en/information-functions.html
+Information Functions	CURRENT_ROLE	https://dev.mysql.com/doc/refman/8.4/en/information-functions.html
+Information Functions	CURRENT_USER	https://dev.mysql.com/doc/refman/8.4/en/information-functions.html
+Information Functions	DATABASE	https://dev.mysql.com/doc/refman/8.4/en/information-functions.html
+Information Functions	FOUND_ROWS	https://dev.mysql.com/doc/refman/8.4/en/information-functions.html
+Information Functions	ICU_VERSION	https://dev.mysql.com/doc/refman/8.4/en/information-functions.html
+Information Functions	LAST_INSERT_ID	https://dev.mysql.com/doc/refman/8.4/en/information-functions.html
+Information Functions	ROLES_GRAPHML	https://dev.mysql.com/doc/refman/8.4/en/information-functions.html
+Information Functions	ROW_COUNT	https://dev.mysql.com/doc/refman/8.4/en/information-functions.html
+Information Functions	SCHEMA	https://dev.mysql.com/doc/refman/8.4/en/information-functions.html
+Information Functions	SESSION_USER	https://dev.mysql.com/doc/refman/8.4/en/information-functions.html
+Information Functions	SYSTEM_USER	https://dev.mysql.com/doc/refman/8.4/en/information-functions.html
+Information Functions	USER	https://dev.mysql.com/doc/refman/8.4/en/information-functions.html
+Information Functions	VERSION	https://dev.mysql.com/doc/refman/8.4/en/information-functions.html
+Internal Functions	CAN_ACCESS_COLUMN	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	CAN_ACCESS_DATABASE	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	CAN_ACCESS_TABLE	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	CAN_ACCESS_USER	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	CAN_ACCESS_VIEW	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	GET_DD_COLUMN_PRIVILEGES	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	GET_DD_CREATE_OPTIONS	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	GET_DD_INDEX_SUB_PART_LENGTH	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	INTERNAL_AUTO_INCREMENT	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	INTERNAL_AVG_ROW_LENGTH	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	INTERNAL_CHECKSUM	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	INTERNAL_CHECK_TIME	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	INTERNAL_DATA_FREE	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	INTERNAL_DATA_LENGTH	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	INTERNAL_DD_CHAR_LENGTH	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	INTERNAL_GET_COMMENT_OR_ERROR	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	INTERNAL_GET_ENABLED_ROLE_JSON	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	INTERNAL_GET_HOSTNAME	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	INTERNAL_GET_USERNAME	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	INTERNAL_GET_VIEW_WARNING_OR_ERROR	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	INTERNAL_INDEX_COLUMN_CARDINALITY	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	INTERNAL_INDEX_LENGTH	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	INTERNAL_IS_ENABLED_ROLE	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	INTERNAL_IS_MANDATORY_ROLE	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	INTERNAL_KEYS_DISABLED	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	INTERNAL_MAX_DATA_LENGTH	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	INTERNAL_TABLE_ROWS	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	INTERNAL_UPDATE_TIME	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Internal Functions	IS_VISIBLE_DD_OBJECT	https://dev.mysql.com/doc/refman/8.4/en/internal-functions.html
+Language Structure	FALSE	https://dev.mysql.com/doc/refman/8.4/en/boolean-literals.html
+Language Structure	TRUE	https://dev.mysql.com/doc/refman/8.4/en/boolean-literals.html
+LineString Property Functions	ST_ENDPOINT	https://dev.mysql.com/doc/refman/8.4/en/gis-linestring-property-functions.html
+LineString Property Functions	ST_ISCLOSED	https://dev.mysql.com/doc/refman/8.4/en/gis-linestring-property-functions.html
+LineString Property Functions	ST_LENGTH	https://dev.mysql.com/doc/refman/8.4/en/gis-linestring-property-functions.html
+LineString Property Functions	ST_NUMPOINTS	https://dev.mysql.com/doc/refman/8.4/en/gis-linestring-property-functions.html
+LineString Property Functions	ST_POINTN	https://dev.mysql.com/doc/refman/8.4/en/gis-linestring-property-functions.html
+LineString Property Functions	ST_STARTPOINT	https://dev.mysql.com/doc/refman/8.4/en/gis-linestring-property-functions.html
+Loadable Functions	CREATE FUNCTION LOADABLE FUNCTION	https://dev.mysql.com/doc/refman/8.4/en/create-function-loadable.html
+Loadable Functions	DROP FUNCTION LOADABLE FUNCTION	https://dev.mysql.com/doc/refman/8.4/en/drop-function-loadable.html
+Locking Functions	GET_LOCK	https://dev.mysql.com/doc/refman/8.4/en/locking-functions.html
+Locking Functions	IS_FREE_LOCK	https://dev.mysql.com/doc/refman/8.4/en/locking-functions.html
+Locking Functions	IS_USED_LOCK	https://dev.mysql.com/doc/refman/8.4/en/locking-functions.html
+Locking Functions	RELEASE_ALL_LOCKS	https://dev.mysql.com/doc/refman/8.4/en/locking-functions.html
+Locking Functions	RELEASE_LOCK	https://dev.mysql.com/doc/refman/8.4/en/locking-functions.html
+Logical Operators	!	https://dev.mysql.com/doc/refman/8.4/en/logical-operators.html
+Logical Operators	AND	https://dev.mysql.com/doc/refman/8.4/en/logical-operators.html
+Logical Operators	ASSIGN-EQUAL	https://dev.mysql.com/doc/refman/8.4/en/assignment-operators.html
+Logical Operators	ASSIGN-VALUE	https://dev.mysql.com/doc/refman/8.4/en/assignment-operators.html
+Logical Operators	OR	https://dev.mysql.com/doc/refman/8.4/en/logical-operators.html
+Logical Operators	XOR	https://dev.mysql.com/doc/refman/8.4/en/logical-operators.html
+MBR	MBR DEFINITION	https://dev.mysql.com/doc/refman/8.4/en/gis-class-geometry.html
+MBR Functions	->	https://dev.mysql.com/doc/refman/8.4/en/json-search-functions.html
+MBR Functions	->>	https://dev.mysql.com/doc/refman/8.4/en/json-search-functions.html
+MBR Functions	JSON_ARRAY	https://dev.mysql.com/doc/refman/8.4/en/json-creation-functions.html
+MBR Functions	JSON_ARRAY_APPEND	https://dev.mysql.com/doc/refman/8.4/en/json-modification-functions.html
+MBR Functions	JSON_ARRAY_INSERT	https://dev.mysql.com/doc/refman/8.4/en/json-modification-functions.html
+MBR Functions	JSON_CONTAINS	https://dev.mysql.com/doc/refman/8.4/en/json-search-functions.html
+MBR Functions	JSON_CONTAINS_PATH	https://dev.mysql.com/doc/refman/8.4/en/json-search-functions.html
+MBR Functions	JSON_DEPTH	https://dev.mysql.com/doc/refman/8.4/en/json-attribute-functions.html
+MBR Functions	JSON_EXTRACT	https://dev.mysql.com/doc/refman/8.4/en/json-search-functions.html
+MBR Functions	JSON_INSERT	https://dev.mysql.com/doc/refman/8.4/en/json-modification-functions.html
+MBR Functions	JSON_KEYS	https://dev.mysql.com/doc/refman/8.4/en/json-search-functions.html
+MBR Functions	JSON_LENGTH	https://dev.mysql.com/doc/refman/8.4/en/json-attribute-functions.html
+MBR Functions	JSON_MERGE	https://dev.mysql.com/doc/refman/8.4/en/json-modification-functions.html
+MBR Functions	JSON_MERGE_PATCH()	https://dev.mysql.com/doc/refman/8.4/en/json-modification-functions.html
+MBR Functions	JSON_MERGE_PRESERVE()	https://dev.mysql.com/doc/refman/8.4/en/json-modification-functions.html
+MBR Functions	JSON_OBJECT	https://dev.mysql.com/doc/refman/8.4/en/json-creation-functions.html
+MBR Functions	JSON_OVERLAPS	https://dev.mysql.com/doc/refman/8.4/en/json-search-functions.html
+MBR Functions	JSON_PRETTY	https://dev.mysql.com/doc/refman/8.4/en/json-utility-functions.html
+MBR Functions	JSON_QUOTE	https://dev.mysql.com/doc/refman/8.4/en/json-creation-functions.html
+MBR Functions	JSON_REMOVE	https://dev.mysql.com/doc/refman/8.4/en/json-modification-functions.html
+MBR Functions	JSON_REPLACE	https://dev.mysql.com/doc/refman/8.4/en/json-modification-functions.html
+MBR Functions	JSON_SCHEMA_VALID	https://dev.mysql.com/doc/refman/8.4/en/json-validation-functions.html
+MBR Functions	JSON_SCHEMA_VALIDATION_REPORT	https://dev.mysql.com/doc/refman/8.4/en/json-validation-functions.html
+MBR Functions	JSON_SEARCH	https://dev.mysql.com/doc/refman/8.4/en/json-search-functions.html
+MBR Functions	JSON_SET	https://dev.mysql.com/doc/refman/8.4/en/json-modification-functions.html
+MBR Functions	JSON_STORAGE_FREE	https://dev.mysql.com/doc/refman/8.4/en/json-utility-functions.html
+MBR Functions	JSON_STORAGE_SIZE	https://dev.mysql.com/doc/refman/8.4/en/json-utility-functions.html
+MBR Functions	JSON_TABLE	https://dev.mysql.com/doc/refman/8.4/en/json-table-functions.html
+MBR Functions	JSON_TYPE	https://dev.mysql.com/doc/refman/8.4/en/json-attribute-functions.html
+MBR Functions	JSON_UNQUOTE	https://dev.mysql.com/doc/refman/8.4/en/json-modification-functions.html
+MBR Functions	JSON_VALID	https://dev.mysql.com/doc/refman/8.4/en/json-attribute-functions.html
+MBR Functions	JSON_VALUE	https://dev.mysql.com/doc/refman/8.4/en/json-search-functions.html
+MBR Functions	MBRCONTAINS	https://dev.mysql.com/doc/refman/8.4/en/spatial-relation-functions-mbr.html
+MBR Functions	MBRCOVEREDBY	https://dev.mysql.com/doc/refman/8.4/en/spatial-relation-functions-mbr.html
+MBR Functions	MBRCOVERS	https://dev.mysql.com/doc/refman/8.4/en/spatial-relation-functions-mbr.html
+MBR Functions	MBRDISJOINT	https://dev.mysql.com/doc/refman/8.4/en/spatial-relation-functions-mbr.html
+MBR Functions	MBREQUALS	https://dev.mysql.com/doc/refman/8.4/en/spatial-relation-functions-mbr.html
+MBR Functions	MBRINTERSECTS	https://dev.mysql.com/doc/refman/8.4/en/spatial-relation-functions-mbr.html
+MBR Functions	MBROVERLAPS	https://dev.mysql.com/doc/refman/8.4/en/spatial-relation-functions-mbr.html
+MBR Functions	MBRTOUCHES	https://dev.mysql.com/doc/refman/8.4/en/spatial-relation-functions-mbr.html
+MBR Functions	MBRWITHIN	https://dev.mysql.com/doc/refman/8.4/en/spatial-relation-functions-mbr.html
+MBR Functions	MEMBER OF	https://dev.mysql.com/doc/refman/8.4/en/json-search-functions.html
+MBR Functions	ST_ASGEOJSON	https://dev.mysql.com/doc/refman/8.4/en/spatial-geojson-functions.html
+MBR Functions	ST_COLLECT	https://dev.mysql.com/doc/refman/8.4/en/spatial-aggregate-functions.html
+MBR Functions	ST_DISTANCE_SPHERE	https://dev.mysql.com/doc/refman/8.4/en/spatial-convenience-functions.html
+MBR Functions	ST_GEOHASH	https://dev.mysql.com/doc/refman/8.4/en/spatial-geohash-functions.html
+MBR Functions	ST_GEOMFROMGEOJSON	https://dev.mysql.com/doc/refman/8.4/en/spatial-geojson-functions.html
+MBR Functions	ST_ISVALID	https://dev.mysql.com/doc/refman/8.4/en/spatial-convenience-functions.html
+MBR Functions	ST_LATFROMGEOHASH	https://dev.mysql.com/doc/refman/8.4/en/spatial-geohash-functions.html
+MBR Functions	ST_LONGFROMGEOHASH	https://dev.mysql.com/doc/refman/8.4/en/spatial-geohash-functions.html
+MBR Functions	ST_MAKEENVELOPE	https://dev.mysql.com/doc/refman/8.4/en/spatial-convenience-functions.html
+MBR Functions	ST_POINTFROMGEOHASH	https://dev.mysql.com/doc/refman/8.4/en/spatial-geohash-functions.html
+MBR Functions	ST_SIMPLIFY	https://dev.mysql.com/doc/refman/8.4/en/spatial-convenience-functions.html
+MBR Functions	ST_VALIDATE	https://dev.mysql.com/doc/refman/8.4/en/spatial-convenience-functions.html
+Miscellaneous Functions	ANY_VALUE	https://dev.mysql.com/doc/refman/8.4/en/miscellaneous-functions.html
+Miscellaneous Functions	BIN_TO_UUID	https://dev.mysql.com/doc/refman/8.4/en/miscellaneous-functions.html
+Miscellaneous Functions	DEFAULT	https://dev.mysql.com/doc/refman/8.4/en/miscellaneous-functions.html
+Miscellaneous Functions	GROUPING	https://dev.mysql.com/doc/refman/8.4/en/miscellaneous-functions.html
+Miscellaneous Functions	INET6_ATON	https://dev.mysql.com/doc/refman/8.4/en/miscellaneous-functions.html
+Miscellaneous Functions	INET6_NTOA	https://dev.mysql.com/doc/refman/8.4/en/miscellaneous-functions.html
+Miscellaneous Functions	INET_ATON	https://dev.mysql.com/doc/refman/8.4/en/miscellaneous-functions.html
+Miscellaneous Functions	INET_NTOA	https://dev.mysql.com/doc/refman/8.4/en/miscellaneous-functions.html
+Miscellaneous Functions	IS_IPV4	https://dev.mysql.com/doc/refman/8.4/en/miscellaneous-functions.html
+Miscellaneous Functions	IS_IPV4_COMPAT	https://dev.mysql.com/doc/refman/8.4/en/miscellaneous-functions.html
+Miscellaneous Functions	IS_IPV4_MAPPED	https://dev.mysql.com/doc/refman/8.4/en/miscellaneous-functions.html
+Miscellaneous Functions	IS_IPV6	https://dev.mysql.com/doc/refman/8.4/en/miscellaneous-functions.html
+Miscellaneous Functions	IS_UUID	https://dev.mysql.com/doc/refman/8.4/en/miscellaneous-functions.html
+Miscellaneous Functions	NAME_CONST	https://dev.mysql.com/doc/refman/8.4/en/miscellaneous-functions.html
+Miscellaneous Functions	SLEEP	https://dev.mysql.com/doc/refman/8.4/en/miscellaneous-functions.html
+Miscellaneous Functions	UUID	https://dev.mysql.com/doc/refman/8.4/en/miscellaneous-functions.html
+Miscellaneous Functions	UUID_SHORT	https://dev.mysql.com/doc/refman/8.4/en/miscellaneous-functions.html
+Miscellaneous Functions	UUID_TO_BIN	https://dev.mysql.com/doc/refman/8.4/en/miscellaneous-functions.html
+Miscellaneous Functions	VALUES	https://dev.mysql.com/doc/refman/8.4/en/miscellaneous-functions.html
+Numeric Functions	%	https://dev.mysql.com/doc/refman/8.4/en/arithmetic-functions.html
+Numeric Functions	*	https://dev.mysql.com/doc/refman/8.4/en/arithmetic-functions.html
+Numeric Functions	+	https://dev.mysql.com/doc/refman/8.4/en/arithmetic-functions.html
+Numeric Functions	- BINARY	https://dev.mysql.com/doc/refman/8.4/en/arithmetic-functions.html
+Numeric Functions	- UNARY	https://dev.mysql.com/doc/refman/8.4/en/arithmetic-functions.html
+Numeric Functions	/	https://dev.mysql.com/doc/refman/8.4/en/arithmetic-functions.html
+Numeric Functions	ABS	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	ACOS	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	ASIN	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	ATAN	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	ATAN2	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	CEIL	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	CEILING	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	CONV	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	COS	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	COT	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	CRC32	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	DEGREES	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	DIV	https://dev.mysql.com/doc/refman/8.4/en/arithmetic-functions.html
+Numeric Functions	EXP	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	FLOOR	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	LN	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	LOG	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	LOG10	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	LOG2	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	MOD	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	PI	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	POW	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	POWER	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	RADIANS	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	RAND	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	ROUND	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	SIGN	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	SIN	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	SQRT	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	TAN	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Numeric Functions	TRUNCATE	https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+Performance Schema Functions	FORMAT_BYTES	https://dev.mysql.com/doc/refman/8.4/en/performance-schema-functions.html
+Performance Schema Functions	FORMAT_PICO_TIME	https://dev.mysql.com/doc/refman/8.4/en/performance-schema-functions.html
+Performance Schema Functions	PS_CURRENT_THREAD_ID	https://dev.mysql.com/doc/refman/8.4/en/performance-schema-functions.html
+Performance Schema Functions	PS_THREAD_ID	https://dev.mysql.com/doc/refman/8.4/en/performance-schema-functions.html
+Plugins	INSTALL PLUGIN	https://dev.mysql.com/doc/refman/8.4/en/install-plugin.html
+Point Property Functions	ST_LATITUDE	https://dev.mysql.com/doc/refman/8.4/en/gis-point-property-functions.html
+Point Property Functions	ST_LONGITUDE	https://dev.mysql.com/doc/refman/8.4/en/gis-point-property-functions.html
+Point Property Functions	ST_X	https://dev.mysql.com/doc/refman/8.4/en/gis-point-property-functions.html
+Point Property Functions	ST_Y	https://dev.mysql.com/doc/refman/8.4/en/gis-point-property-functions.html
+Polygon Property Functions	ST_AREA	https://dev.mysql.com/doc/refman/8.4/en/gis-polygon-property-functions.html
+Polygon Property Functions	ST_CENTROID	https://dev.mysql.com/doc/refman/8.4/en/gis-polygon-property-functions.html
+Polygon Property Functions	ST_EXTERIORRING	https://dev.mysql.com/doc/refman/8.4/en/gis-polygon-property-functions.html
+Polygon Property Functions	ST_INTERIORRINGN	https://dev.mysql.com/doc/refman/8.4/en/gis-polygon-property-functions.html
+Polygon Property Functions	ST_NUMINTERIORRINGS	https://dev.mysql.com/doc/refman/8.4/en/gis-polygon-property-functions.html
+Prepared Statements	DEALLOCATE PREPARE	https://dev.mysql.com/doc/refman/8.4/en/deallocate-prepare.html
+Prepared Statements	DROP PREPARE	https://dev.mysql.com/doc/refman/8.4/en/deallocate-prepare.html
+Prepared Statements	EXECUTE STATEMENT	https://dev.mysql.com/doc/refman/8.4/en/execute.html
+Prepared Statements	PREPARE	https://dev.mysql.com/doc/refman/8.4/en/prepare.html
+Replication Statements	CHANGE REPLICATION FILTER	https://dev.mysql.com/doc/refman/8.4/en/change-replication-filter.html
+Replication Statements	CHANGE REPLICATION SOURCE TO	https://dev.mysql.com/doc/refman/8.4/en/change-replication-source-to.html
+Replication Statements	PURGE BINARY LOGS	https://dev.mysql.com/doc/refman/8.4/en/purge-binary-logs.html
+Replication Statements	RESET BINARY LOGS AND GTIDS	https://dev.mysql.com/doc/refman/8.4/en/reset-binary-logs-and-gtids.html
+Replication Statements	RESET REPLICA	https://dev.mysql.com/doc/refman/8.4/en/reset-replica.html
+Replication Statements	SET SQL_LOG_BIN	https://dev.mysql.com/doc/refman/8.4/en/set-sql-log-bin.html
+Replication Statements	START REPLICA	https://dev.mysql.com/doc/refman/8.4/en/start-replica.html
+Replication Statements	STOP REPLICA	https://dev.mysql.com/doc/refman/8.4/en/stop-replica.html
+Storage Engines	MERGE	https://dev.mysql.com/doc/refman/8.4/en/merge-storage-engine.html
+String Functions	ASCII	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	BIN	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	BIT_LENGTH	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	CHAR FUNCTION	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	CHARACTER_LENGTH	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	CHAR_LENGTH	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	CONCAT	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	CONCAT_WS	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	ELT	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	EXPORT_SET	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	FIELD	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	FIND_IN_SET	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	FORMAT	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	FROM_BASE64	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	HEX	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	INSERT FUNCTION	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	INSTR	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	LCASE	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	LEFT	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	LENGTH	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	LIKE	https://dev.mysql.com/doc/refman/8.4/en/string-comparison-functions.html
+String Functions	LOAD_FILE	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	LOCATE	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	LOWER	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	LPAD	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	LTRIM	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	MAKE_SET	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	MATCH AGAINST	https://dev.mysql.com/doc/refman/8.4/en/fulltext-search.html
+String Functions	MID	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	NOT LIKE	https://dev.mysql.com/doc/refman/8.4/en/string-comparison-functions.html
+String Functions	NOT REGEXP	https://dev.mysql.com/doc/refman/8.4/en/regexp.html
+String Functions	OCT	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	OCTET_LENGTH	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	ORD	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	POSITION	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	QUOTE	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	REGEXP	https://dev.mysql.com/doc/refman/8.4/en/regexp.html
+String Functions	REGEXP_INSTR	https://dev.mysql.com/doc/refman/8.4/en/regexp.html
+String Functions	REGEXP_LIKE	https://dev.mysql.com/doc/refman/8.4/en/regexp.html
+String Functions	REGEXP_REPLACE	https://dev.mysql.com/doc/refman/8.4/en/regexp.html
+String Functions	REGEXP_SUBSTR	https://dev.mysql.com/doc/refman/8.4/en/regexp.html
+String Functions	REPEAT FUNCTION	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	REPLACE FUNCTION	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	REVERSE	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	RIGHT	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	RPAD	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	RTRIM	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	SOUNDEX	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	SOUNDS LIKE	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	SPACE	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	STRCMP	https://dev.mysql.com/doc/refman/8.4/en/string-comparison-functions.html
+String Functions	SUBSTR	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	SUBSTRING	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	SUBSTRING_INDEX	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	TO_BASE64	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	TRIM	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	UCASE	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	UNHEX	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	UPPER	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+String Functions	WEIGHT_STRING	https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+Table Maintenance	ANALYZE TABLE	https://dev.mysql.com/doc/refman/8.4/en/analyze-table.html
+Table Maintenance	CHECK TABLE	https://dev.mysql.com/doc/refman/8.4/en/check-table.html
+Table Maintenance	CHECKSUM TABLE	https://dev.mysql.com/doc/refman/8.4/en/checksum-table.html
+Table Maintenance	OPTIMIZE TABLE	https://dev.mysql.com/doc/refman/8.4/en/optimize-table.html
+Table Maintenance	REPAIR TABLE	https://dev.mysql.com/doc/refman/8.4/en/repair-table.html
+Transactions	BEGIN	https://dev.mysql.com/doc/refman/8.4/en/commit.html
+Transactions	COMMIT	https://dev.mysql.com/doc/refman/8.4/en/commit.html
+Transactions	LOCK INSTANCE FOR BACKUP	https://dev.mysql.com/doc/refman/8.4/en/lock-instance-for-backup.html
+Transactions	LOCK TABLES	https://dev.mysql.com/doc/refman/8.4/en/lock-tables.html
+Transactions	RELEASE SAVEPOINT	https://dev.mysql.com/doc/refman/8.4/en/savepoint.html
+Transactions	ROLLBACK	https://dev.mysql.com/doc/refman/8.4/en/commit.html
+Transactions	ROLLBACK TO SAVEPOINT	https://dev.mysql.com/doc/refman/8.4/en/savepoint.html
+Transactions	SAVEPOINT	https://dev.mysql.com/doc/refman/8.4/en/savepoint.html
+Transactions	SET TRANSACTION	https://dev.mysql.com/doc/refman/8.4/en/set-transaction.html
+Transactions	START TRANSACTION	https://dev.mysql.com/doc/refman/8.4/en/commit.html
+Transactions	XA	https://dev.mysql.com/doc/refman/8.4/en/xa-statements.html
+Utility	DESC	https://dev.mysql.com/doc/refman/8.4/en/explain.html
+Utility	DESCRIBE	https://dev.mysql.com/doc/refman/8.4/en/explain.html
+Utility	EXPLAIN	https://dev.mysql.com/doc/refman/8.4/en/explain.html
+Utility	HELP STATEMENT	https://dev.mysql.com/doc/refman/8.4/en/help.html
+Utility	USE	https://dev.mysql.com/doc/refman/8.4/en/use.html
+Window Functions	CUME_DIST	https://dev.mysql.com/doc/refman/8.4/en/window-function-descriptions.html
+Window Functions	DENSE_RANK	https://dev.mysql.com/doc/refman/8.4/en/window-function-descriptions.html
+Window Functions	FIRST_VALUE	https://dev.mysql.com/doc/refman/8.4/en/window-function-descriptions.html
+Window Functions	LAG	https://dev.mysql.com/doc/refman/8.4/en/window-function-descriptions.html
+Window Functions	LAST_VALUE	https://dev.mysql.com/doc/refman/8.4/en/window-function-descriptions.html
+Window Functions	LEAD	https://dev.mysql.com/doc/refman/8.4/en/window-function-descriptions.html
+Window Functions	NTH_VALUE	https://dev.mysql.com/doc/refman/8.4/en/window-function-descriptions.html
+Window Functions	NTILE	https://dev.mysql.com/doc/refman/8.4/en/window-function-descriptions.html
+Window Functions	PERCENT_RANK	https://dev.mysql.com/doc/refman/8.4/en/window-function-descriptions.html
+Window Functions	RANK	https://dev.mysql.com/doc/refman/8.4/en/window-function-descriptions.html
+Window Functions	ROW_NUMBER	https://dev.mysql.com/doc/refman/8.4/en/window-function-descriptions.html
+WKB Functions	ST_ASBINARY	https://dev.mysql.com/doc/refman/8.4/en/gis-format-conversion-functions.html
+WKB Functions	ST_ASTEXT	https://dev.mysql.com/doc/refman/8.4/en/gis-format-conversion-functions.html
+WKB Functions	ST_GEOMCOLLFROMWKB	https://dev.mysql.com/doc/refman/8.4/en/gis-wkb-functions.html
+WKB Functions	ST_GEOMFROMWKB	https://dev.mysql.com/doc/refman/8.4/en/gis-wkb-functions.html
+WKB Functions	ST_LINEFROMWKB	https://dev.mysql.com/doc/refman/8.4/en/gis-wkb-functions.html
+WKB Functions	ST_MLINEFROMWKB	https://dev.mysql.com/doc/refman/8.4/en/gis-wkb-functions.html
+WKB Functions	ST_MPOINTFROMWKB	https://dev.mysql.com/doc/refman/8.4/en/gis-wkb-functions.html
+WKB Functions	ST_MPOLYFROMWKB	https://dev.mysql.com/doc/refman/8.4/en/gis-wkb-functions.html
+WKB Functions	ST_POINTFROMWKB	https://dev.mysql.com/doc/refman/8.4/en/gis-wkb-functions.html
+WKB Functions	ST_POLYFROMWKB	https://dev.mysql.com/doc/refman/8.4/en/gis-wkb-functions.html
+WKB Functions	ST_SWAPXY	https://dev.mysql.com/doc/refman/8.4/en/gis-format-conversion-functions.html
+WKT	WKT DEFINITION	https://dev.mysql.com/doc/refman/8.4/en/gis-data-formats.html
+WKT Functions	ST_GEOMCOLLFROMTEXT	https://dev.mysql.com/doc/refman/8.4/en/gis-wkt-functions.html
+WKT Functions	ST_GEOMFROMTEXT	https://dev.mysql.com/doc/refman/8.4/en/gis-wkt-functions.html
+WKT Functions	ST_LINEFROMTEXT	https://dev.mysql.com/doc/refman/8.4/en/gis-wkt-functions.html
+WKT Functions	ST_MLINEFROMTEXT	https://dev.mysql.com/doc/refman/8.4/en/gis-wkt-functions.html
+WKT Functions	ST_MPOINTFROMTEXT	https://dev.mysql.com/doc/refman/8.4/en/gis-wkt-functions.html
+WKT Functions	ST_MPOLYFROMTEXT	https://dev.mysql.com/doc/refman/8.4/en/gis-wkt-functions.html
+WKT Functions	ST_POINTFROMTEXT	https://dev.mysql.com/doc/refman/8.4/en/gis-wkt-functions.html
+WKT Functions	ST_POLYFROMTEXT	https://dev.mysql.com/doc/refman/8.4/en/gis-wkt-functions.html
+XML	EXTRACTVALUE	https://dev.mysql.com/doc/refman/8.4/en/xml-functions.html
+XML	UPDATEXML	https://dev.mysql.com/doc/refman/8.4/en/xml-functions.html
