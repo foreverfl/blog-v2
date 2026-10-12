@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS public.places (
     address     text,
     lat         double precision NOT NULL,
     lng         double precision NOT NULL,
+    visitable   boolean,
     visited_on  date,
     note        text,
     url         text,
@@ -16,9 +17,10 @@ CREATE TABLE IF NOT EXISTS public.places (
     UNIQUE NULLS NOT DISTINCT (name, category, subcategory)
 );
 
-COMMENT ON TABLE  public.places IS 'every spot on /map except ITS, been there or not; rows pushed with psql from work repo seeds/places/*.sql';
+COMMENT ON TABLE  public.places IS 'every spot on /map except ITS, been there or not; rows pushed with psql from work repo seeds/NNN_<category>[-<subcategory>].sql';
 COMMENT ON COLUMN public.places.category IS 'ur | brewery | food | cafe | stay | sight | other; other = anything else, named in note, promoted once rows pile up';
 COMMENT ON COLUMN public.places.subcategory IS 'free text detail inside a category, e.g. brewery: whisky | shochu | sake | gin | beer | wine | other; NULL when the category needs none';
+COMMENT ON COLUMN public.places.visitable IS 'true = takes visitors (tour, visitor centre or shop, reservation-only included); false = closed to the public; NULL = not checked';
 COMMENT ON COLUMN public.places.visited_on IS 'NULL = not visited yet';
 COMMENT ON COLUMN public.places.url IS 'the official page, or a Google Maps link';
 COMMENT ON COLUMN public.places.image_url IS 'one representative photo on the blog asset bucket; NULL if none';
