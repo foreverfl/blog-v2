@@ -1,0 +1,88 @@
+openapi: 3.1.0
+info:
+  title: Code API Notes API
+  version: 1.0.0
+  description: |
+    Notes on outside APIs (built-ins, standard libraries, frameworks) met in code
+    review. Index rows carry only a name and a doc link; the review-api skill
+    fills in the note the first time the API shows up in a diff.
+  x-api-id: code
+
+servers:
+  - url: https://api.mogumogu.dev/go
+    description: Production
+  - url: http://localhost:8003
+    description: Local development (direct to the Go service)
+
+tags:
+  - name: API Notes
+    description: Index rows and notes in code.api_notes.
+
+paths:
+  /code/api-notes:
+    get:
+      tags: [API Notes]
+      operationId: listApiNotes
+      summary: List every api note row
+      description: Every row, index rows included, ordered by lang, package, name. No paging.
+      responses:
+        '200':
+          description: All rows; an empty array when the table is empty.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Note'
+        '500':
+          description: The query failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+
+    Note:
+      type: object
+      properties:
+        lang:
+          type: string
+          example: go
+        package:
+          type: string
+          example: strings
+        name:
+          type: string
+          example: Cut
+        major_version:
+          type: [string, 'null']
+          description: Installed major when the note was written; null for built-ins and index rows.
+        summary:
+          type: [string, 'null']
+          description: One plain sentence; null means an index row with no note yet.
+        example:
+          type: [string, 'null']
+        doc_url:
+          type: string
+          format: uri
+        gotcha:
+          type: [string, 'null']
+        seen_count:
+          type: integer
+          description: Diffs this API has appeared in; 0 on an index row.
+        first_seen_in:
+          type: [string, 'null']
+        last_seen_in:
+          type: [string, 'null']
+        last_seen_at:
+          type: [string, 'null']
+          format: date-time
+      required: [lang, package, name, major_version, summary, example, doc_url, gotcha, seen_count, first_seen_in, last_seen_in, last_seen_at]

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"blog-go-api/internal/apinotes"
 	"blog-go-api/internal/common"
 	"blog-go-api/internal/config"
 	"blog-go-api/internal/db"
@@ -135,6 +136,9 @@ func main() {
 	draw := handler.DrawHandler(cfg, hackernewsClient, hackernewsImagesClient, openai, statusManager)
 	handle("POST /hackernews/draw", draw)
 	handle("POST /hackernews/draw/{date}", draw)
+
+	// API notes
+	handle("GET /code/api-notes", apinotes.ListHandler(pool))
 
 	// UR vacant rooms
 	handle("GET /ur/listings", urhandler.ListingsHandler(cfg))
