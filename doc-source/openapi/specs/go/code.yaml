@@ -125,6 +125,49 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /code/api-notes/lookups:
+    post:
+      tags: [API Notes]
+      operationId: lookupApiNotes
+      summary: Record that one diff showed these keys and sort them
+      description: |
+        The review-api skill calls this once per diff. Keys that carry a note come back whole as
+        `noted`, with seen_count + 1 and last_seen_in / last_seen_at set to this call. Keys that are
+        index rows come back as `indexed` and are not touched. Keys with no row come back as `missing`.
+      security:
+        - apiSecret: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LookupRequest'
+      responses:
+        '200':
+          description: Every asked key, in exactly one of the three lists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LookupResponse'
+        '400':
+          description: The body is not JSON, or seen_in or keys is missing.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: The query failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
 components:
   securitySchemes:
     apiSecret:
@@ -206,3 +249,49 @@ components:
           type: string
           description: repo@commit, e.g. work@29fba9d. Omit for a study note.
       required: [lang, package, name, doc_url, summary, example]
+
+    Key:
+      type: object
+      properties:
+        lang:
+          type: string
+          example: go
+        package:
+          type: string
+          example: strings
+        name:
+          type: string
+          example: Cut
+      required: [lang, package, name]
+
+    LookupRequest:
+      type: object
+      properties:
+        seen_in:
+          type: string
+          description: repo@commit of the diff, e.g. work@29fba9d.
+        keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/Key'
+      required: [seen_in, keys]
+
+    LookupResponse:
+      type: object
+      properties:
+        noted:
+          type: array
+          description: Note rows, after the bump.
+          items:
+            $ref: '#/components/schemas/Note'
+        indexed:
+          type: array
+          description: Index rows (no summary yet); not touched.
+          items:
+            $ref: '#/components/schemas/Key'
+        missing:
+          type: array
+          description: Keys with no row at all.
+          items:
+            $ref: '#/components/schemas/Key'
+      required: [noted, indexed, missing]

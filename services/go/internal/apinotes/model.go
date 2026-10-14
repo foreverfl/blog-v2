@@ -30,3 +30,23 @@ type NoteInput struct {
 	MajorVersion *string `json:"major_version"`
 	FirstSeenIn  *string `json:"first_seen_in"`
 }
+
+// Key is the (lang, package, name) that identifies one api_notes row.
+type Key struct {
+	Lang    string `db:"lang" json:"lang"`
+	Package string `db:"package" json:"package"`
+	Name    string `db:"name" json:"name"`
+}
+
+// LookupRequest is the POST /code/api-notes/lookups body: the keys one diff showed and where that diff lives.
+type LookupRequest struct {
+	SeenIn string `json:"seen_in"`
+	Keys   []Key  `json:"keys"`
+}
+
+// LookupResponse splits the asked keys into note rows (noted, bumped), index rows (indexed) and keys with no row (missing).
+type LookupResponse struct {
+	Noted   []Note `json:"noted"`
+	Indexed []Key  `json:"indexed"`
+	Missing []Key  `json:"missing"`
+}

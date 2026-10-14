@@ -61,3 +61,57 @@ func SaveNote(ctx context.Context, pool *pgxpool.Pool, input NoteInput) (Note, b
 	}
 	return saved.Note, saved.Inserted, nil
 }
+
+// LookupNotes bumps seen_count and last_seen_* of the asked keys that carry a note and returns them as noted, the asked keys that are index rows as indexed, the rest as missing, or the query error.
+func LookupNotes(ctx context.Context, pool *pgxpool.Pool, seenIn string, keys []Key) (LookupResponse, error) {
+	langs := make([]string, len(keys))
+	packages := make([]string, len(keys))
+	names := make([]string, len(keys))
+	for i, key := range keys {
+		langs[i], packages[i], names[i] = key.Lang, key.Package, key.Name
+	}
+
+	rows, err := pool.Query(ctx, `
+		UPDATE code.api_notes AS n
+		   SET seen_count = n.seen_count + 1, last_seen_in = $4, last_seen_at = now()
+		  FROM UNNEST($1::text[], $2::text[], $3::text[]) AS k(lang, package, name)
+		 WHERE n.lang = k.lang AND n.package = k.package AND n.name = k.name AND n.summary IS NOT NULL
+		RETURNING n.lang, n.package, n.name, n.major_version, n.summary, n.example, n.doc_url, n.gotcha,
+		          n.seen_count, n.first_seen_in, n.last_seen_in, n.last_seen_at`, langs, packages, names, seenIn)
+	if err != nil {
+		return LookupResponse{}, err
+	}
+	noted, err := pgx.CollectRows(rows, pgx.RowToStructByName[Note])
+	if err != nil {
+		return LookupResponse{}, err
+	}
+
+	rows, err = pool.Query(ctx, `
+		SELECT n.lang, n.package, n.name
+		  FROM code.api_notes AS n
+		  JOIN UNNEST($1::text[], $2::text[], $3::text[]) AS k(lang, package, name)
+		    ON n.lang = k.lang AND n.package = k.package AND n.name = k.name
+		 WHERE n.summary IS NULL`, langs, packages, names)
+	if err != nil {
+		return LookupResponse{}, err
+	}
+	indexed, err := pgx.CollectRows(rows, pgx.RowToStructByName[Key])
+	if err != nil {
+		return LookupResponse{}, err
+	}
+
+	found := map[Key]bool{}
+	for _, note := range noted {
+		found[Key{note.Lang, note.Package, note.Name}] = true
+	}
+	for _, key := range indexed {
+		found[key] = true
+	}
+	missing := []Key{}
+	for _, key := range keys {
+		if !found[key] {
+			missing = append(missing, key)
+		}
+	}
+	return LookupResponse{Noted: noted, Indexed: indexed, Missing: missing}, nil
+}

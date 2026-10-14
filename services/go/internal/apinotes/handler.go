@@ -64,3 +64,32 @@ func SaveHandler(pool *pgxpool.Pool, apiSecret string) http.HandlerFunc {
 		common.WriteJSON(w, status, note)
 	}
 }
+
+// LookupHandler records that one diff showed the given keys and tells the caller which ones already carry a note; apiSecret required.
+//
+// Request:  POST /code/api-notes/lookups, JSON LookupRequest (seen_in and at least one key required)
+// Response: 200 LookupResponse / 400 bad body / 401 / 500 query failed
+func LookupHandler(pool *pgxpool.Pool, apiSecret string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !common.CheckAuth(r, apiSecret) {
+			common.WriteJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"}) // 401
+			return
+		}
+		var input LookupRequest
+		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+			common.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid JSON body"}) // 400
+			return
+		}
+		if input.SeenIn == "" || len(input.Keys) == 0 {
+			common.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": "seen_in and at least one key are required"}) // 400
+			return
+		}
+		result, err := LookupNotes(r.Context(), pool, input.SeenIn, input.Keys)
+		if err != nil {
+			slog.Error("api note lookup failed", "err", err)
+			common.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "api note lookup failed"}) // 500
+			return
+		}
+		common.WriteJSON(w, http.StatusOK, result) // 200
+	}
+}
