@@ -9,13 +9,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// ListHandler returns every index row and note row; public, no auth.
+// ListHandler returns every index row and note row, or only one language's when the path has {lang}; public, no auth.
 //
-// Request:  GET /code/api-notes
+// Request:  GET /code/api-notes or GET /code/api-notes/{lang}
 // Response: 200 []Note JSON ordered by lang, package, name / 500 query failed
 func ListHandler(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		notes, err := LoadNotes(r.Context(), pool)
+		notes, err := LoadNotes(r.Context(), pool, r.PathValue("lang"))
 		if err != nil {
 			slog.Error("api notes query failed", "err", err)
 			common.WriteJSON(w, http.StatusInternalServerError, map[string]string{"error": "api notes query failed"})

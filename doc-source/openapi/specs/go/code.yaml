@@ -41,6 +41,36 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /code/api-notes/{lang}:
+    get:
+      tags: [API Notes]
+      operationId: listApiNotesByLang
+      summary: List the api note rows of one language
+      description: Same rows and order as `/code/api-notes`, only those of `lang`. An unknown language returns an empty array, not 404.
+      parameters:
+        - name: lang
+          in: path
+          required: true
+          description: php | go | nodejs | js | ts | bash | git | postgres | mysql | clickhouse | sparql | rust | java | python | swift
+          schema:
+            type: string
+          example: go
+      responses:
+        '200':
+          description: Rows of that language; an empty array when it has none.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Note'
+        '500':
+          description: The query failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
 components:
   schemas:
     Error:

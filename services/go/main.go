@@ -138,7 +138,9 @@ func main() {
 	handle("POST /hackernews/draw/{date}", draw)
 
 	// API notes
-	handle("GET /code/api-notes", apinotes.ListHandler(pool))
+	apiNotes := apinotes.ListHandler(pool)
+	handle("GET /code/api-notes", apiNotes)
+	handle("GET /code/api-notes/{lang}", apiNotes)
 
 	// UR vacant rooms
 	handle("GET /ur/listings", urhandler.ListingsHandler(cfg))
