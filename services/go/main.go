@@ -9,6 +9,7 @@ import (
 
 	"blog-go-api/internal/common"
 	"blog-go-api/internal/config"
+	"blog-go-api/internal/db"
 	"blog-go-api/internal/handler"
 	"blog-go-api/internal/middleware"
 	oaiservice "blog-go-api/internal/openai"
@@ -66,6 +67,14 @@ func main() {
 		os.Exit(1)
 	}
 	defer redis.Close()
+
+	pool, err := db.NewPool(ctx, cfg.DatabaseURL)
+	if err != nil {
+		slog.Error("failed to connect to postgres", "err", err)
+		os.Exit(1)
+	}
+	defer pool.Close()
+	slog.Info("connected to postgres")
 
 	openai := oaiservice.NewService(cfg.OpenAIAPIKey)
 	statusManager := common.NewStatusManager()

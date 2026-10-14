@@ -14,6 +14,9 @@ type Config struct {
 	AWSSecretAccessKey           string
 	AWSRegion                    string
 
+	// Postgres
+	DatabaseURL string
+
 	// Redis
 	RedisURL string
 
@@ -33,6 +36,7 @@ func Load() *Config {
 		AWSAccessKeyID:               getEnv("AWS_ACCESS_KEY_ID", ""),
 		AWSSecretAccessKey:           getEnv("AWS_SECRET_ACCESS_KEY", ""),
 		AWSRegion:                    getEnv("AWS_REGION", "auto"),
+		DatabaseURL:                  getEnv("DATABASE_URL", ""),
 		RedisURL:                     getEnv("REDIS_URL", "redis://localhost:6379"),
 		OpenAIAPIKey:                 getEnv("OPENAI_API_KEY", ""),
 		ApiSecret:                    getEnv("API_SECRET", ""),
@@ -41,6 +45,7 @@ func Load() *Config {
 
 	required := map[string]string{
 		"API_SECRET":                       cfg.ApiSecret,
+		"DATABASE_URL":                     cfg.DatabaseURL,
 		"OPENAI_API_KEY":                   cfg.OpenAIAPIKey,
 		"S3_BUCKET_BLOG_HACKERNEWS":        cfg.S3BucketBlogHackernews,
 		"S3_BUCKET_BLOG_HACKERNEWS_IMAGES": cfg.S3BucketBlogHackernewsImages,
