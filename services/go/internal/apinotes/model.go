@@ -17,3 +17,16 @@ type Note struct {
 	LastSeenIn   *string    `db:"last_seen_in" json:"last_seen_in"`
 	LastSeenAt   *time.Time `db:"last_seen_at" json:"last_seen_at"`
 }
+
+// NoteInput is the POST /code/api-notes body: the key, the note text, and where the API was first seen.
+type NoteInput struct {
+	Lang         string  `json:"lang"`
+	Package      string  `json:"package"`
+	Name         string  `json:"name"`
+	DocURL       string  `json:"doc_url"`
+	Summary      string  `json:"summary"`
+	Example      string  `json:"example"`
+	Gotcha       *string `json:"gotcha"`
+	MajorVersion *string `json:"major_version"`
+	FirstSeenIn  *string `json:"first_seen_in"`
+}

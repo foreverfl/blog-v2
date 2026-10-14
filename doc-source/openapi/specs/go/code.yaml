@@ -41,6 +41,60 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+    post:
+      tags: [API Notes]
+      operationId: saveApiNote
+      summary: Save one note
+      description: |
+        Inserts the note, or fills the index row of the same (lang, package, name) when that row has
+        no summary yet; a filled index row keeps its seeded doc_url. A null first_seen_in means a
+        study note: seen_count stays 0 and last_seen_in / last_seen_at stay null.
+      security:
+        - apiSecret: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NoteInput'
+      responses:
+        '201':
+          description: A new row was inserted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+        '200':
+          description: The index row of that key was filled in.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Note'
+        '400':
+          description: The body is not JSON or misses a required field.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: That key already carries a note.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: The query failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /code/api-notes/{lang}:
     get:
       tags: [API Notes]
@@ -72,6 +126,12 @@ paths:
                 $ref: '#/components/schemas/Error'
 
 components:
+  securitySchemes:
+    apiSecret:
+      type: http
+      scheme: bearer
+      description: Static secret shared with the Go service (`API_SECRET`).
+
   schemas:
     Error:
       type: object
@@ -116,3 +176,33 @@ components:
           type: [string, 'null']
           format: date-time
       required: [lang, package, name, major_version, summary, example, doc_url, gotcha, seen_count, first_seen_in, last_seen_in, last_seen_at]
+
+    NoteInput:
+      type: object
+      properties:
+        lang:
+          type: string
+          example: go
+        package:
+          type: string
+          example: strings
+        name:
+          type: string
+          example: Cut
+        doc_url:
+          type: string
+          format: uri
+          description: Kept only on a new row; a filled index row keeps the seeded link.
+        summary:
+          type: string
+          description: One plain sentence in easy English.
+        example:
+          type: string
+        gotcha:
+          type: string
+        major_version:
+          type: string
+        first_seen_in:
+          type: string
+          description: repo@commit, e.g. work@29fba9d. Omit for a study note.
+      required: [lang, package, name, doc_url, summary, example]

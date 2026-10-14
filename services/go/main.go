@@ -141,6 +141,7 @@ func main() {
 	apiNotes := apinotes.ListHandler(pool)
 	handle("GET /code/api-notes", apiNotes)
 	handle("GET /code/api-notes/{lang}", apiNotes)
+	handle("POST /code/api-notes", apinotes.SaveHandler(pool, cfg.ApiSecret))
 
 	// UR vacant rooms
 	handle("GET /ur/listings", urhandler.ListingsHandler(cfg))
