@@ -50,3 +50,13 @@ pub struct PlaceVisit {
     pub visited_with: Option<String>,
     pub review: Option<String>,
 }
+
+/// Body of PUT /places/{id}/mine: the whole record, replaced as one.
+#[derive(Debug, Deserialize)]
+pub struct SaveVisitRequest {
+    pub applied_count: i16,
+    pub last_applied_on: Option<NaiveDate>,
+    pub visited_on: Option<NaiveDate>,
+    pub visited_with: Option<String>,
+    pub review: Option<String>,
+}

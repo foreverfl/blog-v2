@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::types::ApiError;
 
-use super::model::{Place, PlaceVisit};
+use super::model::{Place, PlaceVisit, SaveVisitRequest};
 
 /// Lists places with their ITS details, filtered by category and/or subcategory when given.
 #[tracing::instrument(name = "places.list", skip(pool))]
@@ -49,4 +49,40 @@ pub async fn list_visits(pool: &PgPool, user_id: Uuid) -> Result<Vec<PlaceVisit>
     .await?;
 
     Ok(visits)
+}
+
+/// Inserts or replaces one user's record for a place; NotFound when the place does not exist.
+#[tracing::instrument(name = "places.save_visit", skip(pool, req))]
+pub async fn save_visit(
+    pool: &PgPool,
+    user_id: Uuid,
+    place_id: Uuid,
+    req: &SaveVisitRequest,
+) -> Result<PlaceVisit, ApiError> {
+    let visit = sqlx::query_as::<_, PlaceVisit>(
+        r#"
+        INSERT INTO public.place_visits
+            (user_id, place_id, applied_count, last_applied_on, visited_on, visited_with, review)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        ON CONFLICT (user_id, place_id) DO UPDATE SET
+            applied_count = EXCLUDED.applied_count, last_applied_on = EXCLUDED.last_applied_on,
+            visited_on = EXCLUDED.visited_on, visited_with = EXCLUDED.visited_with, review = EXCLUDED.review
+        RETURNING place_id, applied_count, last_applied_on, visited_on, visited_with, review
+        "#,
+    )
+    .bind(user_id)
+    .bind(place_id)
+    .bind(req.applied_count)
+    .bind(req.last_applied_on)
+    .bind(req.visited_on)
+    .bind(&req.visited_with)
+    .bind(&req.review)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| match e {
+        sqlx::Error::Database(ref db_err) if db_err.is_foreign_key_violation() => ApiError::NotFound,
+        other => ApiError::Database(other),
+    })?;
+
+    Ok(visit)
 }

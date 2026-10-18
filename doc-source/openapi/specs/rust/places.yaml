@@ -67,6 +67,39 @@ paths:
         '401':
           description: Missing or invalid token.
 
+  /places/{id}/mine:
+    put:
+      tags: [Places]
+      operationId: saveMyPlaceVisit
+      summary: Save my record for one place
+      description: Replaces the caller's whole record for the place; a missing field is saved as null.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveVisitRequest'
+      responses:
+        '200':
+          description: The saved record.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceVisit'
+        '401':
+          description: Missing or invalid token.
+        '404':
+          description: No place has that id.
+
 components:
   securitySchemes:
     bearerAuth:
@@ -75,6 +108,24 @@ components:
       bearerFormat: JWT
 
   schemas:
+    SaveVisitRequest:
+      type: object
+      required: [applied_count]
+      properties:
+        applied_count:
+          type: integer
+          example: 2
+        last_applied_on:
+          type: [string, 'null']
+          format: date
+        visited_on:
+          type: [string, 'null']
+          format: date
+          example: 2026-12-25
+        visited_with:
+          type: [string, 'null']
+        review:
+          type: [string, 'null']
     PlaceVisit:
       type: object
       required: [place_id, applied_count]
