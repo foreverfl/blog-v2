@@ -36,3 +36,17 @@ pub struct ListPlacesQuery {
     pub category: Option<String>,
     pub subcategory: Option<String>,
 }
+
+/// One row of public.place_visits for the logged-in user.
+///
+/// applied_count and last_applied_on only mean something for ITS resorts;
+/// they stay 0 / null for other places.
+#[derive(Debug, Clone, Serialize, sqlx::FromRow)]
+pub struct PlaceVisit {
+    pub place_id: Uuid,
+    pub applied_count: i16,
+    pub last_applied_on: Option<NaiveDate>,
+    pub visited_on: Option<NaiveDate>,
+    pub visited_with: Option<String>,
+    pub review: Option<String>,
+}

@@ -1,8 +1,9 @@
 use sqlx::PgPool;
+use uuid::Uuid;
 
 use crate::types::ApiError;
 
-use super::model::Place;
+use super::model::{Place, PlaceVisit};
 
 /// Lists places with their ITS details, filtered by category and/or subcategory when given.
 #[tracing::instrument(name = "places.list", skip(pool))]
@@ -30,4 +31,22 @@ pub async fn list(
     .await?;
 
     Ok(places)
+}
+
+/// Lists every place_visits row of one user, oldest first.
+#[tracing::instrument(name = "places.list_visits", skip(pool))]
+pub async fn list_visits(pool: &PgPool, user_id: Uuid) -> Result<Vec<PlaceVisit>, ApiError> {
+    let visits = sqlx::query_as::<_, PlaceVisit>(
+        r#"
+        SELECT place_id, applied_count, last_applied_on, visited_on, visited_with, review
+        FROM public.place_visits
+        WHERE user_id = $1
+        ORDER BY created_at
+        "#,
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(visits)
 }

@@ -47,8 +47,54 @@ paths:
                 items:
                   $ref: '#/components/schemas/Place'
 
+  /places/mine:
+    get:
+      tags: [Places]
+      operationId: listMyPlaceVisits
+      summary: List my visit records
+      description: Returns the caller's place_visits rows, oldest first. Empty array when none.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Array of visit records.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlaceVisit'
+        '401':
+          description: Missing or invalid token.
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
+    PlaceVisit:
+      type: object
+      required: [place_id, applied_count]
+      properties:
+        place_id:
+          type: string
+          format: uuid
+        applied_count:
+          type: integer
+          description: ITS only; times the user applied for the lottery.
+        last_applied_on:
+          type: [string, 'null']
+          format: date
+        visited_on:
+          type: [string, 'null']
+          format: date
+        visited_with:
+          type: [string, 'null']
+        review:
+          type: [string, 'null']
     Place:
       type: object
       required: [id, name, category, lat, lng]
