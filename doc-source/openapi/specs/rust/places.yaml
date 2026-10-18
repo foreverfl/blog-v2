@@ -1,0 +1,117 @@
+openapi: 3.1.0
+info:
+  title: Places API
+  version: 1.0.0
+  description: |
+    Every spot on the /map page of mogumogu.dev: ITS resorts, breweries,
+    UR housing and places visited. Rows are seeded with SQL, not written
+    through the API. Reading is public.
+  x-api-id: places
+
+servers:
+  - url: https://api.mogumogu.dev/rust
+    description: Production
+  - url: http://localhost:8002
+    description: Local development (direct to the Rust service)
+
+tags:
+  - name: Places
+    description: Spots drawn on the /map page.
+
+paths:
+  /places:
+    get:
+      tags: [Places]
+      operationId: listPlaces
+      summary: List places
+      description: Returns places ordered by name, with the ITS-only fields filled for ITS resorts and null otherwise.
+      security: []
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [ur, brewery, food, cafe, stay, sight, other]
+        - name: subcategory
+          in: query
+          schema:
+            type: string
+          description: Free text inside a category, e.g. whisky, its.
+      responses:
+        '200':
+          description: Array of places.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Place'
+
+components:
+  schemas:
+    Place:
+      type: object
+      required: [id, name, category, lat, lng]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: 長浜蒸溜所
+        category:
+          type: string
+          enum: [ur, brewery, food, cafe, stay, sight, other]
+        subcategory:
+          type: [string, 'null']
+          example: whisky
+        address:
+          type: [string, 'null']
+        lat:
+          type: number
+          format: double
+        lng:
+          type: number
+          format: double
+        visitable:
+          type: [boolean, 'null']
+          description: true = takes visitors, false = closed to the public, null = not checked.
+        visited_on:
+          type: [string, 'null']
+          format: date
+        note:
+          type: [string, 'null']
+        url:
+          type: [string, 'null']
+        image_url:
+          type: [string, 'null']
+        kind:
+          type: [string, 'null']
+          enum: [direct, yearround, seasonal, null]
+          description: ITS only.
+        seasons:
+          type: [array, 'null']
+          items:
+            type: string
+          description: ITS only; seasonal facilities list summer and/or winter.
+        prefecture:
+          type: [string, 'null']
+          description: ITS only.
+        city:
+          type: [string, 'null']
+          description: ITS only.
+        room_types:
+          type: [string, 'null']
+          description: ITS only.
+        min_party:
+          type: [integer, 'null']
+          description: ITS only; 1 or 2.
+        detail_url:
+          type: [string, 'null']
+          description: ITS only; the ITS page.
+        market_price_yen:
+          type: [integer, 'null']
+          description: ITS only; usual price per adult per night on the hotel's own site.
+        closed:
+          type: [boolean, 'null']
+          description: ITS only; true while the facility is shut.

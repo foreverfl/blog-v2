@@ -70,6 +70,7 @@ pub fn create_router(state: AppState) -> Router {
         .nest("/bug-reports", bug_reports::router())
         .nest("/comments", comments::router())
         .nest("/likes", likes::router())
+        .nest("/places", crate::places::router())
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(|req: &axum::http::Request<_>| {
