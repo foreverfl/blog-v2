@@ -10,6 +10,7 @@ services:
       FLYWAY_SCHEMAS: public
       FLYWAY_BASELINE_ON_MIGRATE: "true"
       FLYWAY_LOCATIONS: filesystem:/flyway/migrations
+      FLYWAY_IGNORE_MIGRATION_PATTERNS: "repeatable:missing"
     volumes:
       - ./migrations:/flyway/migrations:ro
     command: migrate
