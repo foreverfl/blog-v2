@@ -8,7 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"blog-go-cli/internal/github"
+	"blog-go-cli/internal/client/github"
 )
 
 type unit struct {

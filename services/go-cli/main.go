@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"blog-go-cli/internal/classify"
-	"blog-go-cli/internal/snapshot"
+	"blog-go-cli/internal/cmd/classify"
+	"blog-go-cli/internal/cmd/snapshot"
 )
 
 // main dispatches to the subcommand named in os.Args[1] and exits 1 on any error.

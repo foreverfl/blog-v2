@@ -9,7 +9,7 @@ import (
 	"os"
 	"strconv"
 
-	"blog-go-cli/internal/github"
+	"blog-go-cli/internal/client/github"
 )
 
 const kindsPath = "../../data/github_repo_kinds.jsonl"
