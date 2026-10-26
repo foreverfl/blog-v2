@@ -84,7 +84,7 @@ func collectUnit(selected unit) ([]repo, error) {
 				seenFullNames[pageRepo.FullName] = true
 				unitRepos = append(unitRepos, pageRepo)
 			}
-			if len(pageRepos) < 100 {
+			if len(pageRepos) == 0 {
 				return unitRepos, nil
 			}
 			time.Sleep(searchPause)
