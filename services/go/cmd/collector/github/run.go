@@ -1,10 +1,13 @@
 package github
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
 	"time"
+
+	"blog-go-api/internal/db"
 )
 
 type unit struct {
@@ -23,6 +26,8 @@ const (
 	searchPause   = 2 * time.Second
 )
 
+var jst = time.FixedZone("JST", 9*60*60)
+
 // Run collects every unit, or only the one whose key is args[0], and prints rank, full_name and stars per line; it returns an error for an unknown key or a failed request.
 func Run(args []string) error {
 	selectedUnits := units
@@ -38,14 +43,23 @@ func Run(args []string) error {
 		}
 	}
 
+	ctx := context.Background()
+	pool, err := db.NewPool(ctx, os.Getenv("DATABASE_URL"))
+	if err != nil {
+		return err
+	}
+	defer pool.Close()
+
+	snapshotDate := time.Now().In(jst).Format(time.DateOnly)
 	for _, selected := range selectedUnits {
 		unitRepos, err := collectUnit(selected)
 		if err != nil {
 			return err
 		}
-		for index, unitRepo := range unitRepos {
-			fmt.Printf("%d\t%s\t%d\n", index+1, unitRepo.FullName, unitRepo.Stars)
+		if err := saveSnapshot(ctx, pool, snapshotDate, selected.key, unitRepos); err != nil {
+			return err
 		}
+		fmt.Printf("%s %s: saved %d repos\n", snapshotDate, selected.key, len(unitRepos))
 	}
 	return nil
 }
