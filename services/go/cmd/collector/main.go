@@ -10,7 +10,7 @@ import (
 // main dispatches to the subcommand named in os.Args[1] and exits 1 on any error.
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "usage: collector <github> [args...]")
+		fmt.Fprintln(os.Stderr, "usage: collector <github|github-classify> [args...]")
 		os.Exit(1)
 	}
 
@@ -18,6 +18,8 @@ func main() {
 	switch os.Args[1] {
 	case "github":
 		err = github.Run(os.Args[2:])
+	case "github-classify":
+		err = github.RunClassify(os.Args[2:])
 	default:
 		err = fmt.Errorf("unknown subcommand %q", os.Args[1])
 	}
