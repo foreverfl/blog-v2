@@ -1,10 +1,12 @@
-package github
+package snapshot
 
 import (
 	"context"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"blog-go-cli/internal/github"
 )
 
 const upsertSnapshotSQL = `
@@ -21,7 +23,7 @@ ON CONFLICT (snapshot_date, category, full_name) DO UPDATE SET
   repo_created_at = EXCLUDED.repo_created_at`
 
 // saveSnapshot upserts unitRepos as one day's ranking for category, rank 1 first, or returns the first failed row's error.
-func saveSnapshot(ctx context.Context, pool *pgxpool.Pool, snapshotDate string, category string, unitRepos []repo) error {
+func saveSnapshot(ctx context.Context, pool *pgxpool.Pool, snapshotDate string, category string, unitRepos []github.Repo) error {
 	batch := &pgx.Batch{}
 	for index, unitRepo := range unitRepos {
 		topics := unitRepo.Topics

@@ -1,4 +1,4 @@
-package github
+package classify
 
 import (
 	"bufio"
@@ -8,14 +8,16 @@ import (
 	"io/fs"
 	"os"
 	"strconv"
+
+	"blog-go-cli/internal/github"
 )
 
 const kindsPath = "../../data/github_repo_kinds.jsonl"
 
-// RunClassify prints the full names of up to args[0] repos from the overall ranking, most stars first, that the kinds file does not list yet; it returns an error for a missing or non-numeric count, an unreadable file or a failed search.
-func RunClassify(args []string) error {
+// Run prints the full names of up to args[0] repos from the overall ranking, most stars first, that the kinds file does not list yet; it returns an error for a missing or non-numeric count, an unreadable file or a failed search.
+func Run(args []string) error {
 	if len(args) != 1 {
-		return errors.New("usage: collector github-classify <n>")
+		return errors.New("usage: go-cli github-classify <n>")
 	}
 	limit, err := strconv.Atoi(args[0])
 	if err != nil {
@@ -26,7 +28,7 @@ func RunClassify(args []string) error {
 	if err != nil {
 		return err
 	}
-	overallRepos, err := collectUnit(units[0])
+	overallRepos, err := github.CollectTopRepos("")
 	if err != nil {
 		return err
 	}
