@@ -19,6 +19,7 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+hurl/*.env
 *.pem
 *.key
 secrets/
