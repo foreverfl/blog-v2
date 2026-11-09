@@ -1,0 +1,121 @@
+"use client";
+
+import Pagination from "@/components/molecules/Pagination";
+import React, { useState } from "react";
+import LinkWithSpinning from "../molecules/LinkWithSpinning";
+
+interface FrontMatter {
+  fileName?: string;
+  title: string;
+  date: string;
+  classification: string;
+  category: string;
+  image: string;
+}
+
+interface Props {
+  posts: FrontMatter[];
+  title: string;
+  lan: string;
+}
+
+function swapExt(url: string): string | null {
+  if (/\.webp(\?.*)?$/.test(url))
+    return url.replace(/\.webp(\?.*)?$/, ".png$1");
+  if (/\.png(\?.*)?$/.test(url)) return url.replace(/\.png(\?.*)?$/, ".webp$1");
+  return null;
+}
+
+function PostThumbnail({ src, alt }: { src: string; alt: string }) {
+  const [currentSrc, setCurrentSrc] = useState(src);
+  const [fallbackTried, setFallbackTried] = useState(false);
+
+  return (
+    <img
+      src={currentSrc}
+      alt={alt}
+      loading="lazy"
+      className="absolute inset-0 w-full h-full object-cover object-center"
+      onError={() => {
+        if (fallbackTried) return;
+        const swapped = swapExt(currentSrc);
+        if (!swapped) return;
+        setFallbackTried(true);
+        setCurrentSrc(swapped);
+      }}
+    />
+  );
+}
+
+const AllCategory: React.FC<Props> = ({ posts, title, lan }) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const postsPerPage = 8;
+
+  // Calculate total pages
+  const totalPages = Math.ceil(posts.length / postsPerPage);
+
+  const sortedPosts = [...posts].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+  );
+
+  // Get current posts
+  const currentPosts = sortedPosts.slice(
+    (currentPage - 1) * postsPerPage,
+    currentPage * postsPerPage,
+  );
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  return (
+    <>
+      {/* Section */}
+      <div>
+        {posts.length > 0 && (
+          <h2 className="text-5xl font-semibold text-center my-10 text-neutral-800 dark:text-neutral-200">
+            {title}
+          </h2>
+        )}
+        <div className="grid grid-cols-2 portrait:grid-cols-2 portrait:lg:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-6 px-5 md:px-10">
+          {currentPosts.map((post) => (
+            <LinkWithSpinning
+              key={post.fileName}
+              href={`/${lan}/${post.classification}/${post.category}/${
+                post.fileName
+                  ?.replace(/\.(mdx?|md)$/, "")
+                  .replace(/-(?:en|ko|ja)$/, "") ?? ""
+              }`}
+            >
+              <div className="relative bg-white dark:bg-neutral-800 shadow rounded overflow-hidden aspect-square">
+                {post.image && (
+                  <PostThumbnail src={post.image} alt={post.title} />
+                )}
+                <div className="absolute h-1/4 w-full bottom-0 flex items-center justify-center bg-gray-200 dark:bg-neutral-700 bg-opacity-50 dark:bg-opacity-50">
+                  <div className="text-center w-full">
+                    <p className="text-sm dark:text-neutral-300">{post.date}</p>
+                    <h3 className="font-semibold dark:text-neutral-100 truncate mx-5">
+                      {post.title}
+                    </h3>
+                  </div>
+                </div>
+              </div>
+            </LinkWithSpinning>
+          ))}
+        </div>
+
+        {/* Pagination */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
+      </div>
+    </>
+  );
+};
+
+export default AllCategory;

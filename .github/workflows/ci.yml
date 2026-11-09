@@ -12,16 +12,17 @@ concurrency:
 jobs:
   changes:
     name: Detect changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       auth: ${{ steps.filter.outputs.auth }}
       rust: ${{ steps.filter.outputs.rust }}
       go: ${{ steps.filter.outputs.go }}
       go-cli: ${{ steps.filter.outputs.go-cli }}
       haskell: ${{ steps.filter.outputs.haskell }}
+      web: ${{ steps.filter.outputs.web }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
+      - uses: actions/checkout@v7
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -35,17 +36,19 @@ jobs:
               - 'services/go-cli/**'
             haskell:
               - 'services/haskell/**'
+            web:
+              - 'web/**'
 
   build-auth:
     name: Build auth-api (Rust)
     needs: changes
     if: needs.changes.outputs.auth == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: services/auth
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
@@ -56,12 +59,12 @@ jobs:
     name: Build rust-api (Rust)
     needs: changes
     if: needs.changes.outputs.rust == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: services/rust
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
         with:
@@ -72,13 +75,13 @@ jobs:
     name: Build go-api (Go)
     needs: changes
     if: needs.changes.outputs.go == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: services/go
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: services/go/go.mod
           cache-dependency-path: services/go/go.sum
@@ -88,34 +91,56 @@ jobs:
     name: Build go-cli (Go)
     needs: changes
     if: needs.changes.outputs.go-cli == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: services/go-cli
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: services/go-cli/go.mod
           cache-dependency-path: services/go-cli/go.sum
       - run: go vet ./... && go test ./...
 
+  build-web:
+    name: Build web (Astro)
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: web
+    env:
+      # getStaticPaths reads production APIs at build time; these URLs ship in the client bundle anyway.
+      PUBLIC_API_RUST_URL: ${{ vars.PUBLIC_API_RUST_URL }}
+      PUBLIC_R2_URI: ${{ vars.PUBLIC_R2_URI }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: web/.nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run build
+
   build-haskell:
     name: Build haskell-api (Haskell)
     needs: changes
     if: needs.changes.outputs.haskell == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: services/haskell
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: haskell-actions/setup@v2
         with:
           ghc-version: "9.12"
           cabal-version: "latest"
       - run: cabal update
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: |
             ~/.cabal/store
@@ -126,9 +151,9 @@ jobs:
 
   notify-failure:
     name: Notify CI failure
-    needs: [changes, build-auth, build-rust, build-go, build-go-cli, build-haskell]
+    needs: [changes, build-auth, build-rust, build-go, build-go-cli, build-haskell, build-web]
     if: failure()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       # Only static fields in the payload — commit messages can hold quotes/newlines
       # that would break the inline JSON.
