@@ -16,6 +16,12 @@ docker-ready:
 local-up: docker-ready
 	docker network inspect blog-local >/dev/null 2>&1 || docker network create blog-local
 	set -a && . $(COMPOSE_DIR)/.env.local && set +a && docker-compose -f $(COMPOSE_DIR)/compose.local.yml up -d
+	@echo "waiting for web on http://localhost:3000/ko (npm ci runs first) ..."
+	@for i in $$(seq 300); do \
+		curl -sf -o /dev/null http://localhost:3000/ko && { echo "✓ ready: http://localhost:3000/ko"; exit 0; }; \
+		sleep 1; \
+	done; \
+	echo "web did not answer in 5 minutes — see: docker logs blog-web"; exit 1
 
 ## local-up-N: Start instance N — APIs only, ports (N+3)001–004, CORS for :300N
 local-up-%: docker-ready
