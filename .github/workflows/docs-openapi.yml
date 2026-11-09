@@ -11,7 +11,7 @@ on:
 
 jobs:
   trigger:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Ping Cloudflare Pages deploy hook
         run: curl -fsS -X POST "${{ secrets.CF_PAGES_BLOG_DOC_DEPLOY_HOOK }}"

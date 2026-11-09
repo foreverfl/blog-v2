@@ -17,7 +17,7 @@ env:
 jobs:
   build-auth:
     name: Build auth-api image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -41,7 +41,7 @@ jobs:
 
   build-rust:
     name: Build rust-api image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -65,7 +65,7 @@ jobs:
 
   build-go:
     name: Build go-api image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -90,7 +90,7 @@ jobs:
 
   build-haskell:
     name: Build haskell-api image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -115,7 +115,7 @@ jobs:
   deploy:
     name: Deploy to EC2
     needs: [build-auth, build-rust, build-go, build-haskell]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: read
@@ -166,7 +166,7 @@ jobs:
     name: Notify CD failure
     needs: [build-auth, build-rust, build-go, build-haskell, deploy]
     if: failure()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - run: |
           curl -sf -H "Content-Type: application/json" -d '{
