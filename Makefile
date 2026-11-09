@@ -68,6 +68,7 @@ test:
 	cd services/go && go vet ./... && go test -short ./...
 	cd services/go-cli && go vet ./... && go test ./...
 	cd services/haskell && cabal test
+	cd web && npm test
 
 ## help: Show available targets
 .PHONY: help

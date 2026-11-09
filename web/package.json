@@ -13,7 +13,8 @@
     "preview": "astro preview",
     "check": "astro check",
     "lint": "eslint .",
-    "convert-webp": "tsx ./test/convert-to-webp.ts"
+    "convert-webp": "tsx ./test/convert-to-webp.ts",
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@astrojs/react": "^6.0.6",
@@ -59,7 +60,8 @@
     "prettier": "^3.9.10",
     "tailwindcss": "^4.3.1",
     "tsx": "^4.23.15",
-    "typescript": "^6"
+    "typescript": "^6",
+    "vitest": "^5.1.0"
   },
   "overrides": {
     "vite": "^7"
