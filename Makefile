@@ -58,6 +58,17 @@ prod-up:
 prod-down:
 	set -a && . $(COMPOSE_DIR)/.env.prod && set +a && docker-compose -f $(COMPOSE_DIR)/compose.prod.yml down
 
+# ── Test ────────────────────────────────────────────────────────────────────
+
+## test: Run the tests of every service under services/
+.PHONY: test
+test:
+	cd services/auth && cargo test
+	cd services/rust && cargo test
+	cd services/go && go vet ./... && go test ./...
+	cd services/go-cli && go vet ./... && go test ./...
+	cd services/haskell && cabal test
+
 ## help: Show available targets
 .PHONY: help
 help:
