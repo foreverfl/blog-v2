@@ -70,3 +70,7 @@ grafana-cloudwatch-policy.json
 
 # Parallel-work worktrees (created by /worktree skill)
 .worktrees/
+
+# playwright
+test-results/
+playwright-report/

@@ -44,17 +44,6 @@ services:
       - redis_data:/data
     command: redis-server --save 60 1 --loglevel warning
 
-  # Redis Insight
-  redis-insight:
-    image: redis/redisinsight:3.0
-    container_name: redis-insight
-    ports:
-      - "5540:5540"
-    depends_on:
-      - redis
-    volumes:
-      - redisinsight_data:/data
-
   # Auth (axum)
   auth-api:
     image: rust:1.93
@@ -149,6 +138,21 @@ services:
         condition: service_started
     command: bash -c "cabal update && cabal install ghcid --overwrite-policy=always && ghcid --command='cabal repl' --run=Main.main --restart=blog-haskell-api.cabal"
 
+  # Web (Astro dev server); astro reads web/.env.local by itself
+  web:
+    image: node:24.22.2
+    container_name: ${STACK_PREFIX:-blog}-web
+    working_dir: /app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../../web:/app
+      - web_node_modules:/app/node_modules
+    depends_on:
+      - auth-api
+      - rust-api
+    command: bash -c "npm ci && npm run dev -- --host"
+
   # Log viewer
   dozzle:
     image: amir20/dozzle:latest
@@ -165,8 +169,8 @@ networks:
     external: true
 
 volumes:
+  web_node_modules:
   redis_data:
-  redisinsight_data:
   postgres_data:
   auth_cargo_cache:
   auth_target_cache:
