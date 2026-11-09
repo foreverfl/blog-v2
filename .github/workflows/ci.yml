@@ -19,6 +19,7 @@ jobs:
       go: ${{ steps.filter.outputs.go }}
       go-cli: ${{ steps.filter.outputs.go-cli }}
       haskell: ${{ steps.filter.outputs.haskell }}
+      web: ${{ steps.filter.outputs.web }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -35,6 +36,8 @@ jobs:
               - 'services/go-cli/**'
             haskell:
               - 'services/haskell/**'
+            web:
+              - 'web/**'
 
   build-auth:
     name: Build auth-api (Rust)
@@ -100,6 +103,28 @@ jobs:
           cache-dependency-path: services/go-cli/go.sum
       - run: go vet ./... && go test ./...
 
+  build-web:
+    name: Build web (Astro)
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    env:
+      # getStaticPaths reads production APIs at build time; these URLs ship in the client bundle anyway.
+      PUBLIC_API_RUST_URL: ${{ vars.PUBLIC_API_RUST_URL }}
+      PUBLIC_R2_URI: ${{ vars.PUBLIC_R2_URI }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: web/.nvmrc
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm run build
+
   build-haskell:
     name: Build haskell-api (Haskell)
     needs: changes
@@ -126,7 +151,7 @@ jobs:
 
   notify-failure:
     name: Notify CI failure
-    needs: [changes, build-auth, build-rust, build-go, build-go-cli, build-haskell]
+    needs: [changes, build-auth, build-rust, build-go, build-go-cli, build-haskell, build-web]
     if: failure()
     runs-on: ubuntu-latest
     steps:
