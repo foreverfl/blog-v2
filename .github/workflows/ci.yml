@@ -48,7 +48,6 @@ jobs:
         with:
           workspaces: services/auth
       - run: cargo check
-      - run: cargo build --release
 
   build-rust:
     name: Build rust-api (Rust)
@@ -65,7 +64,6 @@ jobs:
         with:
           workspaces: services/rust
       - run: cargo check
-      - run: cargo build --release
 
   build-go:
     name: Build go-api (Go)
