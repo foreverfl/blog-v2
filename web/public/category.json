@@ -1,0 +1,127 @@
+[
+  {
+    "name_ko": "개발",
+    "name_ja": "開発",
+    "name_en": "Development",
+    "emoji": "💻",
+    "link": "development",
+    "categories": [
+      {
+        "name_ko": "프로젝트 회고",
+        "name_ja": "プロジェクト振り返り",
+        "name_en": "Project Retrospective",
+        "emoji": "🔁",
+        "link": "project"
+      },
+      {
+        "name_ko": "개발 노트",
+        "name_ja": "開発ノート",
+        "name_en": "Dev Notes",
+        "emoji": "📝",
+        "link": "devnotes"
+      },
+      {
+        "name_ko": "실험실",
+        "name_ja": "実験室",
+        "name_en": "Lab",
+        "emoji": "🧪",
+        "link": "lab"
+      }
+    ]
+  },
+  {
+    "name_ko": "주저리주저리",
+    "name_ja": "ひとりごと",
+    "name_en": "Ramblings",
+    "emoji": "💭",
+    "link": "miscellaneous",
+    "categories": [
+      {
+        "name_ko": "내 생각",
+        "name_ja": "私の考え",
+        "name_en": "My Thoughts",
+        "emoji": "🗨️",
+        "link": "my-thoughts"
+      }
+    ]
+  },
+  {
+    "name_ko": "트렌드",
+    "name_ja": "トレンド",
+    "name_en": "Trends",
+    "emoji": "📈",
+    "link": "trends",
+    "categories": [
+      {
+        "name_ko": "해커뉴스",
+        "name_ja": "ハッカーニュース",
+        "name_en": "Hacker News",
+        "emoji": "🚀",
+        "link": "hackernews"
+      },
+      {
+        "name_ko": "GitHub",
+        "name_ja": "GitHub",
+        "name_en": "GitHub",
+        "emoji": "🐙",
+        "link": "github",
+        "hasOwnPage": true
+      }
+    ]
+  },
+  {
+    "name_ko": "기록",
+    "name_ja": "記録",
+    "name_en": "Records",
+    "emoji": "📚",
+    "link": "records",
+    "categories": [
+      {
+        "name_ko": "여행지도",
+        "name_ja": "旅行地図",
+        "name_en": "Travel Map",
+        "emoji": "🗺️",
+        "link": "map",
+        "hasOwnPage": true
+      },
+      {
+        "name_ko": "레시피",
+        "name_ja": "レシピ",
+        "name_en": "Recipes",
+        "emoji": "🍳",
+        "link": "recipes"
+      },
+      {
+        "name_ko": "애니 리뷰",
+        "name_ja": "アニメレビュー",
+        "name_en": "Anime Reviews",
+        "emoji": "📺",
+        "link": "anime-reviews"
+      }
+    ]
+  },
+  {
+    "name_ko": "실험실",
+    "name_ja": "実験室",
+    "name_en": "Playground",
+    "emoji": "🧪",
+    "link": "playground",
+    "categories": [
+      {
+        "name_ko": "오디오 랩",
+        "name_ja": "オーディオラボ",
+        "name_en": "Audio Lab",
+        "emoji": "🎵",
+        "link": "audio-lab"
+      },
+      {
+        "name_ko": "다이어트",
+        "name_ja": "ダイエット",
+        "name_en": "Diet",
+        "emoji": "🥗",
+        "link": "diet",
+        "hasOwnPage": true
+      }
+    ]
+  }
+]

@@ -1,0 +1,73 @@
+{
+  "name": "blog",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev --port 3000",
+    "dev:1": "PUBLIC_API_AUTH_URL=http://localhost:4001/auth PUBLIC_API_RUST_URL=http://localhost:4002 astro dev --port 3001",
+    "dev:2": "PUBLIC_API_AUTH_URL=http://localhost:5001/auth PUBLIC_API_RUST_URL=http://localhost:5002 astro dev --port 3002",
+    "dev:3": "PUBLIC_API_AUTH_URL=http://localhost:6001/auth PUBLIC_API_RUST_URL=http://localhost:6002 astro dev --port 3003",
+    "dev:4": "PUBLIC_API_AUTH_URL=http://localhost:7001/auth PUBLIC_API_RUST_URL=http://localhost:7002 astro dev --port 3004",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "lint": "eslint .",
+    "convert-webp": "tsx ./test/convert-to-webp.ts",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@astrojs/react": "^6.0.6",
+    "@astrojs/sitemap": "^3.7.4",
+    "@grafana/faro-web-sdk": "^2.12.1",
+    "@grafana/faro-web-tracing": "^2.12.1",
+    "@protomaps/basemaps": "^5.7.2",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@tanstack/react-query": "^5.104.0",
+    "@tanstack/react-query-devtools": "^5.104.0",
+    "@types/react-modal": "^3.16.3",
+    "astro": "^6.4.8",
+    "d3": "^7.9.0",
+    "dotenv": "^17.4.2",
+    "framer-motion": "^12.43.0",
+    "github-markdown-css": "^5.9.0",
+    "i18next": "^26.4.2",
+    "maplibre-gl": "^6.13.0",
+    "next-themes": "^0.4.6",
+    "pmtiles": "^4.5.0",
+    "postcss": "^8.5.28",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-i18next": "^17.0.15",
+    "react-markdown": "^10.1.0",
+    "react-modal": "^3.16.3",
+    "rehype-raw": "^7.0.0",
+    "rehype-slug": "^6.0.0",
+    "remark-gfm": "^4.0.1",
+    "shiki": "^4.4.3",
+    "uuid": "^14.0.2"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@types/d3": "^7.4.3",
+    "@types/node": "^26",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/uuid": "^11.0.0",
+    "eslint": "^10.11.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.6",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.9",
+    "tailwindcss": "^4.3.1",
+    "tsx": "^4.23.15",
+    "typescript": "^6"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,css,md,mdx}": "prettier --write"
+  },
+  "overrides": {
+    "vite": "^7"
+  }
+}

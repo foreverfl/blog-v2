@@ -1,0 +1,73 @@
+"use client";
+
+import React, { useSyncExternalStore } from "react";
+import { useTheme } from "next-themes";
+
+interface SetModeProps {
+  id?: string;
+}
+
+const subscribe = () => () => {};
+const useMounted = () =>
+  useSyncExternalStore(
+    subscribe,
+    () => true,
+    () => false,
+  );
+
+const SetMode: React.FC<SetModeProps> = ({ id = "theme-toggle" }) => {
+  const mounted = useMounted();
+  const { theme, setTheme, systemTheme, resolvedTheme } = useTheme();
+
+  const toggleTheme = () => {
+    setTheme(
+      theme === "dark" || (systemTheme === "dark" && !theme) ? "light" : "dark",
+    );
+  };
+
+  if (!mounted) {
+    return (
+      <div className="animate-pulse">
+        <div className="rounded-full bg-gray-400 h-8 w-14"></div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {/* 스위치 컨테이너 */}
+      <div
+        id={id}
+        className="relative inline-block w-14 h-8 cursor-pointer"
+        onClick={toggleTheme}
+      >
+        <input type="checkbox" className="hidden" />
+        {/* 스위치 배경 */}
+        <div
+          className={`rounded-full h-8 bg-gray-400 p-1 transition-colors duration-200 ease-in-out`}
+        >
+          {/* 스위치 토글 핸들 */}
+          <div
+            className={`bg-white w-6 h-6 rounded-full shadow-md transform transition-transform duration-200 ease-in-out ${
+              resolvedTheme === "dark" ? "translate-x-6" : ""
+            }`}
+          >
+            <img
+              src={
+                resolvedTheme === "dark"
+                  ? "/images/moon.png"
+                  : "/images/sun.png"
+              }
+              alt={resolvedTheme === "dark" ? "Dark Mode On" : "Dark Mode Off"}
+              width={24}
+              height={24}
+              className="rounded-full"
+            />
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default SetMode;

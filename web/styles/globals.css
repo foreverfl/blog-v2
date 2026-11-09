@@ -1,0 +1,271 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+html {
+  font-size: 0.9rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* scroll bar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+  border: 2px solid transparent; /* 핸들의 테두리를 투명하게 설정 */
+  background-clip: padding-box; /* 배경색이 테두리 영역을 넘어서지 않도록 설정 */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #646464;
+}
+
+/* fonts */
+/* navbar */
+
+@font-face {
+  font-family: "NumberFont";
+  src: url("/fonts/HiMelody-Regular.ttf") format("truetype");
+  unicode-range: U+0030-0039; /* 숫자 0-9 */
+  font-display: block;
+}
+
+/* navbar: English */
+@font-face {
+  font-family: "NavbarFont";
+  src: url("/fonts/Caveat-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  unicode-range: U+0020-002F, U+003A-007F; /* 숫자를 제외한 기호 및 알파벳 */
+  font-display: block;
+}
+/* navbar: Korean */
+@font-face {
+  font-family: "NavbarFont";
+  src: url("/fonts/HiMelody-Regular.ttf") format("truetype");
+  unicode-range: U+AC00-D7AF; /* 가각~힣 */
+  font-display: block;
+}
+/* navbar: Japanese */
+@font-face {
+  font-family: "NavbarFont";
+  src: url("/fonts/Yomogi-Regular.ttf") format("truetype");
+  unicode-range:
+    U+3000-303F, U+3040-309F, U+30A0-30FF, U+FF00-FFEF, U+4E00-9FAF; /* 구두점, 히라가나, 카타카나, 일본어 반각 카타카나, 한자 */
+  font-display: block;
+}
+
+/* footer */
+@font-face {
+  font-family: "Caveat";
+  src: url("/fonts/Caveat-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+}
+
+/* 코드블럭 래퍼 */
+.markdown-body figure {
+  margin: 0 !important;
+}
+
+figure figcaption {
+  font-size: 14px;
+  text-align: left;
+  padding: 10px;
+  background-color: #24292e;
+  color: #ffffff;
+  border-radius: 5px;
+}
+
+/* github-markdown-css */
+.markdown-body {
+  box-sizing: border-box;
+  min-width: 200px;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 45px;
+}
+
+.markdown-body pre {
+  border-radius: 5px;
+  padding: 10px;
+  margin-top: 3px !important;
+}
+
+.markdown-body blockquote {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 10px;
+  margin: 20px 0;
+}
+
+/* 코드 블럭 라인 넘버링 */
+code[data-line-numbers] {
+  counter-reset: line;
+}
+
+code[data-line-numbers] > [data-line]::before {
+  counter-increment: line;
+  content: counter(line);
+
+  /* Other styling */
+  display: inline-block;
+  width: 0.75rem;
+  margin-right: 2rem;
+  text-align: right;
+  color: gray;
+}
+
+code[data-line-numbers-max-digits="2"] > [data-line]::before {
+  width: 1.25rem;
+}
+
+code[data-line-numbers-max-digits="3"] > [data-line]::before {
+  width: 1.75rem;
+}
+
+code[data-line-numbers-max-digits="4"] > [data-line]::before {
+  width: 2.25rem;
+}
+
+/* 마크내운 내에서 이미지 투명 */
+.markdown-body img {
+  background-color: transparent !important;
+}
+
+/* 마크다운 내에서 ol, ul이 tailwind 보다 우선하도록 설정 */
+.markdown-body ul {
+  list-style: disc !important; /* ul에 대해 disc 스타일 적용 */
+}
+
+.markdown-body ol {
+  list-style: decimal !important; /* ol에 대해 숫자 스타일 적용 */
+}
+
+/* post on light mode */
+.markdown-body {
+  background-color: white !important;
+  color: #000000 !important;
+}
+
+/* post on dark mode */
+.dark .markdown-body {
+  background-color: transparent !important;
+  color: #ffffff !important;
+}
+
+@layer utilities {
+  .font-navbar {
+    font-family: "NavbarFont", "NumberFont", sans-serif;
+  }
+
+  .font-footer {
+    font-family: "Caveat", cursive;
+  }
+}
+
+/* privacy-policy */
+.privacy-policy h1 {
+  @apply text-3xl font-bold mb-4;
+}
+.privacy-policy h2 {
+  @apply text-2xl font-semibold mt-8 mb-4;
+}
+.privacy-policy h3 {
+  @apply text-xl font-medium mt-6 mb-2;
+}
+.privacy-policy h4 {
+  @apply text-lg font-medium mt-4 mb-2;
+}
+.privacy-policy p {
+  @apply mb-4;
+}
+.privacy-policy ul {
+  @apply list-disc pl-8 mb-4;
+}
+.privacy-policy li {
+  @apply mb-2;
+}
+.privacy-policy a {
+  @apply text-blue-500 hover:underline;
+}
+
+/* Anime feed: full-screen slides, so the global scrollbar above is only noise. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Anime feed: double-tap heart — pop up, drift slightly, shrink away. */
+@keyframes heart-pop {
+  0% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0;
+  }
+  25% {
+    transform: translate(-50%, -58%) scale(1.3);
+    opacity: 1;
+  }
+  55% {
+    transform: translate(-50%, -63%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -72%) scale(0.3);
+    opacity: 0;
+  }
+}
+
+/* Anime feed: rail heart — quick bounce on every like/unlike tap. */
+@keyframes heart-tap {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.35);
+  }
+  70% {
+    transform: scale(0.85);
+  }
+  100% {
+    transform: scale(1);
+  }
+}

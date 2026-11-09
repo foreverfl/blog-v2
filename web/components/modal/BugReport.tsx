@@ -1,0 +1,131 @@
+"use client";
+
+import { RUST_API } from "@/lib/api-base";
+import CloudflareTurnstile from "@/components/atom/CloudflareTurnstile";
+import { useToast } from "@/lib/context/toast-context";
+import "@/lib/i18n";
+import { useClientPathname } from "@/lib/hooks/useClientPathname";
+import { FC, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+
+interface BugReportProps {
+  isOpen: boolean;
+  setIsOpen?: (open: boolean) => void;
+}
+
+const BugReport: FC<BugReportProps> = ({ isOpen, setIsOpen }) => {
+  const { t, i18n } = useTranslation();
+  const { showToast } = useToast();
+
+  const pathname = useClientPathname();
+  const parts = pathname.split("/");
+  const lan = pathname.split("/")[1];
+
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string>("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      // Turnstile-gated submit; the Rust endpoint verifies the token server-side.
+      const res = await fetch(`${RUST_API}/bug-reports`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ turnstileToken, title, content }),
+      });
+      if (!res.ok) throw new Error("API error");
+
+      setTitle("");
+      setContent("");
+
+      showToast(t("bug_report_form_success"), "success");
+      if (setIsOpen) setIsOpen(false);
+    } catch {
+      showToast(t("bug_report_form_error"), "error");
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    if (isOpen) setTurnstileToken("");
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (["en", "ja", "ko"].includes(lan)) {
+      i18n.changeLanguage(lan);
+    }
+  }, [lan, i18n]);
+
+  return (
+    <div>
+      <h2 className="text-lg font-bold mb-2">{t("bug_report_title")}</h2>
+
+      {/* Turnstile Widget */}
+      {!turnstileToken && (
+        <>
+          <CloudflareTurnstile
+            siteKey={import.meta.env.PUBLIC_TURNSTILE_SITE_KEY!}
+            onSuccess={setTurnstileToken}
+            resetDeps={[isOpen]} // 모달 열릴 때마다 새로 mount
+          />
+          <p className="mt-2 text-xs text-gray-500">
+            {t("bug_report_form_turnstile_notice")}
+          </p>
+        </>
+      )}
+
+      {/* Bug Report Form */}
+      {turnstileToken && (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            {/* title */}
+            <label className="block text-sm mb-1">
+              {t("bug_report_form_title_label")}
+            </label>
+            <input
+              required
+              type="text"
+              className="w-full border px-2 py-1 rounded dark:bg-neutral-800"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={100}
+              placeholder={t("bug_report_form_title_placeholder")}
+            />
+          </div>
+
+          {/* content */}
+          <div>
+            <label className="block text-sm mb-1">
+              {t("bug_report_form_description_label")}
+            </label>
+            <textarea
+              required
+              className="w-full border px-2 py-1 rounded dark:bg-neutral-800 min-h-[80px]"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              maxLength={1000}
+              placeholder={t("bug_report_form_description_placeholder")}
+            />
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-rose-600 text-white rounded px-4 py-1 hover:bg-rose-700 transition"
+            >
+              {loading
+                ? t("bug_report_form_submitting")
+                : t("bug_report_form_submit")}
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+};
+
+export default BugReport;

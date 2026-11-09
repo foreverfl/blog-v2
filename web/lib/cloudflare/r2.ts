@@ -1,0 +1,160 @@
+const R2_BASE = import.meta.env.PUBLIC_R2_URI;
+
+if (!R2_BASE) {
+  throw new Error("❌ PUBLIC_R2_URI is not defined");
+}
+
+type R2Params = {
+  bucket: string;
+  key: string;
+};
+
+type ListR2Result = {
+  folder: string;
+  dates: string[];
+};
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function retry<T>(
+  fn: () => Promise<T>,
+  retries = 3,
+  delayMs = 1000,
+): Promise<T> {
+  let lastError;
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      console.warn(
+        `⚠️ Retry ${i + 1}/${retries} failed:`,
+        err instanceof Error ? err.message : String(err),
+      );
+      if (i < retries - 1) {
+        await delay(delayMs);
+      }
+    }
+  }
+  console.error("❌ All retries failed.");
+  throw lastError;
+}
+
+function getContentTypeFromExtension(key: string): string {
+  const ext = key.split(".").pop()?.toLowerCase();
+  switch (ext) {
+    case "json":
+      return "application/json";
+    case "txt":
+      return "text/plain";
+    case "html":
+      return "text/html";
+    case "csv":
+      return "text/csv";
+    case "md":
+      return "text/markdown";
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "png":
+      return "image/png";
+    case "webp":
+      return "image/webp";
+    case "pdf":
+      return "application/pdf";
+    default:
+      return "application/octet-stream";
+  }
+}
+
+export async function putToR2({ bucket, key }: R2Params, data: any) {
+  const contentType = getContentTypeFromExtension(key);
+
+  let body: BodyInit;
+
+  if (typeof data === "string") {
+    body = data;
+  } else if (data instanceof Blob) {
+    body = data;
+  } else if (data instanceof ArrayBuffer) {
+    body = data;
+  } else if (data instanceof Uint8Array) {
+    // Convert Uint8Array to Blob with proper ArrayBuffer
+    const arrayBuffer = data.buffer as ArrayBuffer;
+    body = new Blob([
+      arrayBuffer.slice(data.byteOffset, data.byteOffset + data.byteLength),
+    ]);
+  } else if (typeof Buffer !== "undefined" && Buffer.isBuffer(data)) {
+    // Convert Buffer to Uint8Array then to Blob
+    const uint8Array = new Uint8Array(data);
+    const arrayBuffer = uint8Array.buffer as ArrayBuffer;
+    body = new Blob([
+      arrayBuffer.slice(
+        uint8Array.byteOffset,
+        uint8Array.byteOffset + uint8Array.byteLength,
+      ),
+    ]);
+  } else {
+    body = JSON.stringify(data);
+  }
+
+  const now = Date.now();
+  const url = `${R2_BASE}/${bucket}/${key}?t=${now}`;
+  console.log(`📤 [R2 PUT] Uploading: ${key} (${contentType})`);
+
+  await retry(async () => {
+    const res = await fetch(url, {
+      method: "PUT",
+      headers: {
+        "Content-Type": contentType,
+      },
+      body,
+      signal: AbortSignal.timeout(30000), // 30 second timeout for Docker networking
+    });
+    if (!res.ok) throw new Error(`❌ Failed to PUT to R2: ${res.statusText}`);
+  });
+}
+
+export async function getFromR2({ bucket, key }: R2Params) {
+  const now = Date.now();
+  const url = `${R2_BASE}/${bucket}/${key}?t=${now}`;
+
+  return retry(async () => {
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(30000), // 30 second timeout for Docker networking
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`❌ Failed to GET from R2: ${res.statusText}`);
+    return res.json();
+  });
+}
+
+export async function deleteFromR2({ bucket, key }: R2Params) {
+  const url = `${R2_BASE}/${bucket}/${key}`;
+
+  await retry(async () => {
+    const res = await fetch(url, {
+      method: "DELETE",
+      signal: AbortSignal.timeout(30000), // 30 second timeout for Docker networking
+    });
+    if (!res.ok)
+      throw new Error(`❌ Failed to DELETE from R2: ${res.statusText}`);
+  });
+}
+
+export async function listFromR2(bucket: string): Promise<ListR2Result | null> {
+  const now = Date.now();
+  const url = `${R2_BASE}/${bucket}?t=${now}`;
+
+  return retry(async () => {
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(30000), // 30 second timeout for Docker networking
+    });
+    if (res.status === 404) return null;
+    if (!res.ok)
+      throw new Error(`❌ Failed to LIST from R2: ${res.statusText}`);
+    return res.json() as Promise<ListR2Result>;
+  });
+}
