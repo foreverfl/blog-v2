@@ -14,7 +14,7 @@
     "check": "astro check",
     "lint": "eslint .",
     "convert-webp": "tsx ./test/convert-to-webp.ts",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests --exclude 'e2e/**'"
   },
   "dependencies": {
     "@astrojs/react": "^6.0.6",
@@ -49,6 +49,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
+    "@playwright/test": "^1.65.0",
     "@types/d3": "^7.4.3",
     "@types/node": "^26",
     "@types/react": "^19",
