@@ -5,6 +5,13 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build -o blog-go-api .
 
+FROM golang:1.26 AS collector-builder
+WORKDIR /cli
+COPY --from=go-cli go.mod go.sum ./
+RUN go mod download
+COPY --from=go-cli . .
+RUN CGO_ENABLED=0 go build -o collector .
+
 FROM debian:bookworm-slim
 RUN apt-get update && \
     apt-get install -y --no-install-recommends chromium ca-certificates && \
@@ -16,6 +23,7 @@ RUN apt-get update && \
 ENV CHROMIUM_PATH=/usr/bin/chromium
 ENV HOME=/home/app
 COPY --from=builder /app/blog-go-api /usr/local/bin/
+COPY --from=collector-builder /cli/collector /usr/local/bin/
 USER app:app
 EXPOSE 8003
 CMD ["blog-go-api"]
