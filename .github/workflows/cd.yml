@@ -36,8 +36,8 @@ jobs:
           tags: |
             ${{ env.IMAGE_PREFIX }}/auth-api:latest
             ${{ env.IMAGE_PREFIX }}/auth-api:${{ env.VERSION }}
-          cache-from: type=gha,scope=auth
-          cache-to: type=gha,mode=max,scope=auth
+          cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}/auth-api:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}/auth-api:buildcache,mode=max
 
   build-rust:
     name: Build rust-api image
@@ -60,8 +60,8 @@ jobs:
           tags: |
             ${{ env.IMAGE_PREFIX }}/rust-api:latest
             ${{ env.IMAGE_PREFIX }}/rust-api:${{ env.VERSION }}
-          cache-from: type=gha,scope=rust
-          cache-to: type=gha,mode=max,scope=rust
+          cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}/rust-api:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}/rust-api:buildcache,mode=max
 
   build-go:
     name: Build go-api image
@@ -84,8 +84,8 @@ jobs:
           tags: |
             ${{ env.IMAGE_PREFIX }}/go-api:latest
             ${{ env.IMAGE_PREFIX }}/go-api:${{ env.VERSION }}
-          cache-from: type=gha,scope=go
-          cache-to: type=gha,mode=max,scope=go
+          cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}/go-api:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}/go-api:buildcache,mode=max
 
   build-haskell:
     name: Build haskell-api image
@@ -108,8 +108,8 @@ jobs:
           tags: |
             ${{ env.IMAGE_PREFIX }}/haskell-api:latest
             ${{ env.IMAGE_PREFIX }}/haskell-api:${{ env.VERSION }}
-          cache-from: type=gha,scope=haskell
-          cache-to: type=gha,mode=max,scope=haskell
+          cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}/haskell-api:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_PREFIX }}/haskell-api:buildcache,mode=max
 
   deploy:
     name: Deploy to EC2
