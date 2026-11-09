@@ -44,17 +44,6 @@ services:
       - redis_data:/data
     command: redis-server --save 60 1 --loglevel warning
 
-  # Redis Insight
-  redis-insight:
-    image: redis/redisinsight:3.0
-    container_name: redis-insight
-    ports:
-      - "5540:5540"
-    depends_on:
-      - redis
-    volumes:
-      - redisinsight_data:/data
-
   # Auth (axum)
   auth-api:
     image: rust:1.93
@@ -182,7 +171,6 @@ networks:
 volumes:
   web_node_modules:
   redis_data:
-  redisinsight_data:
   postgres_data:
   auth_cargo_cache:
   auth_target_cache:
