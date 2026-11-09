@@ -17,6 +17,7 @@ jobs:
       auth: ${{ steps.filter.outputs.auth }}
       rust: ${{ steps.filter.outputs.rust }}
       go: ${{ steps.filter.outputs.go }}
+      go-cli: ${{ steps.filter.outputs.go-cli }}
       haskell: ${{ steps.filter.outputs.haskell }}
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +31,8 @@ jobs:
               - 'services/rust/**'
             go:
               - 'services/go/**'
+            go-cli:
+              - 'services/go-cli/**'
             haskell:
               - 'services/haskell/**'
 
@@ -47,7 +50,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: services/auth
-      - run: cargo check
+      - run: cargo test
 
   build-rust:
     name: Build rust-api (Rust)
@@ -63,7 +66,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: services/rust
-      - run: cargo check
+      - run: cargo test
 
   build-go:
     name: Build go-api (Go)
@@ -79,7 +82,23 @@ jobs:
         with:
           go-version-file: services/go/go.mod
           cache-dependency-path: services/go/go.sum
-      - run: go build ./...
+      - run: go vet ./... && go test -short ./...
+
+  build-go-cli:
+    name: Build go-cli (Go)
+    needs: changes
+    if: needs.changes.outputs.go-cli == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/go-cli
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: services/go-cli/go.mod
+          cache-dependency-path: services/go-cli/go.sum
+      - run: go vet ./... && go test ./...
 
   build-haskell:
     name: Build haskell-api (Haskell)
@@ -107,7 +126,7 @@ jobs:
 
   notify-failure:
     name: Notify CI failure
-    needs: [changes, build-auth, build-rust, build-go, build-haskell]
+    needs: [changes, build-auth, build-rust, build-go, build-go-cli, build-haskell]
     if: failure()
     runs-on: ubuntu-latest
     steps:
