@@ -1,0 +1,128 @@
+openapi: 3.1.0
+info:
+  title: GitHub Rankings API
+  version: 1.0.0
+  description: |
+    Daily GitHub repo rankings written by the collector CLI into
+    collector.github_repo_snapshots, with each repo's kind and top languages
+    from collector.github_repo_kinds. Reading is public.
+  x-api-id: github
+
+servers:
+  - url: https://api.mogumogu.dev/rust
+    description: Production
+  - url: http://localhost:8002
+    description: Local development (direct to the Rust service)
+
+tags:
+  - name: GitHub
+    description: Daily repo rankings.
+
+paths:
+  /github/overall:
+    get:
+      tags: [GitHub]
+      operationId: listOverall
+      summary: List one day's overall ranking
+      description: |
+        Returns the overall ranking of one day in rank order. Without `date`
+        it is the latest day. A repo not classified yet has kind null and
+        languages [].
+      security: []
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+          example: '2026-11-03'
+          description: The snapshot day. Missing means the latest day.
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 100
+            minimum: 1
+            maximum: 1000
+          description: How many rows to return. Values above 1000 are cut to 1000, below 1 raised to 1.
+      responses:
+        '200':
+          description: The day and its repos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ranking'
+        '400':
+          description: date is not YYYY-MM-DD, or limit is not an integer.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: The day has no rows.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    Ranking:
+      type: object
+      required: [date, repos]
+      properties:
+        date:
+          type: string
+          format: date
+          example: '2026-11-03'
+        repos:
+          type: array
+          items:
+            $ref: '#/components/schemas/RepoRow'
+    RepoRow:
+      type: object
+      required: [rank, full_name, url, description, stars, language, topics, repo_created_at, stars_today, kind, languages]
+      properties:
+        rank:
+          type: integer
+          example: 1
+        full_name:
+          type: string
+          example: facebook/react
+        url:
+          type: string
+          example: https://github.com/facebook/react
+        description:
+          type: [string, 'null']
+        stars:
+          type: integer
+          format: int32
+        language:
+          type: [string, 'null']
+          description: GitHub's main language for the repo.
+        topics:
+          type: array
+          items:
+            type: string
+        repo_created_at:
+          type: string
+          format: date-time
+        stars_today:
+          type: [integer, 'null']
+          description: Null for the overall ranking; filled only on trending pages.
+        kind:
+          type: [string, 'null']
+          enum: [ai-llm, dev-tools, web-frontend, backend, infra-devops, data-db, mobile, security, learning, other, null]
+          description: Null until the repo is classified.
+        languages:
+          type: array
+          items:
+            type: string
+          description: Up to 3 languages, most bytes first. Empty until the repo is classified.
