@@ -82,7 +82,8 @@
   "github_col_name": "リポジトリ",
   "github_col_stars": "スター",
   "github_col_language": "言語",
-  "github_col_description": "説明",
+  "github_col_kind": "分類",
+  "github_empty": "まだランキングのデータがありません。",
   "github_field_created_at": "作成日",
   "github_field_kind": "カテゴリ"
 }
