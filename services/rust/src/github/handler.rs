@@ -16,23 +16,42 @@ pub fn router() -> Router<AppState> {
     Router::new().route("/overall", get(list_overall))
 }
 
-// GET /github/overall?date=YYYY-MM-DD&limit=
+// GET /github/overall?date=YYYY-MM-DD&limit=&offset=
 //
-// Response: 200 { date, repos } with the day's 'overall' repos by rank (latest day when date is
-// absent, limit 100 by default, capped at 1000); 400 on a malformed date; 404 when that day has no rows.
+// Response: 200 { date, repos } with the day's 'overall' repos by rank after skipping offset rows
+// (latest day when date is absent, limit 100 by default, capped at 1000); repos is empty past the end.
+// 400 on a malformed date; 404 when that day has no rows.
 async fn list_overall(
     State(state): State<AppState>,
     Query(query): Query<ListOverallQuery>,
 ) -> Result<Json<RankingResponse>, ApiError> {
     let date = parse_date(query.date.as_deref())?;
     let limit = clamp_limit(query.limit);
-    let rows = store::list_ranking(&state.db, "overall", date, limit).await?;
-    let Some(first) = rows.first() else {
-        return Err(ApiError::NotFound);
+    let offset = clamp_offset(query.offset);
+    let rows = store::list_ranking(&state.db, "overall", date, limit, offset).await?;
+    let snapshot_date = match rows.first() {
+        Some(first) => first.snapshot_date,
+        None => day_of_empty_page(&state, date, offset).await?,
     };
-    let snapshot_date = first.snapshot_date;
     let repos = rows.into_iter().map(|row| row.repo).collect();
     Ok(Json(RankingResponse { date: snapshot_date, repos }))
+}
+
+/// Finds the day a page past the end belongs to, so it can answer 200 with no repos;
+/// NotFound when offset is 0 or the day has no rows at all.
+async fn day_of_empty_page(
+    state: &AppState,
+    date: Option<NaiveDate>,
+    offset: i64,
+) -> Result<NaiveDate, ApiError> {
+    if offset == 0 {
+        return Err(ApiError::NotFound);
+    }
+    let first_rows = store::list_ranking(&state.db, "overall", date, 1, 0).await?;
+    first_rows
+        .first()
+        .map(|first| first.snapshot_date)
+        .ok_or(ApiError::NotFound)
 }
 
 /// Parses ?date= as YYYY-MM-DD; None when absent, BadRequest when malformed.
@@ -48,6 +67,11 @@ fn parse_date(raw: Option<&str>) -> Result<Option<NaiveDate>, ApiError> {
 /// Turns ?limit= into a row count between 1 and MAX_LIMIT, DEFAULT_LIMIT when absent.
 fn clamp_limit(raw: Option<i64>) -> i64 {
     raw.unwrap_or(DEFAULT_LIMIT).clamp(1, MAX_LIMIT)
+}
+
+/// Turns ?offset= into rows to skip; negative or absent is 0.
+fn clamp_offset(raw: Option<i64>) -> i64 {
+    raw.unwrap_or(0).max(0)
 }
 
 #[cfg(test)]
@@ -68,5 +92,10 @@ mod tests {
     #[test]
     fn clamp_limit_caps_at_max() {
         assert_eq!(clamp_limit(Some(5000)), 1000);
+    }
+
+    #[test]
+    fn clamp_offset_turns_negative_into_zero() {
+        assert_eq!(clamp_offset(Some(-5)), 0);
     }
 }

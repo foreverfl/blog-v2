@@ -3,13 +3,15 @@ use sqlx::PgPool;
 
 use super::model::DatedRepoRow;
 
-/// Lists one category's repos of a day by rank, at most `limit`; the latest day when `date` is None.
+/// Lists one category's repos of a day by rank, skipping `offset` rows and returning at most `limit`;
+/// the latest day when `date` is None.
 #[tracing::instrument(name = "github.list_ranking", skip(pool))]
 pub async fn list_ranking(
     pool: &PgPool,
     category: &str,
     date: Option<NaiveDate>,
     limit: i64,
+    offset: i64,
 ) -> Result<Vec<DatedRepoRow>, sqlx::Error> {
     sqlx::query_as::<_, DatedRepoRow>(
         r#"
@@ -23,11 +25,13 @@ pub async fn list_ranking(
               (SELECT max(snapshot_date) FROM collector.github_repo_snapshots WHERE category = $1))
         ORDER BY s.rank
         LIMIT $3
+        OFFSET $4
         "#,
     )
     .bind(category)
     .bind(date)
     .bind(limit)
+    .bind(offset)
     .fetch_all(pool)
     .await
 }

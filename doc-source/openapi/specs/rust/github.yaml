@@ -41,9 +41,16 @@ paths:
             default: 100
             minimum: 1
             maximum: 1000
+        - name: offset
+          in: query
+          description: Rows to skip before the page starts; negative values count as 0.
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
       responses:
         '200':
-          description: The day and its repos.
+          description: The day and its repos. repos is empty when offset is past the last row.
           content:
             application/json:
               schema:
