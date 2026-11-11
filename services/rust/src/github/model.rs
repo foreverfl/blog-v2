@@ -24,6 +24,7 @@ pub struct RepoRow {
 pub struct ListOverallQuery {
     pub date: Option<String>,
     pub limit: Option<i32>,
+    pub offset: Option<i32>,
 }
 
 /// Body of GET /github/overall: the day the rows belong to and the rows.
