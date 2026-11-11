@@ -1,8 +1,9 @@
+import { listUrl } from "@/components/github/list-url";
 import RepoModal from "@/components/github/RepoModal";
 import { RUST_API } from "@/lib/api-base";
 import "@/lib/i18n";
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 export type RepoRow = {
@@ -23,12 +24,13 @@ export type RepoRow = {
 const TABS = ["overall"];
 
 /**
- * Fetch the latest day's overall ranking.
+ * Fetch one page of the latest day's overall ranking.
  *
- * @returns the repos in rank order, or [] when the api has no day yet (404)
+ * @param offset - rows already loaded
+ * @returns the repos in rank order, or [] when the api has no day yet (404) or the page is past the end
  */
-async function fetchOverall(): Promise<RepoRow[]> {
-  const response = await fetch(`${RUST_API}/github/overall`);
+async function fetchOverallPage(offset: number): Promise<RepoRow[]> {
+  const response = await fetch(`${RUST_API}${listUrl({ offset })}`);
   if (response.status === 404) return [];
   if (!response.ok) throw new Error(`GET /github/overall ${response.status}`);
   const ranking: { date: string; repos: RepoRow[] } = await response.json();
@@ -39,7 +41,7 @@ const CELL =
   "border-b border-gray-700 px-3 py-2 text-left dark:border-gray-600";
 
 /**
- * Today's GitHub ranking: one tab per category, a one-line row per repo, 100 rows at once.
+ * Today's GitHub ranking: one tab per category, a one-line row per repo, 100 more rows each time the table's end scrolls into view.
  *
  * @param props - { lan: "ko" | "en" | "ja" from the URL }
  * @returns the tab row and the ranking table
@@ -51,10 +53,26 @@ export default function GithubRank({ lan }: { lan: string }) {
   }, [lan, i18n]);
   const [tab, setTab] = useState(TABS[0]);
   const [selected, setSelected] = useState<RepoRow | null>(null);
-  const { data: repos } = useQuery({
-    queryKey: ["github", "overall"],
-    queryFn: fetchOverall,
-  });
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useInfiniteQuery({
+      queryKey: ["github", "overall"],
+      queryFn: ({ pageParam }) => fetchOverallPage(pageParam),
+      initialPageParam: 0,
+      getNextPageParam: (lastPage, pages) =>
+        lastPage.length === 0 ? undefined : pages.flat().length,
+    });
+  const repos = data?.pages.flat();
+
+  const tableEndRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const tableEnd = tableEndRef.current;
+    if (!tableEnd || !hasNextPage || isFetchingNextPage) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) fetchNextPage();
+    });
+    observer.observe(tableEnd);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
@@ -104,6 +122,7 @@ export default function GithubRank({ lan }: { lan: string }) {
         {repos?.length === 0 && (
           <p className="py-6 text-center text-sm">{t("github_empty")}</p>
         )}
+        <div ref={tableEndRef} />
       </div>
       <RepoModal repo={selected} onClose={() => setSelected(null)} />
     </div>
