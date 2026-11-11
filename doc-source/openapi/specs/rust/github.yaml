@@ -5,8 +5,7 @@ info:
   description: |
     Daily GitHub repo rankings written by the collector CLI into
     collector.github_repo_snapshots, with each repo's kind and top languages
-    from collector.github_repo_kinds and its ko / ja description from
-    collector.github_repo_descriptions. Reading is public.
+    from collector.github_repo_kinds. Reading is public.
   x-api-id: github
 
 servers:
@@ -89,7 +88,7 @@ components:
             $ref: '#/components/schemas/RepoRow'
     RepoRow:
       type: object
-      required: [rank, full_name, url, description, stars, language, topics, repo_created_at, stars_today, kind, languages, description_ko, description_ja]
+      required: [rank, full_name, url, description, stars, language, topics, repo_created_at, stars_today, kind, languages]
       properties:
         rank:
           type: integer
@@ -127,9 +126,3 @@ components:
           items:
             type: string
           description: Up to 3 languages, most bytes first. Empty until the repo is classified.
-        description_ko:
-          type: [string, 'null']
-          description: Korean translation of description. Null until the repo is translated.
-        description_ja:
-          type: [string, 'null']
-          description: Japanese translation of description. Null until the repo is translated.
