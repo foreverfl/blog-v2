@@ -26,9 +26,11 @@ pub async fn list_overall(
         r#"
         SELECT s.snapshot_date, s.rank, s.full_name, s.url, s.description, s.stars,
                s.language, s.topics, s.repo_created_at, s.stars_today,
-               k.kind, COALESCE(k.languages, '{}') AS languages
+               k.kind, COALESCE(k.languages, '{}') AS languages,
+               d.description_ko, d.description_ja
         FROM collector.github_repo_snapshots s
         LEFT JOIN collector.github_repo_kinds k ON k.full_name = s.full_name
+        LEFT JOIN collector.github_repo_descriptions d ON d.full_name = s.full_name
         WHERE s.category = 'overall'
           AND s.snapshot_date = COALESCE($1, (SELECT max(snapshot_date) FROM collector.github_repo_snapshots WHERE category = 'overall'))
         ORDER BY s.rank

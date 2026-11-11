@@ -2,9 +2,11 @@ use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 
 /// One repo of a day's ranking: a collector.github_repo_snapshots row without
-/// snapshot_date / category, plus kind and languages from github_repo_kinds.
+/// snapshot_date / category, plus kind and languages from github_repo_kinds and
+/// the ko / ja description from github_repo_descriptions.
 ///
-/// kind is null and languages empty until the repo has been classified.
+/// kind is null and languages empty until the repo has been classified;
+/// description_ko / description_ja are null until it has been translated.
 #[derive(Debug, Clone, Serialize, sqlx::FromRow)]
 pub struct RepoRow {
     pub rank: i16,
@@ -18,6 +20,8 @@ pub struct RepoRow {
     pub stars_today: Option<i32>,
     pub kind: Option<String>,
     pub languages: Vec<String>,
+    pub description_ko: Option<String>,
+    pub description_ja: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
