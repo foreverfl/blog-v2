@@ -31,6 +31,7 @@ pub struct DatedRepoRow {
 pub struct ListOverallQuery {
     pub date: Option<String>,
     pub limit: Option<i64>,
+    pub offset: Option<i64>,
 }
 
 /// Body of GET /github/overall.
