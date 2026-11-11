@@ -1,0 +1,119 @@
+openapi: 3.1.0
+info:
+  title: GitHub Rankings API
+  version: 1.0.0
+  description: |
+    Daily GitHub repo rankings written by the collector CLI into
+    collector.github_repo_snapshots, each repo joined to its AI-picked kind
+    and top languages from collector.github_repo_kinds. Reading is public.
+  x-api-id: github
+
+servers:
+  - url: https://api.mogumogu.dev/rust
+    description: Production
+  - url: http://localhost:8002
+    description: Local development (direct to the Rust service)
+
+tags:
+  - name: GitHub
+    description: Daily GitHub repo rankings.
+
+paths:
+  /github/overall:
+    get:
+      tags: [GitHub]
+      operationId: listOverall
+      summary: List one day's overall ranking
+      description: Returns the day's 'overall' repos ordered by rank. Without date, the latest day collected.
+      security: []
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+          example: 2026-11-03
+        - name: limit
+          in: query
+          description: Rows to return; values above 1000 are cut to 1000.
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 1000
+      responses:
+        '200':
+          description: The day and its repos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ranking'
+        '400':
+          description: date is not YYYY-MM-DD.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No rows for that day.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    Ranking:
+      type: object
+      required: [date, repos]
+      properties:
+        date:
+          type: string
+          format: date
+        repos:
+          type: array
+          items:
+            $ref: '#/components/schemas/RepoRow'
+    RepoRow:
+      type: object
+      required: [rank, full_name, url, description, stars, language, topics, repo_created_at, stars_today, kind, languages]
+      properties:
+        rank:
+          type: integer
+          example: 1
+        full_name:
+          type: string
+          example: torvalds/linux
+        url:
+          type: string
+        description:
+          type: [string, 'null']
+        stars:
+          type: integer
+        language:
+          type: [string, 'null']
+        topics:
+          type: array
+          items:
+            type: string
+        repo_created_at:
+          type: string
+          format: date-time
+        stars_today:
+          type: [integer, 'null']
+          description: Null for the overall ranking; set only for trending pages.
+        kind:
+          type: [string, 'null']
+          enum: [ai-llm, dev-tools, web-frontend, backend, infra-devops, data-db, mobile, security, learning, other, null]
+          description: Null until the repo is classified.
+        languages:
+          type: array
+          items:
+            type: string
+          description: Up to 3 languages, most bytes first; empty until the repo is classified.
