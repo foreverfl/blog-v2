@@ -46,15 +46,6 @@ paths:
             minimum: 1
             maximum: 1000
           description: How many rows to return. Values above 1000 are cut to 1000, below 1 raised to 1.
-        - name: offset
-          in: query
-          schema:
-            type: integer
-            format: int32
-            default: 0
-            minimum: 0
-          example: 100
-          description: How many rows to skip before the first one returned. Negative values become 0. Past the end of the day, repos is empty.
       responses:
         '200':
           description: The day and its repos.
@@ -69,7 +60,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
         '404':
-          description: offset is 0 and the day has no rows. A later page past the end is 200 with empty repos instead.
+          description: The day has no rows.
           content:
             application/json:
               schema:
