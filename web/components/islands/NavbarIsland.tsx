@@ -1,3 +1,4 @@
+import BackButton from "@/components/atom/BackButton";
 import Providers from "@/components/Providers";
 import Navbar from "@/components/organism/navbar/Navbar";
 
@@ -7,6 +8,7 @@ export default function NavbarIsland() {
   return (
     <Providers>
       <Navbar />
+      <BackButton />
     </Providers>
   );
 }

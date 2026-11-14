@@ -19,6 +19,7 @@ interface Category {
   name_ko: string;
   emoji: string;
   link: string;
+  isHiddenFromMenu?: boolean;
 }
 
 interface Classification {
@@ -276,7 +277,9 @@ const Menu: React.FC<MenuProps> = ({
                         : "max-h-0 opacity-0"
                     }`}
                   >
-                    {classification.categories.map((category) => (
+                    {classification.categories
+                      .filter((category) => !category.isHiddenFromMenu)
+                      .map((category) => (
                       <a
                         key={category.link}
                         href={`/${lan}/${classification.link}/${category.link}`}

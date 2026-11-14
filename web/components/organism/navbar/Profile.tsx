@@ -41,7 +41,7 @@ const Profile: React.FC<ProfileProps> = ({
             onClick={toggleProfile}
           >
             <img
-              src={userData?.photo || "/default_profile.jpg"}
+              src={userData?.photo || "/images/smile.png"}
               alt={userData?.username || "Profile"}
               className="w-8 h-8 rounded-full object-cover"
             />

@@ -65,7 +65,8 @@
         "name_en": "GitHub",
         "emoji": "🐙",
         "link": "github",
-        "hasOwnPage": true
+        "hasOwnPage": true,
+        "appHome": "all"
       }
     ]
   },
@@ -82,7 +83,8 @@
         "name_en": "Travel Map",
         "emoji": "🗺️",
         "link": "map",
-        "hasOwnPage": true
+        "hasOwnPage": true,
+        "appHome": "all"
       },
       {
         "name_ko": "레시피",
@@ -120,7 +122,30 @@
         "name_en": "Diet",
         "emoji": "🥗",
         "link": "diet",
-        "hasOwnPage": true
+        "hasOwnPage": true,
+        "appHome": "member"
+      },
+      {
+        "name_ko": "애니",
+        "name_ja": "アニメ",
+        "name_en": "Anime",
+        "emoji": "🎬",
+        "link": "anime",
+        "hasOwnPage": true,
+        "appHome": "admin",
+        "href": "/anime",
+        "isHiddenFromMenu": true
+      },
+      {
+        "name_ko": "에셋",
+        "name_ja": "アセット",
+        "name_en": "Assets",
+        "emoji": "🗂️",
+        "link": "assets",
+        "hasOwnPage": true,
+        "appHome": "admin",
+        "href": "/assets",
+        "isHiddenFromMenu": true
       }
     ]
   }

@@ -16,6 +16,9 @@ interface PostInfo {
   date: string;
 }
 
+// Same line as Tailwind's md, which the navbar already splits phone and desktop on.
+const PHONE_WIDTH_QUERY = "(max-width: 767px)";
+
 const Navbar: React.FC = () => {
   const pathname = useClientPathname();
   const lan = pathname.split("/")[1];
@@ -32,9 +35,14 @@ const Navbar: React.FC = () => {
   const [subNavbarHeight, setSubNavbarHeight] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isPhoneWidth, setIsPhoneWidth] = useState(
+    () => window.matchMedia(PHONE_WIDTH_QUERY).matches,
+  );
 
   const pathSegments = pathname.split("/").filter(Boolean);
   const isPost = pathSegments.length === 4;
+  const isAppHome = pathSegments.length === 2 && pathSegments[1] === "app";
+  const isSubNavbarHidden = isAppHome || (isPhoneWidth && !isPost);
   const shouldHideNavbar = ["/login"].some((route) => pathname.includes(route));
 
   const title = isPost ? postInfo?.title || "" : "mogumogu";
@@ -93,6 +101,13 @@ const Navbar: React.FC = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const phoneWidthQuery = window.matchMedia(PHONE_WIDTH_QUERY);
+    const update = () => setIsPhoneWidth(phoneWidthQuery.matches);
+    phoneWidthQuery.addEventListener("change", update);
+    return () => phoneWidthQuery.removeEventListener("change", update);
+  }, []);
+
   // Observe SubNavbar height so color transitions track its real height
   useEffect(() => {
     const node = subNavbarRef.current;
@@ -110,7 +125,8 @@ const Navbar: React.FC = () => {
 
   const { titleColor, titleBackgroundColor, subNavbarTitleColor, menuColor } =
     useMemo(() => {
-      const subNavbarVisible = scrollY <= subNavbarHeight;
+      const subNavbarVisible =
+        !isSubNavbarHidden && scrollY <= subNavbarHeight;
 
       if (isPost) {
         if (subNavbarVisible) {
@@ -143,7 +159,7 @@ const Navbar: React.FC = () => {
         subNavbarTitleColor: "text-black dark:text-white",
         menuColor: "text-black dark:text-white",
       };
-    }, [isPost, scrollY, subNavbarHeight]);
+    }, [isPost, isSubNavbarHidden, scrollY, subNavbarHeight]);
 
   const handleNavbarClick = () => {
     if (window.scrollY === 0) {
@@ -216,14 +232,16 @@ const Navbar: React.FC = () => {
       </div>
 
       {/* 서브 네비게이션 바 */}
-      <NavbarSub
-        ref={subNavbarRef}
-        isPost={isPost}
-        textColor={subNavbarTitleColor}
-        title={postInfo?.title || subnavTitle}
-        category={postInfo?.category || ""}
-        date={postInfo?.date || ""}
-      />
+      {!isSubNavbarHidden && (
+        <NavbarSub
+          ref={subNavbarRef}
+          isPost={isPost}
+          textColor={subNavbarTitleColor}
+          title={postInfo?.title || subnavTitle}
+          category={postInfo?.category || ""}
+          date={postInfo?.date || ""}
+        />
+      )}
     </>
   );
 };
