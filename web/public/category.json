@@ -122,7 +122,8 @@
         "name_en": "Diet",
         "emoji": "🥗",
         "link": "diet",
-        "hasOwnPage": true
+        "hasOwnPage": true,
+        "appHome": "login"
       }
     ]
   }

@@ -1,4 +1,5 @@
 import Providers from "@/components/Providers";
+import { useAuth } from "@/lib/context/auth-context";
 import categoryJson from "@/public/category.json";
 
 /**
@@ -23,17 +24,23 @@ interface AppHomeClassification {
 const classifications = categoryJson as AppHomeClassification[];
 
 /**
- * The first screen of the installed app: one button per category.json item
- * whose appHome is "all".
+ * One button per category.json item the viewer may see: "all" items always,
+ * "login" items once the login check has finished and the viewer is logged in.
  *
  * @param lan - "ko" | "ja" | "en"
  */
-export default function AppHomeIsland({ lan }: { lan: string }) {
+function AppHomeButtons({ lan }: { lan: string }) {
+  const { isReady, isLoggedIn } = useAuth();
   const nameKey = `name_${lan}` as "name_ko" | "name_ja" | "name_en";
+  const canSeeLoginButtons = isReady && isLoggedIn;
 
   const appHomeButtons = classifications.flatMap((classification) =>
     classification.categories
-      .filter((category) => category.appHome === "all")
+      .filter(
+        (category) =>
+          category.appHome === "all" ||
+          (category.appHome === "login" && canSeeLoginButtons),
+      )
       .map((category) => ({
         href: `/${lan}/${classification.link}/${category.link}`,
         label: `${category.emoji} ${category[nameKey]}`,
@@ -41,18 +48,29 @@ export default function AppHomeIsland({ lan }: { lan: string }) {
   );
 
   return (
+    <main className="mx-auto grid min-h-screen max-w-md grid-cols-2 content-start gap-4 px-4 pt-24">
+      {appHomeButtons.map((button) => (
+        <a
+          key={button.href}
+          href={button.href}
+          className="rounded-2xl border border-neutral-300 p-6 text-center text-lg dark:border-neutral-700"
+        >
+          {button.label}
+        </a>
+      ))}
+    </main>
+  );
+}
+
+/**
+ * The first screen of the installed app, inside the shared Providers tree.
+ *
+ * @param lan - "ko" | "ja" | "en"
+ */
+export default function AppHomeIsland({ lan }: { lan: string }) {
+  return (
     <Providers>
-      <main className="mx-auto grid min-h-screen max-w-md grid-cols-2 content-start gap-4 px-4 pt-24">
-        {appHomeButtons.map((button) => (
-          <a
-            key={button.href}
-            href={button.href}
-            className="rounded-2xl border border-neutral-300 p-6 text-center text-lg dark:border-neutral-700"
-          >
-            {button.label}
-          </a>
-        ))}
-      </main>
+      <AppHomeButtons lan={lan} />
     </Providers>
   );
 }
