@@ -16,7 +16,9 @@ const menus = categories.map((menu, index) => ({
   slug: menu.link,
   label: { en: menu.name_en, ko: menu.name_ko, ja: menu.name_ja },
   position: index + 1,
-  pages: (menu.categories ?? []).map((page) => ({
+  pages: (menu.categories ?? [])
+    .filter((page) => !page.isHiddenFromMenu)
+    .map((page) => ({
     slug: page.link,
     label: page.name_en,
     url: `${siteBase}/${menu.link}/${page.link}`,

@@ -124,6 +124,28 @@
         "link": "diet",
         "hasOwnPage": true,
         "appHome": "member"
+      },
+      {
+        "name_ko": "애니",
+        "name_ja": "アニメ",
+        "name_en": "Anime",
+        "emoji": "🎬",
+        "link": "anime",
+        "hasOwnPage": true,
+        "appHome": "admin",
+        "href": "/anime",
+        "isHiddenFromMenu": true
+      },
+      {
+        "name_ko": "에셋",
+        "name_ja": "アセット",
+        "name_en": "Assets",
+        "emoji": "🗂️",
+        "link": "assets",
+        "hasOwnPage": true,
+        "appHome": "admin",
+        "href": "/assets",
+        "isHiddenFromMenu": true
       }
     ]
   }

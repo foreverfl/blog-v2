@@ -5,7 +5,7 @@ import categoryJson from "@/public/category.json";
 /**
  * One item of category.json, as the app home reads it.
  * appHome "all": everyone sees its button. "member": only when logged in.
- * No appHome: the item has no button.
+ * "admin": only the site owner. No appHome: the item has no button.
  */
 interface AppHomeCategory {
   name_ko: string;
@@ -13,7 +13,8 @@ interface AppHomeCategory {
   name_en: string;
   emoji: string;
   link: string;
-  appHome?: "all" | "member";
+  appHome?: "all" | "member" | "admin";
+  href?: string;
 }
 
 interface AppHomeClassification {
@@ -23,41 +24,35 @@ interface AppHomeClassification {
 
 const classifications = categoryJson as AppHomeClassification[];
 
-// TODO: move into category.json as "admin" items.
-const ADMIN_BUTTONS = [
-  { href: "/anime", label: "🎬 Anime" },
-  { href: "/assets", label: "🗂️ Assets" },
-];
-
 /**
  * One button per category.json item the viewer may see: "all" items always,
- * "member" items once the login check has finished and the viewer is logged in.
- * The admin sees ADMIN_BUTTONS after them.
+ * "member" and "admin" items once the login check has finished and says so.
+ * An item with its own href goes there instead of /lan/classification/item.
  *
  * @param lan - "ko" | "ja" | "en"
  */
 function AppHomeButtons({ lan }: { lan: string }) {
   const { isReady, isLoggedIn, isAdmin } = useAuth();
   const nameKey = `name_${lan}` as "name_ko" | "name_ja" | "name_en";
-  const canSeeMemberButtons = isReady && isLoggedIn;
-  const adminButtons = isReady && isAdmin ? ADMIN_BUTTONS : [];
+  const canSeeAppHome = {
+    all: true,
+    member: isReady && isLoggedIn,
+    admin: isReady && isAdmin,
+  };
 
-  const categoryButtons = classifications.flatMap((classification) =>
+  const appHomeButtons = classifications.flatMap((classification) =>
     classification.categories
-      .filter(
-        (category) =>
-          category.appHome === "all" ||
-          (category.appHome === "member" && canSeeMemberButtons),
-      )
+      .filter((category) => category.appHome && canSeeAppHome[category.appHome])
       .map((category) => ({
-        href: `/${lan}/${classification.link}/${category.link}`,
+        href:
+          category.href ?? `/${lan}/${classification.link}/${category.link}`,
         label: `${category.emoji} ${category[nameKey]}`,
       })),
   );
 
   return (
     <main className="mx-auto grid min-h-screen max-w-md grid-cols-2 content-start gap-4 px-4 pt-24">
-      {[...categoryButtons, ...adminButtons].map((button) => (
+      {appHomeButtons.map((button) => (
         <a
           key={button.href}
           href={button.href}
