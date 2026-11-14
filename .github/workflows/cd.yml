@@ -116,6 +116,7 @@ jobs:
     name: Deploy to EC2
     needs: [build-auth, build-rust, build-go, build-haskell]
     runs-on: ubuntu-24.04
+    environment: production
     permissions:
       contents: read
       packages: read
