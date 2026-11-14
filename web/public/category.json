@@ -83,7 +83,8 @@
         "name_en": "Travel Map",
         "emoji": "🗺️",
         "link": "map",
-        "hasOwnPage": true
+        "hasOwnPage": true,
+        "appHome": "all"
       },
       {
         "name_ko": "레시피",
