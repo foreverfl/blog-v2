@@ -9,7 +9,13 @@
     "jsxImportSource": "react",
     "verbatimModuleSyntax": false
   },
-  "include": [".astro/types.d.ts", "src/**/*", "components/**/*", "lib/**/*"],
+  "include": [
+    ".astro/types.d.ts",
+    "global.d.ts",
+    "src/**/*",
+    "components/**/*",
+    "lib/**/*"
+  ],
   "exclude": [
     "node_modules",
     "dist",

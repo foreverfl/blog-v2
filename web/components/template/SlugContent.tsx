@@ -10,7 +10,7 @@ import rehypeRaw from "rehype-raw";
 import CodeBlock from "@/components/atom/CodeBlock";
 import Comment from "@/components/molecules/Comment";
 import Good from "@/components/molecules/Good";
-import "github-markdown-css";
+import "github-markdown-css/github-markdown.css";
 
 interface PostContent {
   lang: string;
