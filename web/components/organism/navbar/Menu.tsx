@@ -280,25 +280,25 @@ const Menu: React.FC<MenuProps> = ({
                     {classification.categories
                       .filter((category) => !category.isHiddenFromMenu)
                       .map((category) => (
-                      <a
-                        key={category.link}
-                        href={`/${lan}/${classification.link}/${category.link}`}
-                        className="block"
-                      >
-                        <div
-                          className={`px-8 py-4 hover:bg-gray-200 text-black hover:rounded-b-md cursor-pointer`}
-                          onClick={(e) => e.stopPropagation()} // prevent parent toggle
+                        <a
+                          key={category.link}
+                          href={`/${lan}/${classification.link}/${category.link}`}
+                          className="block"
                         >
-                          {/* Display category name */}
-                          <span className="mr-2">{category.emoji}</span>
-                          {(() => {
-                            if (lan === "ja") return category.name_ja;
-                            if (lan === "en") return category.name_en;
-                            return category.name_ko;
-                          })()}
-                        </div>
-                      </a>
-                    ))}
+                          <div
+                            className={`px-8 py-4 hover:bg-gray-200 text-black hover:rounded-b-md cursor-pointer`}
+                            onClick={(e) => e.stopPropagation()} // prevent parent toggle
+                          >
+                            {/* Display category name */}
+                            <span className="mr-2">{category.emoji}</span>
+                            {(() => {
+                              if (lan === "ja") return category.name_ja;
+                              if (lan === "en") return category.name_en;
+                              return category.name_ko;
+                            })()}
+                          </div>
+                        </a>
+                      ))}
                   </div>
                 </div>
               ))}

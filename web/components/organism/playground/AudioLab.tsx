@@ -91,7 +91,6 @@ export default function AudioLab() {
       cleanupPlayback();
       if (audioUrl) URL.revokeObjectURL(audioUrl);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Visualization loop ───────────────────────────────────
