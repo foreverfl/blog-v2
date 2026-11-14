@@ -35,6 +35,7 @@ const Navbar: React.FC = () => {
 
   const pathSegments = pathname.split("/").filter(Boolean);
   const isPost = pathSegments.length === 4;
+  const isAppHome = pathSegments.length === 2 && pathSegments[1] === "app";
   const shouldHideNavbar = ["/login"].some((route) => pathname.includes(route));
 
   const title = isPost ? postInfo?.title || "" : "mogumogu";
@@ -110,7 +111,7 @@ const Navbar: React.FC = () => {
 
   const { titleColor, titleBackgroundColor, subNavbarTitleColor, menuColor } =
     useMemo(() => {
-      const subNavbarVisible = scrollY <= subNavbarHeight;
+      const subNavbarVisible = !isAppHome && scrollY <= subNavbarHeight;
 
       if (isPost) {
         if (subNavbarVisible) {
@@ -143,7 +144,7 @@ const Navbar: React.FC = () => {
         subNavbarTitleColor: "text-black dark:text-white",
         menuColor: "text-black dark:text-white",
       };
-    }, [isPost, scrollY, subNavbarHeight]);
+    }, [isPost, isAppHome, scrollY, subNavbarHeight]);
 
   const handleNavbarClick = () => {
     if (window.scrollY === 0) {
@@ -216,14 +217,16 @@ const Navbar: React.FC = () => {
       </div>
 
       {/* 서브 네비게이션 바 */}
-      <NavbarSub
-        ref={subNavbarRef}
-        isPost={isPost}
-        textColor={subNavbarTitleColor}
-        title={postInfo?.title || subnavTitle}
-        category={postInfo?.category || ""}
-        date={postInfo?.date || ""}
-      />
+      {!isAppHome && (
+        <NavbarSub
+          ref={subNavbarRef}
+          isPost={isPost}
+          textColor={subNavbarTitleColor}
+          title={postInfo?.title || subnavTitle}
+          category={postInfo?.category || ""}
+          date={postInfo?.date || ""}
+        />
+      )}
     </>
   );
 };
