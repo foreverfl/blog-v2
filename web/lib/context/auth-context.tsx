@@ -95,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (e) {
       console.error("Auth check failed:", e);
-      clearAuth();
+      // No response from the server, so keep the token; only a 401 clears it.
       setIsLoggedIn(false);
       setUserData(null);
     } finally {
