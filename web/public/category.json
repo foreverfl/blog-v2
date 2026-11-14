@@ -65,7 +65,8 @@
         "name_en": "GitHub",
         "emoji": "🐙",
         "link": "github",
-        "hasOwnPage": true
+        "hasOwnPage": true,
+        "appHome": "all"
       }
     ]
   },
