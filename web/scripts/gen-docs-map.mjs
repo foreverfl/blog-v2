@@ -2,14 +2,16 @@
 // Generate doc-source/docs-map.yaml from public/category.json.
 // Top-level entries become menus; their `categories` become pages (status: pending).
 
-import { readFileSync, writeFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { readFileSync, writeFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const siteBase = 'https://mogumogu.dev';
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+const siteBase = "https://mogumogu.dev";
 
-const categories = JSON.parse(readFileSync(join(root, 'public/category.json'), 'utf8'));
+const categories = JSON.parse(
+  readFileSync(join(root, "public/category.json"), "utf8"),
+);
 
 // Preserve source order; `position` encodes it so output is deterministic per input.
 const menus = categories.map((menu, index) => ({
@@ -19,20 +21,21 @@ const menus = categories.map((menu, index) => ({
   pages: (menu.categories ?? [])
     .filter((page) => !page.isHiddenFromMenu)
     .map((page) => ({
-    slug: page.link,
-    label: page.name_en,
-    url: `${siteBase}/${menu.link}/${page.link}`,
-    status: 'pending',
-  })),
+      slug: page.link,
+      label: page.name_en,
+      url: `${siteBase}/${menu.link}/${page.link}`,
+      status: "pending",
+    })),
 }));
 
-writeFileSync(join(root, 'doc-source/docs-map.yaml'), toYaml(menus), 'utf8');
+writeFileSync(join(root, "doc-source/docs-map.yaml"), toYaml(menus), "utf8");
 
 // Hand-rolled serializer to avoid a runtime dependency. Every string value is
 // double-quoted, so Unicode labels need no special casing.
 function toYaml(menus) {
-  const quote = (value) => `"${String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
-  const lines = ['menus:'];
+  const quote = (value) =>
+    `"${String(value).replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+  const lines = ["menus:"];
   for (const menu of menus) {
     lines.push(`  - slug: ${quote(menu.slug)}`);
     lines.push(`    label:`);
@@ -48,5 +51,5 @@ function toYaml(menus) {
       lines.push(`        status: ${quote(page.status)}`);
     }
   }
-  return lines.join('\n') + '\n';
+  return lines.join("\n") + "\n";
 }

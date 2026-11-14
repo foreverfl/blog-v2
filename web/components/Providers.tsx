@@ -39,6 +39,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       enableSystem={true}
       defaultTheme="system"
       disableTransitionOnChange
+      scriptProps={{ type: "application/json" }}
     >
       <QueryClientProvider client={queryClient}>
         <AuthProvider>

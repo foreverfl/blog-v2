@@ -125,8 +125,7 @@ const Navbar: React.FC = () => {
 
   const { titleColor, titleBackgroundColor, subNavbarTitleColor, menuColor } =
     useMemo(() => {
-      const subNavbarVisible =
-        !isSubNavbarHidden && scrollY <= subNavbarHeight;
+      const subNavbarVisible = !isSubNavbarHidden && scrollY <= subNavbarHeight;
 
       if (isPost) {
         if (subNavbarVisible) {
