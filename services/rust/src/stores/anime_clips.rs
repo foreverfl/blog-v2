@@ -68,8 +68,12 @@ pub async fn list_liked(pool: &PgPool, limit: i64, offset: i64) -> Result<Vec<Cl
     Ok(rows)
 }
 
+// Same age as the R2 lifecycle rule "anime-clips", which deletes feed/ files.
+const FEED_FILE_DAYS: i32 = 30;
+
 /// List clips for the feed, in random order (seeding cuts whole episodes,
-/// so id order would replay an episode front to back).
+/// so id order would replay an episode front to back). Only clips whose file
+/// R2 still has: liked ones, and ones younger than FEED_FILE_DAYS.
 ///
 /// @param viewed - Some(false) = only unviewed (view_count = 0), Some(true) =
 ///                 only viewed ones ("the ones already seen"), None = all.
@@ -79,13 +83,15 @@ pub async fn list(pool: &PgPool, viewed: Option<bool>, limit: i64) -> Result<Vec
         r#"
         SELECT id, r2_key, series_slug, series_title, episode, start_sec, duration_sec, jellyfin_item, is_opening, liked, liked_at, view_count, last_viewed_at, created_at
         FROM anime.clips
-        WHERE $1::boolean IS NULL OR ($1 AND view_count > 0) OR (NOT $1 AND view_count = 0)
+        WHERE ($1::boolean IS NULL OR ($1 AND view_count > 0) OR (NOT $1 AND view_count = 0))
+          AND (liked OR created_at > now() - make_interval(days => $3))
         ORDER BY random()
         LIMIT $2
         "#,
     )
     .bind(viewed)
     .bind(limit)
+    .bind(FEED_FILE_DAYS)
     .fetch_all(pool)
     .await?;
 
