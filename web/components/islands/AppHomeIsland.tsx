@@ -42,7 +42,7 @@ export default function AppHomeIsland({ lan }: { lan: string }) {
 
   return (
     <Providers>
-      <main className="mx-auto grid max-w-md grid-cols-2 gap-4 px-4 pt-24">
+      <main className="mx-auto grid min-h-screen max-w-md grid-cols-2 content-start gap-4 px-4 pt-24">
         {appHomeButtons.map((button) => (
           <a
             key={button.href}
