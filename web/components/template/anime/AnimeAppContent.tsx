@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import BackButton from "@/components/atom/BackButton";
 import BottomNav, {
   type AnimeScreen,
 } from "@/components/organism/anime/BottomNav";
@@ -52,6 +53,10 @@ export default function AnimeAppContent() {
       </div>
       {screen === "profile" && <AnimeProfileContent />}
       <BottomNav screen={screen} onSelect={setScreen} />
+      {/* Under the top bar: its corners hold icons, the bottom left holds the clip title. */}
+      <BackButton
+        position={{ top: "calc(env(safe-area-inset-top) + 3.5rem)" }}
+      />
     </>
   );
 }
