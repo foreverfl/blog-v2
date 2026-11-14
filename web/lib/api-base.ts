@@ -1,5 +1,6 @@
 // Local dev only: the rust api trusts DEV_USER_ID, so the browser needs no login.
-export const DEV_USER = Boolean(import.meta.env.PUBLIC_DEV_USER);
+export const isLoginSkipped =
+  import.meta.env.PUBLIC_IS_LOGIN_SKIPPED === "true";
 
 /**
  * Point a localhost api base at the host the page was opened on, so a phone
