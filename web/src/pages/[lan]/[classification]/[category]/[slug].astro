@@ -10,8 +10,11 @@ import { getContentsStructure } from "@/lib/content/jsonHelpers";
 // uses must live inside it (frontmatter consts are not in scope here).
 // Module imports are fine — they are module-scoped, not frontmatter-scoped.
 export async function getStaticPaths() {
+  // Runs in Node, not the browser: inside the dev container localhost is the container itself.
   const RUST_API =
-    import.meta.env.PUBLIC_API_RUST_URL || "http://localhost:8002";
+    process.env.API_RUST_INTERNAL_URL ||
+    import.meta.env.PUBLIC_API_RUST_URL ||
+    "http://localhost:8002";
 
   const langs = ["en", "ko", "ja"];
   const perPage = 100;
