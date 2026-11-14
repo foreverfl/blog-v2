@@ -46,19 +46,25 @@ function AppHomeButtons({ lan }: { lan: string }) {
       .map((category) => ({
         href:
           category.href ?? `/${lan}/${classification.link}/${category.link}`,
-        label: `${category.emoji} ${category[nameKey]}`,
+        emoji: category.emoji,
+        name: category[nameKey],
       })),
   );
 
   return (
-    <main className="mx-auto grid min-h-screen max-w-md grid-cols-2 content-start gap-4 px-4 pt-24">
+    <main className="mx-auto grid min-h-screen max-w-md grid-cols-4 content-start gap-4 px-4 pt-24">
       {appHomeButtons.map((button) => (
         <a
           key={button.href}
           href={button.href}
-          className="rounded-2xl border border-neutral-300 p-6 text-center text-lg dark:border-neutral-700"
+          className="flex flex-col items-center gap-1"
         >
-          {button.label}
+          <span className="flex aspect-square w-full items-center justify-center rounded-2xl bg-neutral-200 text-3xl dark:bg-neutral-800">
+            {button.emoji}
+          </span>
+          <span className="w-full truncate text-center text-xs">
+            {button.name}
+          </span>
         </a>
       ))}
     </main>
