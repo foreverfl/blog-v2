@@ -80,6 +80,8 @@ const {
         event.newDocument.body.append(
           ...document.querySelectorAll("body > .ReactModalPortal"),
         );
+        // Query devtools keep their CSS in <style id="_goober">, which the <head> swap drops
+        event.newDocument.head.append(...document.querySelectorAll("#_goober"));
       });
     </script>
   </body>
