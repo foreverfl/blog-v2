@@ -18,15 +18,20 @@ interface AppHomeCategory {
 }
 
 interface AppHomeClassification {
+  name_ko: string;
+  name_ja: string;
+  name_en: string;
   link: string;
   categories: AppHomeCategory[];
 }
 
 const classifications = categoryJson as AppHomeClassification[];
 
+const APP_HOME_BADGES = { all: "", member: "👤", admin: "🔑" };
+
 /**
- * One button per category.json item the viewer may see: "all" items always,
- * "member" and "admin" items once the login check has finished and says so.
+ * One titled section per category.json classification, each holding the
+ * buttons the viewer may see; a section with no visible button is not drawn.
  * An item with its own href goes there instead of /lan/classification/item.
  *
  * @param lan - "ko" | "ja" | "en"
@@ -40,32 +45,53 @@ function AppHomeButtons({ lan }: { lan: string }) {
     admin: isReady && isAdmin,
   };
 
-  const appHomeButtons = classifications.flatMap((classification) =>
-    classification.categories
-      .filter((category) => category.appHome && canSeeAppHome[category.appHome])
-      .map((category) => ({
-        href:
-          category.href ?? `/${lan}/${classification.link}/${category.link}`,
-        emoji: category.emoji,
-        name: category[nameKey],
-      })),
-  );
+  const sections = classifications
+    .map((classification) => ({
+      link: classification.link,
+      name: classification[nameKey],
+      buttons: classification.categories
+        .filter(
+          (category) => category.appHome && canSeeAppHome[category.appHome],
+        )
+        .map((category) => ({
+          href:
+            category.href ?? `/${lan}/${classification.link}/${category.link}`,
+          emoji: category.emoji,
+          name: category[nameKey],
+          badge: APP_HOME_BADGES[category.appHome!],
+        })),
+    }))
+    .filter((section) => section.buttons.length > 0);
 
   return (
-    <main className="mx-auto grid min-h-screen max-w-md grid-cols-4 content-start gap-4 px-4 pt-24">
-      {appHomeButtons.map((button) => (
-        <a
-          key={button.href}
-          href={button.href}
-          className="flex flex-col items-center gap-1"
-        >
-          <span className="flex aspect-square w-full items-center justify-center rounded-2xl bg-neutral-200 text-3xl dark:bg-neutral-800">
-            {button.emoji}
-          </span>
-          <span className="w-full truncate text-center text-xs">
-            {button.name}
-          </span>
-        </a>
+    <main className="mx-auto flex min-h-screen max-w-md flex-col gap-8 px-4 pt-24 pb-24">
+      {sections.map((section) => (
+        <section key={section.link} className="flex flex-col gap-3">
+          <h2 className="text-sm font-semibold text-neutral-500">
+            {section.name}
+          </h2>
+          <div className="grid grid-cols-4 gap-4">
+            {section.buttons.map((button) => (
+              <a
+                key={button.href}
+                href={button.href}
+                className="flex flex-col items-center gap-1"
+              >
+                <span className="relative flex aspect-square w-full items-center justify-center rounded-2xl bg-neutral-200 text-3xl dark:bg-neutral-800">
+                  {button.emoji}
+                  {button.badge && (
+                    <span className="absolute -top-1.5 -right-1.5 flex size-6 items-center justify-center rounded-full bg-neutral-300 text-xs shadow dark:bg-neutral-600">
+                      {button.badge}
+                    </span>
+                  )}
+                </span>
+                <span className="w-full truncate text-center text-xs">
+                  {button.name}
+                </span>
+              </a>
+            ))}
+          </div>
+        </section>
       ))}
     </main>
   );

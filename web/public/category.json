@@ -11,21 +11,24 @@
         "name_ja": "プロジェクト振り返り",
         "name_en": "Project Retrospective",
         "emoji": "🔁",
-        "link": "project"
+        "link": "project",
+        "appHome": "all"
       },
       {
         "name_ko": "개발 노트",
         "name_ja": "開発ノート",
         "name_en": "Dev Notes",
         "emoji": "📝",
-        "link": "devnotes"
+        "link": "devnotes",
+        "appHome": "all"
       },
       {
         "name_ko": "실험실",
         "name_ja": "実験室",
         "name_en": "Lab",
         "emoji": "🧪",
-        "link": "lab"
+        "link": "lab",
+        "appHome": "all"
       }
     ]
   },
@@ -41,7 +44,8 @@
         "name_ja": "私の考え",
         "name_en": "My Thoughts",
         "emoji": "🗨️",
-        "link": "my-thoughts"
+        "link": "my-thoughts",
+        "appHome": "all"
       }
     ]
   },
@@ -57,7 +61,8 @@
         "name_ja": "ハッカーニュース",
         "name_en": "Hacker News",
         "emoji": "🚀",
-        "link": "hackernews"
+        "link": "hackernews",
+        "appHome": "all"
       },
       {
         "name_ko": "GitHub",
@@ -91,14 +96,16 @@
         "name_ja": "レシピ",
         "name_en": "Recipes",
         "emoji": "🍳",
-        "link": "recipes"
+        "link": "recipes",
+        "appHome": "all"
       },
       {
         "name_ko": "애니 리뷰",
         "name_ja": "アニメレビュー",
         "name_en": "Anime Reviews",
         "emoji": "📺",
-        "link": "anime-reviews"
+        "link": "anime-reviews",
+        "appHome": "all"
       }
     ]
   },
@@ -114,7 +121,8 @@
         "name_ja": "オーディオラボ",
         "name_en": "Audio Lab",
         "emoji": "🎵",
-        "link": "audio-lab"
+        "link": "audio-lab",
+        "appHome": "all"
       },
       {
         "name_ko": "다이어트",
