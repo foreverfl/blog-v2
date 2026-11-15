@@ -59,6 +59,28 @@ local-logs-auth:
 local-flyway: docker-ready
 	set -a && . $(COMPOSE_DIR)/.env.local && set +a && docker-compose -f $(COMPOSE_DIR)/compose.local.yml run --rm flyway
 
+RUST_LOCAL := http://localhost:8002
+
+## hackernews-sync: Import Hacker News posts from R2 into the local DB, from the day after the newest one (or FROM=YYMMDD)
+.PHONY: hackernews-sync
+hackernews-sync:
+	@set -a && . $(COMPOSE_DIR)/.env.local && set +a && \
+	for i in $$(seq 60); do curl -sf -o /dev/null $(RUST_LOCAL)/health && break; sleep 1; done && \
+	from="$(FROM)" && \
+	if [ -z "$$from" ]; then \
+		latest=$$(docker exec blog-postgres sh -c "psql -U \"\$$POSTGRES_USER\" -d \"\$$POSTGRES_DB\" -tAc \"SELECT max(slug) FROM posts WHERE classification = 'trends' AND category = 'hackernews'\""); \
+		[ -n "$$latest" ] || { echo "no hacker news post in the local DB — run: make hackernews-sync FROM=YYMMDD"; exit 1; }; \
+		from=$$(date -j -v+1d -f %y%m%d "$$latest" +%y%m%d); \
+		[ "$$from" -le "$$(TZ=Asia/Tokyo date +%y%m%d)" ] || { echo "already up to date: $$latest"; exit 0; }; \
+	fi && \
+	echo "importing from $$from ..." && \
+	response=$$(curl -s -X POST -H "Authorization: Bearer $$API_SECRET" "$(RUST_LOCAL)/import/json?from=$$from") && \
+	job=$$(echo "$$response" | jq -r '.job_id // empty') && \
+	{ [ -n "$$job" ] || { echo "$$response"; exit 1; }; } && \
+	until result=$$(curl -sf -H "Authorization: Bearer $$API_SECRET" "$(RUST_LOCAL)/import/jobs/$$job") && \
+		[ "$$(echo "$$result" | jq -r .status)" = completed ]; do sleep 2; done && \
+	echo "$$result" | jq '{from, imported, skipped, error_count}'
+
 ## prod-up: Start production environment
 .PHONY: prod-up
 prod-up:

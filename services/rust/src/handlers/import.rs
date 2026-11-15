@@ -244,7 +244,7 @@ async fn import_hn_batch(
     result: &mut ImportResult,
 ) {
     // slug = date (e.g. "260313")
-    let image_url = format!("{}/{}.webp", HN_IMAGE_BASE, batch_id);
+    let image_url = format!("{}/{}.png", HN_IMAGE_BASE, batch_id);
     let post = match post_store::upsert(db, "trends", "hackernews", batch_id, Some(&image_url)).await {
         Ok(p) => p,
         Err(e) => {
