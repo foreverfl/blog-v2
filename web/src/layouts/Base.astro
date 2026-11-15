@@ -69,7 +69,9 @@ const {
   </head>
   <body>
     <NavbarIsland client:only="react" transition:persist="navbar" />
-    <slot />
+    <div class="min-h-screen">
+      <slot />
+    </div>
     <FooterIsland client:only="react" transition:persist="footer" />
     <script>
       import "@/lib/faro";
