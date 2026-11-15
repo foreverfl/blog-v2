@@ -36,3 +36,12 @@ upkeep rule).
   lint` is an optional deeper OpenAPI check, not required.
 - Run `/add-openapi <service>/<domain>` to regenerate a domain spec from its
   current routes.
+
+## Local dev server
+
+- Check the web locally only on the dev server the user already runs at
+  `localhost:3000` (`web/`, `astro dev --port 3000`). Never start another dev
+  server on any port; look first with `lsof -iTCP:3000 -sTCP:LISTEN`.
+- When that server cannot show a state (logged out, a different env value), do
+  not start a second one to get it. Say "cannot be seen locally" and leave the
+  check to the user.
