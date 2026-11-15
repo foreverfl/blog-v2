@@ -55,10 +55,6 @@ menus:
         label: "Recipes"
         url: "https://mogumogu.dev/records/recipes"
         status: "pending"
-      - slug: "anime-reviews"
-        label: "Anime Reviews"
-        url: "https://mogumogu.dev/records/anime-reviews"
-        status: "pending"
   - slug: "playground"
     label:
       en: "Playground"

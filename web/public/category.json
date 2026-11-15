@@ -98,14 +98,6 @@
         "emoji": "🍳",
         "link": "recipes",
         "appHome": "all"
-      },
-      {
-        "name_ko": "애니 리뷰",
-        "name_ja": "アニメレビュー",
-        "name_en": "Anime Reviews",
-        "emoji": "📺",
-        "link": "anime-reviews",
-        "appHome": "all"
       }
     ]
   },
