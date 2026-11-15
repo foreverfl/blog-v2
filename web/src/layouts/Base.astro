@@ -43,6 +43,22 @@ const {
     <meta name="twitter:title" content={title} />
     {description && <meta name="twitter:description" content={description} />}
     {image && <meta name="twitter:image" content={image} />}
+
+    <!-- Same rule as next-themes in Providers.tsx, applied before the first paint -->
+    <script is:inline>
+      {
+        let storedTheme = null;
+        try {
+          storedTheme = localStorage.getItem("theme");
+        } catch {}
+        const prefersDark = matchMedia("(prefers-color-scheme: dark)").matches;
+        const isDark =
+          storedTheme === "dark" ||
+          ((!storedTheme || storedTheme === "system") && prefersDark);
+        document.documentElement.classList.toggle("dark", isDark);
+        document.documentElement.style.colorScheme = isDark ? "dark" : "light";
+      }
+    </script>
   </head>
   <body>
     <NavbarIsland client:only="react" />
