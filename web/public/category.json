@@ -90,22 +90,6 @@
         "link": "map",
         "hasOwnPage": true,
         "appHome": "all"
-      },
-      {
-        "name_ko": "레시피",
-        "name_ja": "レシピ",
-        "name_en": "Recipes",
-        "emoji": "🍳",
-        "link": "recipes",
-        "appHome": "all"
-      },
-      {
-        "name_ko": "애니 리뷰",
-        "name_ja": "アニメレビュー",
-        "name_en": "Anime Reviews",
-        "emoji": "📺",
-        "link": "anime-reviews",
-        "appHome": "all"
       }
     ]
   },
@@ -116,23 +100,6 @@
     "emoji": "🧪",
     "link": "playground",
     "categories": [
-      {
-        "name_ko": "오디오 랩",
-        "name_ja": "オーディオラボ",
-        "name_en": "Audio Lab",
-        "emoji": "🎵",
-        "link": "audio-lab",
-        "appHome": "all"
-      },
-      {
-        "name_ko": "다이어트",
-        "name_ja": "ダイエット",
-        "name_en": "Diet",
-        "emoji": "🥗",
-        "link": "diet",
-        "hasOwnPage": true,
-        "appHome": "member"
-      },
       {
         "name_ko": "애니",
         "name_ja": "アニメ",

@@ -40,6 +40,10 @@ menus:
         label: "Hacker News"
         url: "https://mogumogu.dev/trends/hackernews"
         status: "pending"
+      - slug: "github"
+        label: "GitHub"
+        url: "https://mogumogu.dev/trends/github"
+        status: "pending"
   - slug: "records"
     label:
       en: "Records"
@@ -47,17 +51,9 @@ menus:
       ja: "記録"
     position: 4
     pages:
-      - slug: "travel-map"
+      - slug: "map"
         label: "Travel Map"
-        url: "https://mogumogu.dev/records/travel-map"
-        status: "pending"
-      - slug: "recipes"
-        label: "Recipes"
-        url: "https://mogumogu.dev/records/recipes"
-        status: "pending"
-      - slug: "anime-reviews"
-        label: "Anime Reviews"
-        url: "https://mogumogu.dev/records/anime-reviews"
+        url: "https://mogumogu.dev/records/map"
         status: "pending"
   - slug: "playground"
     label:
@@ -66,7 +62,3 @@ menus:
       ja: "実験室"
     position: 5
     pages:
-      - slug: "audio-lab"
-        label: "Audio Lab"
-        url: "https://mogumogu.dev/playground/audio-lab"
-        status: "pending"
