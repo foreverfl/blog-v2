@@ -64,7 +64,7 @@ function AppHomeButtons({ lan }: { lan: string }) {
     .filter((section) => section.buttons.length > 0);
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col gap-8 px-4 pt-24">
+    <main className="mx-auto flex min-h-screen max-w-md flex-col gap-8 px-4 pt-24 pb-24">
       {sections.map((section) => (
         <section key={section.link} className="flex flex-col gap-3">
           <h2 className="text-sm font-semibold text-neutral-500">
