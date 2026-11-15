@@ -101,14 +101,6 @@
     "link": "playground",
     "categories": [
       {
-        "name_ko": "오디오 랩",
-        "name_ja": "オーディオラボ",
-        "name_en": "Audio Lab",
-        "emoji": "🎵",
-        "link": "audio-lab",
-        "appHome": "all"
-      },
-      {
         "name_ko": "다이어트",
         "name_ja": "ダイエット",
         "name_en": "Diet",
