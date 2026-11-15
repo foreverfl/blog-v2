@@ -62,7 +62,3 @@ menus:
       ja: "実験室"
     position: 5
     pages:
-      - slug: "diet"
-        label: "Diet"
-        url: "https://mogumogu.dev/playground/diet"
-        status: "pending"

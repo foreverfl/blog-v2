@@ -101,15 +101,6 @@
     "link": "playground",
     "categories": [
       {
-        "name_ko": "다이어트",
-        "name_ja": "ダイエット",
-        "name_en": "Diet",
-        "emoji": "🥗",
-        "link": "diet",
-        "hasOwnPage": true,
-        "appHome": "member"
-      },
-      {
         "name_ko": "애니",
         "name_ja": "アニメ",
         "name_en": "Anime",
