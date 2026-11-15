@@ -27,6 +27,8 @@ interface AppHomeClassification {
 
 const classifications = categoryJson as AppHomeClassification[];
 
+const APP_HOME_BADGES = { all: "", member: "👤", admin: "🔑" };
+
 /**
  * One titled section per category.json classification, each holding the
  * buttons the viewer may see; a section with no visible button is not drawn.
@@ -56,6 +58,7 @@ function AppHomeButtons({ lan }: { lan: string }) {
             category.href ?? `/${lan}/${classification.link}/${category.link}`,
           emoji: category.emoji,
           name: category[nameKey],
+          badge: APP_HOME_BADGES[category.appHome!],
         })),
     }))
     .filter((section) => section.buttons.length > 0);
@@ -74,8 +77,13 @@ function AppHomeButtons({ lan }: { lan: string }) {
                 href={button.href}
                 className="flex flex-col items-center gap-1"
               >
-                <span className="flex aspect-square w-full items-center justify-center rounded-2xl bg-neutral-200 text-3xl dark:bg-neutral-800">
+                <span className="relative flex aspect-square w-full items-center justify-center rounded-2xl bg-neutral-200 text-3xl dark:bg-neutral-800">
                   {button.emoji}
+                  {button.badge && (
+                    <span className="absolute -top-1.5 -right-1.5 flex size-6 items-center justify-center rounded-full bg-neutral-300 text-xs shadow dark:bg-neutral-600">
+                      {button.badge}
+                    </span>
+                  )}
                 </span>
                 <span className="w-full truncate text-center text-xs">
                   {button.name}
