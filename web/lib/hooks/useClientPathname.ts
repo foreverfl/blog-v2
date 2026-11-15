@@ -1,13 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 // Replacement for next's usePathname in a client-only island.
-// In an Astro MPA every navigation is a full page reload, so the pathname is
-// fixed for the island's lifetime — read it once from window on mount.
+// Islands kept with transition:persist outlive a navigation, so re-read on astro:page-load.
 export function useClientPathname(): string {
-  const [pathname] = useState(() =>
+  const [pathname, setPathname] = useState(() =>
     typeof window !== "undefined" ? window.location.pathname : "/",
   );
+
+  useEffect(() => {
+    const readPathname = () => setPathname(window.location.pathname);
+    document.addEventListener("astro:page-load", readPathname);
+    return () => document.removeEventListener("astro:page-load", readPathname);
+  }, []);
+
   return pathname;
 }

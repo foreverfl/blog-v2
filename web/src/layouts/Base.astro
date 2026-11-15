@@ -1,5 +1,6 @@
 ---
 import "../../styles/globals.css";
+import { ClientRouter } from "astro:transitions";
 import NavbarIsland from "@/components/islands/NavbarIsland";
 import FooterIsland from "@/components/islands/FooterIsland";
 
@@ -47,25 +48,39 @@ const {
     <!-- Same rule as next-themes in Providers.tsx, applied before the first paint -->
     <script is:inline>
       {
-        let storedTheme = null;
-        try {
-          storedTheme = localStorage.getItem("theme");
-        } catch {}
-        const prefersDark = matchMedia("(prefers-color-scheme: dark)").matches;
-        const isDark =
-          storedTheme === "dark" ||
-          ((!storedTheme || storedTheme === "system") && prefersDark);
-        document.documentElement.classList.toggle("dark", isDark);
-        document.documentElement.style.colorScheme = isDark ? "dark" : "light";
+        const applyTheme = () => {
+          let storedTheme = null;
+          try {
+            storedTheme = localStorage.getItem("theme");
+          } catch {}
+          const prefersDark = matchMedia("(prefers-color-scheme: dark)").matches;
+          const isDark =
+            storedTheme === "dark" ||
+            ((!storedTheme || storedTheme === "system") && prefersDark);
+          document.documentElement.classList.toggle("dark", isDark);
+          document.documentElement.style.colorScheme = isDark ? "dark" : "light";
+        };
+        applyTheme();
+        // ClientRouter replaces <html> attributes with the new page's, which drops the class
+        document.addEventListener("astro:after-swap", applyTheme);
       }
     </script>
+    <ClientRouter />
   </head>
   <body>
-    <NavbarIsland client:only="react" />
+    <NavbarIsland client:only="react" transition:persist="navbar" />
     <slot />
-    <FooterIsland client:only="react" />
+    <FooterIsland client:only="react" transition:persist="footer" />
     <script>
       import "@/lib/faro";
+    </script>
+    <script>
+      // react-modal mounts its portal on <body>, which ClientRouter replaces on every navigation
+      document.addEventListener("astro:before-swap", (event) => {
+        event.newDocument.body.append(
+          ...document.querySelectorAll("body > .ReactModalPortal"),
+        );
+      });
     </script>
   </body>
 </html>
