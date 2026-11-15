@@ -90,14 +90,6 @@
         "link": "map",
         "hasOwnPage": true,
         "appHome": "all"
-      },
-      {
-        "name_ko": "레시피",
-        "name_ja": "レシピ",
-        "name_en": "Recipes",
-        "emoji": "🍳",
-        "link": "recipes",
-        "appHome": "all"
       }
     ]
   },

@@ -51,10 +51,6 @@ menus:
         label: "Travel Map"
         url: "https://mogumogu.dev/records/travel-map"
         status: "pending"
-      - slug: "recipes"
-        label: "Recipes"
-        url: "https://mogumogu.dev/records/recipes"
-        status: "pending"
   - slug: "playground"
     label:
       en: "Playground"
