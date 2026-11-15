@@ -12,7 +12,6 @@ import { AuthProvider } from "@/lib/context/auth-context";
 import { LoginModalProvider } from "@/lib/context/login-modal-context";
 import { ToastProvider } from "@/lib/context/toast-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ThemeProvider } from "next-themes";
 import { ReactNode } from "react";
 
@@ -51,7 +50,6 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             </LoginModalProvider>
           </LoadingProvider>
         </AuthProvider>
-        {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
       </QueryClientProvider>
     </ThemeProvider>
   );
