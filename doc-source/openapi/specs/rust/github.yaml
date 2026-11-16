@@ -55,9 +55,15 @@ paths:
           schema:
             type: string
           example: Rust
+        - name: kind
+          in: query
+          description: Keeps only repos classified as this kind, before offset and limit count. With lang, a repo must match both.
+          schema:
+            type: string
+          example: ai-llm
       responses:
         '200':
-          description: The day and its repos. repos is empty when offset is past the last row or no repo has the lang.
+          description: The day and its repos. repos is empty when offset is past the last row or no repo matches lang or kind.
           content:
             application/json:
               schema:

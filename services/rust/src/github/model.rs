@@ -36,6 +36,7 @@ pub struct ListOverallQuery {
     pub limit: Option<i64>,
     pub offset: Option<i64>,
     pub lang: Option<String>,
+    pub kind: Option<String>,
 }
 
 /// Body of GET /github/overall.
