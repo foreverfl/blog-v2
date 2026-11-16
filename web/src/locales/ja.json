@@ -61,5 +61,7 @@
   "github_col_kind": "分類",
   "github_empty": "まだランキングのデータがありません。",
   "github_field_created_at": "作成日",
-  "github_field_kind": "カテゴリ"
+  "github_field_kind": "カテゴリ",
+  "github_field_topics": "トピック",
+  "github_field_stars_today": "今日のスター"
 }

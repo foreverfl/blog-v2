@@ -12,6 +12,8 @@ export type RepoRow = {
   full_name: string;
   url: string;
   description: string | null;
+  description_ko: string | null;
+  description_ja: string | null;
   stars: number;
   language: string | null;
   topics: string[];

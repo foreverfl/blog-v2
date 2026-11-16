@@ -61,5 +61,7 @@
   "github_col_kind": "Category",
   "github_empty": "No ranking data yet.",
   "github_field_created_at": "Created",
-  "github_field_kind": "Category"
+  "github_field_kind": "Category",
+  "github_field_topics": "Topics",
+  "github_field_stars_today": "Stars today"
 }
