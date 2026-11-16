@@ -1,7 +1,7 @@
 use chrono::NaiveDate;
 use sqlx::PgPool;
 
-use super::model::DatedRepoRow;
+use super::model::{DatedLanguageCount, DatedRepoRow};
 
 /// Lists one category's repos of a day by rank, skipping `offset` rows and returning at most `limit`;
 /// the latest day when `date` is None.
@@ -34,6 +34,26 @@ pub async fn list_ranking(
     .bind(date)
     .bind(limit)
     .bind(offset)
+    .fetch_all(pool)
+    .await
+}
+
+/// Counts the latest day's overall repos per language, most first, leaving out repos with no language;
+/// empty when there are no snapshots.
+#[tracing::instrument(name = "github.count_languages", skip(pool))]
+pub async fn count_languages(pool: &PgPool) -> Result<Vec<DatedLanguageCount>, sqlx::Error> {
+    sqlx::query_as::<_, DatedLanguageCount>(
+        r#"
+        SELECT snapshot_date, language AS name, count(*) AS count
+        FROM collector.github_repo_snapshots
+        WHERE category = 'overall'
+          AND language IS NOT NULL
+          AND snapshot_date =
+              (SELECT max(snapshot_date) FROM collector.github_repo_snapshots WHERE category = 'overall')
+        GROUP BY snapshot_date, language
+        ORDER BY count(*) DESC, language
+        "#,
+    )
     .fetch_all(pool)
     .await
 }

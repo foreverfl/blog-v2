@@ -6,14 +6,32 @@ use chrono::NaiveDate;
 use crate::config::AppState;
 use crate::types::ApiError;
 
-use super::model::{ListOverallQuery, RankingResponse};
+use super::model::{LanguagesResponse, ListOverallQuery, RankingResponse};
 use super::store;
 
 const DEFAULT_LIMIT: i64 = 100;
 const MAX_LIMIT: i64 = 1000;
 
 pub fn router() -> Router<AppState> {
-    Router::new().route("/overall", get(list_overall))
+    Router::new()
+        .route("/overall", get(list_overall))
+        .route("/languages", get(list_languages))
+}
+
+// GET /github/languages
+//
+// Response: 200 { date, languages: [{ name, count }] } counting the latest day's 'overall' repos
+// per language, most first, without repos that have no language. 404 when nothing is collected yet.
+async fn list_languages(
+    State(state): State<AppState>,
+) -> Result<Json<LanguagesResponse>, ApiError> {
+    let rows = store::count_languages(&state.db).await?;
+    let date = rows
+        .first()
+        .map(|first| first.snapshot_date)
+        .ok_or(ApiError::NotFound)?;
+    let languages = rows.into_iter().map(|row| row.language).collect();
+    Ok(Json(LanguagesResponse { date, languages }))
 }
 
 // GET /github/overall?date=YYYY-MM-DD&limit=&offset=
