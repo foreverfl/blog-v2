@@ -3,13 +3,14 @@ use sqlx::PgPool;
 
 use super::model::{DatedLanguageCount, DatedRepoRow};
 
-/// Lists one category's repos of a day by rank, skipping `offset` rows and returning at most `limit`;
-/// the latest day when `date` is None.
+/// Lists one category's repos of a day by rank, only those whose `language` matches when given,
+/// skipping `offset` rows and returning at most `limit`; the latest day when `date` is None.
 #[tracing::instrument(name = "github.list_ranking", skip(pool))]
 pub async fn list_ranking(
     pool: &PgPool,
     category: &str,
     date: Option<NaiveDate>,
+    language: Option<&str>,
     limit: i64,
     offset: i64,
 ) -> Result<Vec<DatedRepoRow>, sqlx::Error> {
@@ -25,13 +26,15 @@ pub async fn list_ranking(
         WHERE s.category = $1
           AND s.snapshot_date = COALESCE($2::date,
               (SELECT max(snapshot_date) FROM collector.github_repo_snapshots WHERE category = $1))
+          AND ($3::text IS NULL OR s.language = $3)
         ORDER BY s.rank
-        LIMIT $3
-        OFFSET $4
+        LIMIT $4
+        OFFSET $5
         "#,
     )
     .bind(category)
     .bind(date)
+    .bind(language)
     .bind(limit)
     .bind(offset)
     .fetch_all(pool)

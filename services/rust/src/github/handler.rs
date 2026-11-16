@@ -34,10 +34,11 @@ async fn list_languages(
     Ok(Json(LanguagesResponse { date, languages }))
 }
 
-// GET /github/overall?date=YYYY-MM-DD&limit=&offset=
+// GET /github/overall?date=YYYY-MM-DD&limit=&offset=&lang=
 //
 // Response: 200 { date, repos } with the day's 'overall' repos by rank after skipping offset rows
 // (latest day when date is absent, limit 100 by default, capped at 1000); repos is empty past the end.
+// lang keeps only repos whose language matches, before offset and limit; no match is 200 with no repos.
 // 400 on a malformed date; 404 when that day has no rows.
 async fn list_overall(
     State(state): State<AppState>,
@@ -46,30 +47,38 @@ async fn list_overall(
     let date = parse_date(query.date.as_deref())?;
     let limit = clamp_limit(query.limit);
     let offset = clamp_offset(query.offset);
-    let rows = store::list_ranking(&state.db, "overall", date, limit, offset).await?;
+    let language = query.lang.as_deref();
+    let rows = store::list_ranking(&state.db, "overall", date, language, limit, offset).await?;
     let snapshot_date = match rows.first() {
         Some(first) => first.snapshot_date,
-        None => day_of_empty_page(&state, date, offset).await?,
+        None => day_of_empty_page(&state, date, language, offset).await?,
     };
     let repos = rows.into_iter().map(|row| row.repo).collect();
     Ok(Json(RankingResponse { date: snapshot_date, repos }))
 }
 
-/// Finds the day a page past the end belongs to, so it can answer 200 with no repos;
-/// NotFound when offset is 0 or the day has no rows at all.
+/// Finds the day an empty page (past the end, or no repo in `language`) belongs to, so it can
+/// answer 200 with no repos; NotFound when the day itself has no rows.
 async fn day_of_empty_page(
     state: &AppState,
     date: Option<NaiveDate>,
+    language: Option<&str>,
     offset: i64,
 ) -> Result<NaiveDate, ApiError> {
-    if offset == 0 {
+    if !can_page_be_empty(language, offset) {
         return Err(ApiError::NotFound);
     }
-    let first_rows = store::list_ranking(&state.db, "overall", date, 1, 0).await?;
+    let first_rows = store::list_ranking(&state.db, "overall", date, None, 1, 0).await?;
     first_rows
         .first()
         .map(|first| first.snapshot_date)
         .ok_or(ApiError::NotFound)
+}
+
+/// Returns true when an empty page may still belong to a day with rows: a language filter
+/// or an offset past the start; false means the day itself is missing.
+fn can_page_be_empty(language: Option<&str>, offset: i64) -> bool {
+    language.is_some() || offset > 0
 }
 
 /// Parses ?date= as YYYY-MM-DD; None when absent, BadRequest when malformed.
@@ -110,6 +119,16 @@ mod tests {
     #[test]
     fn clamp_limit_caps_at_max() {
         assert_eq!(clamp_limit(Some(5000)), 1000);
+    }
+
+    #[test]
+    fn first_page_without_language_cannot_be_empty() {
+        assert!(!can_page_be_empty(None, 0));
+    }
+
+    #[test]
+    fn first_page_with_language_can_be_empty() {
+        assert!(can_page_be_empty(Some("Nope"), 0));
     }
 
     #[test]
