@@ -3,13 +3,16 @@ use serde::{Deserialize, Serialize};
 
 /// One repo of a day's ranking: a github_repo_snapshots row joined to its github_repo_kinds row.
 ///
-/// kind is null and languages empty for a repo that has not been classified yet.
+/// kind is null and languages empty for a repo that has not been classified yet;
+/// description_ko and description_ja are null until its github_repo_descriptions row is written.
 #[derive(Debug, Clone, Serialize, sqlx::FromRow)]
 pub struct RepoRow {
     pub rank: i16,
     pub full_name: String,
     pub url: String,
     pub description: Option<String>,
+    pub description_ko: Option<String>,
+    pub description_ja: Option<String>,
     pub stars: i32,
     pub language: Option<String>,
     pub topics: Vec<String>,

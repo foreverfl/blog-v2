@@ -15,11 +15,13 @@ pub async fn list_ranking(
 ) -> Result<Vec<DatedRepoRow>, sqlx::Error> {
     sqlx::query_as::<_, DatedRepoRow>(
         r#"
-        SELECT s.snapshot_date, s.rank, s.full_name, s.url, s.description, s.stars,
+        SELECT s.snapshot_date, s.rank, s.full_name, s.url, s.description,
+               d.description_ko, d.description_ja, s.stars,
                s.language, s.topics, s.repo_created_at, s.stars_today,
                k.kind, COALESCE(k.languages, '{}') AS languages
         FROM collector.github_repo_snapshots s
         LEFT JOIN collector.github_repo_kinds k ON k.full_name = s.full_name
+        LEFT JOIN collector.github_repo_descriptions d ON d.full_name = s.full_name
         WHERE s.category = $1
           AND s.snapshot_date = COALESCE($2::date,
               (SELECT max(snapshot_date) FROM collector.github_repo_snapshots WHERE category = $1))
