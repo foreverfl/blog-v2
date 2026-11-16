@@ -6,7 +6,7 @@ use chrono::NaiveDate;
 use crate::config::AppState;
 use crate::types::ApiError;
 
-use super::model::{LanguagesResponse, ListOverallQuery, RankingResponse};
+use super::model::{KindsResponse, LanguagesResponse, ListOverallQuery, RankingResponse};
 use super::store;
 
 const DEFAULT_LIMIT: i64 = 100;
@@ -16,6 +16,16 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/overall", get(list_overall))
         .route("/languages", get(list_languages))
+        .route("/kinds", get(list_kinds))
+}
+
+// GET /github/kinds
+//
+// Response: 200 { kinds: [{ name, count }] } counting classified repos per kind, most first;
+// kinds is empty before anything is classified.
+async fn list_kinds(State(state): State<AppState>) -> Result<Json<KindsResponse>, ApiError> {
+    let kinds = store::count_kinds(&state.db).await?;
+    Ok(Json(KindsResponse { kinds }))
 }
 
 // GET /github/languages

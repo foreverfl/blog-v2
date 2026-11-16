@@ -94,9 +94,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /github/kinds:
+    get:
+      tags: [GitHub]
+      operationId: listKinds
+      summary: Count classified repos per kind
+      description: Counts the rows of collector.github_repo_kinds by kind, most first.
+      security: []
+      responses:
+        '200':
+          description: The kind counts; kinds is empty before anything is classified.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KindCounts'
 
 components:
   schemas:
+    KindCounts:
+      type: object
+      required: [kinds]
+      properties:
+        kinds:
+          type: array
+          items:
+            type: object
+            required: [name, count]
+            properties:
+              name:
+                type: string
+                example: ai-llm
+              count:
+                type: integer
+                example: 12
     LanguageCounts:
       type: object
       required: [date, languages]

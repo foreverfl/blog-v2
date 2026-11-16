@@ -66,3 +66,16 @@ pub struct LanguagesResponse {
     pub date: NaiveDate,
     pub languages: Vec<LanguageCount>,
 }
+
+/// How many classified repos carry one kind.
+#[derive(Debug, Serialize, sqlx::FromRow)]
+pub struct KindCount {
+    pub name: String,
+    pub count: i64,
+}
+
+/// Body of GET /github/kinds.
+#[derive(Debug, Serialize)]
+pub struct KindsResponse {
+    pub kinds: Vec<KindCount>,
+}
