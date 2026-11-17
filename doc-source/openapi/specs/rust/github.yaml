@@ -55,9 +55,15 @@ paths:
           schema:
             type: string
           example: Rust
+        - name: kind
+          in: query
+          description: Keeps only repos classified as this kind, before offset and limit count. With lang, a repo must match both.
+          schema:
+            type: string
+          example: ai-llm
       responses:
         '200':
-          description: The day and its repos. repos is empty when offset is past the last row or no repo has the lang.
+          description: The day and its repos. repos is empty when offset is past the last row or no repo matches lang or kind.
           content:
             application/json:
               schema:
@@ -94,9 +100,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /github/kinds:
+    get:
+      tags: [GitHub]
+      operationId: listKinds
+      summary: Count classified repos per kind
+      description: Counts the rows of collector.github_repo_kinds by kind, most first.
+      security: []
+      responses:
+        '200':
+          description: The kind counts; kinds is empty before anything is classified.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KindCounts'
 
 components:
   schemas:
+    KindCounts:
+      type: object
+      required: [kinds]
+      properties:
+        kinds:
+          type: array
+          items:
+            type: object
+            required: [name, count]
+            properties:
+              name:
+                type: string
+                example: ai-llm
+              count:
+                type: integer
+                example: 12
     LanguageCounts:
       type: object
       required: [date, languages]

@@ -1,9 +1,9 @@
 use chrono::NaiveDate;
 use sqlx::PgPool;
 
-use super::model::{DatedLanguageCount, DatedRepoRow};
+use super::model::{DatedLanguageCount, DatedRepoRow, KindCount};
 
-/// Lists one category's repos of a day by rank, only those whose `language` matches when given,
+/// Lists one category's repos of a day by rank, only those whose `language` and `kind` match when given,
 /// skipping `offset` rows and returning at most `limit`; the latest day when `date` is None.
 #[tracing::instrument(name = "github.list_ranking", skip(pool))]
 pub async fn list_ranking(
@@ -11,6 +11,7 @@ pub async fn list_ranking(
     category: &str,
     date: Option<NaiveDate>,
     language: Option<&str>,
+    kind: Option<&str>,
     limit: i64,
     offset: i64,
 ) -> Result<Vec<DatedRepoRow>, sqlx::Error> {
@@ -27,14 +28,16 @@ pub async fn list_ranking(
           AND s.snapshot_date = COALESCE($2::date,
               (SELECT max(snapshot_date) FROM collector.github_repo_snapshots WHERE category = $1))
           AND ($3::text IS NULL OR s.language = $3)
+          AND ($4::text IS NULL OR k.kind = $4)
         ORDER BY s.rank
-        LIMIT $4
-        OFFSET $5
+        LIMIT $5
+        OFFSET $6
         "#,
     )
     .bind(category)
     .bind(date)
     .bind(language)
+    .bind(kind)
     .bind(limit)
     .bind(offset)
     .fetch_all(pool)
@@ -55,6 +58,21 @@ pub async fn count_languages(pool: &PgPool) -> Result<Vec<DatedLanguageCount>, s
               (SELECT max(snapshot_date) FROM collector.github_repo_snapshots WHERE category = 'overall')
         GROUP BY snapshot_date, language
         ORDER BY count(*) DESC, language
+        "#,
+    )
+    .fetch_all(pool)
+    .await
+}
+
+/// Counts classified repos per kind, most first; empty when nothing is classified yet.
+#[tracing::instrument(name = "github.count_kinds", skip(pool))]
+pub async fn count_kinds(pool: &PgPool) -> Result<Vec<KindCount>, sqlx::Error> {
+    sqlx::query_as::<_, KindCount>(
+        r#"
+        SELECT kind AS name, count(*) AS count
+        FROM collector.github_repo_kinds
+        GROUP BY kind
+        ORDER BY count(*) DESC, kind
         "#,
     )
     .fetch_all(pool)

@@ -6,7 +6,7 @@ use chrono::NaiveDate;
 use crate::config::AppState;
 use crate::types::ApiError;
 
-use super::model::{LanguagesResponse, ListOverallQuery, RankingResponse};
+use super::model::{KindsResponse, LanguagesResponse, ListOverallQuery, RankingResponse};
 use super::store;
 
 const DEFAULT_LIMIT: i64 = 100;
@@ -16,6 +16,16 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/overall", get(list_overall))
         .route("/languages", get(list_languages))
+        .route("/kinds", get(list_kinds))
+}
+
+// GET /github/kinds
+//
+// Response: 200 { kinds: [{ name, count }] } counting classified repos per kind, most first;
+// kinds is empty before anything is classified.
+async fn list_kinds(State(state): State<AppState>) -> Result<Json<KindsResponse>, ApiError> {
+    let kinds = store::count_kinds(&state.db).await?;
+    Ok(Json(KindsResponse { kinds }))
 }
 
 // GET /github/languages
@@ -34,11 +44,11 @@ async fn list_languages(
     Ok(Json(LanguagesResponse { date, languages }))
 }
 
-// GET /github/overall?date=YYYY-MM-DD&limit=&offset=&lang=
+// GET /github/overall?date=YYYY-MM-DD&limit=&offset=&lang=&kind=
 //
 // Response: 200 { date, repos } with the day's 'overall' repos by rank after skipping offset rows
 // (latest day when date is absent, limit 100 by default, capped at 1000); repos is empty past the end.
-// lang keeps only repos whose language matches, before offset and limit; no match is 200 with no repos.
+// lang and kind keep only repos that match both, before offset and limit; no match is 200 with no repos.
 // 400 on a malformed date; 404 when that day has no rows.
 async fn list_overall(
     State(state): State<AppState>,
@@ -48,37 +58,39 @@ async fn list_overall(
     let limit = clamp_limit(query.limit);
     let offset = clamp_offset(query.offset);
     let language = query.lang.as_deref();
-    let rows = store::list_ranking(&state.db, "overall", date, language, limit, offset).await?;
+    let kind = query.kind.as_deref();
+    let rows =
+        store::list_ranking(&state.db, "overall", date, language, kind, limit, offset).await?;
     let snapshot_date = match rows.first() {
         Some(first) => first.snapshot_date,
-        None => day_of_empty_page(&state, date, language, offset).await?,
+        None => day_of_empty_page(&state, date, language.or(kind), offset).await?,
     };
     let repos = rows.into_iter().map(|row| row.repo).collect();
     Ok(Json(RankingResponse { date: snapshot_date, repos }))
 }
 
-/// Finds the day an empty page (past the end, or no repo in `language`) belongs to, so it can
-/// answer 200 with no repos; NotFound when the day itself has no rows.
+/// Finds the day an empty page (past the end, or no repo matching a `filter` such as lang or kind)
+/// belongs to, so it can answer 200 with no repos; NotFound when the day itself has no rows.
 async fn day_of_empty_page(
     state: &AppState,
     date: Option<NaiveDate>,
-    language: Option<&str>,
+    filter: Option<&str>,
     offset: i64,
 ) -> Result<NaiveDate, ApiError> {
-    if !can_page_be_empty(language, offset) {
+    if !can_page_be_empty(filter, offset) {
         return Err(ApiError::NotFound);
     }
-    let first_rows = store::list_ranking(&state.db, "overall", date, None, 1, 0).await?;
+    let first_rows = store::list_ranking(&state.db, "overall", date, None, None, 1, 0).await?;
     first_rows
         .first()
         .map(|first| first.snapshot_date)
         .ok_or(ApiError::NotFound)
 }
 
-/// Returns true when an empty page may still belong to a day with rows: a language filter
+/// Returns true when an empty page may still belong to a day with rows: a lang or kind filter
 /// or an offset past the start; false means the day itself is missing.
-fn can_page_be_empty(language: Option<&str>, offset: i64) -> bool {
-    language.is_some() || offset > 0
+fn can_page_be_empty(filter: Option<&str>, offset: i64) -> bool {
+    filter.is_some() || offset > 0
 }
 
 /// Parses ?date= as YYYY-MM-DD; None when absent, BadRequest when malformed.
