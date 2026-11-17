@@ -3,7 +3,7 @@ import { listUrl } from "@/components/github/list-url";
 import LoadMoreSentinel from "@/components/molecules/LoadMoreSentinel";
 import { RUST_API } from "@/lib/api-base";
 import "@/lib/i18n";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -26,18 +26,36 @@ export type RepoRow = {
 // One tab until the trending collection lands.
 const TABS = ["overall"];
 
+type LanguageCount = { name: string; count: number };
+
 /**
  * Reads one page of the latest day's overall ranking from the rust api.
  *
  * @param offset - rows already loaded
+ * @param lang - "Rust", or "" for every language
  * @returns the page's repos by rank; [] past the end or when the api has no day yet (404)
  */
-async function fetchOverall(offset: number): Promise<RepoRow[]> {
-  const response = await fetch(`${RUST_API}${listUrl({ offset })}`);
+async function fetchOverall(offset: number, lang: string): Promise<RepoRow[]> {
+  const response = await fetch(`${RUST_API}${listUrl({ offset, lang })}`);
   if (response.status === 404) return [];
   if (!response.ok) throw new Error(`GET /github/overall: ${response.status}`);
   const body: { date: string; repos: RepoRow[] } = await response.json();
   return body.repos;
+}
+
+/**
+ * Reads the latest day's languages for the filter, most repos first.
+ *
+ * @returns [{ name: "TypeScript", count: 21 }, ...]; [] when the api has no day yet (404)
+ */
+async function fetchLanguages(): Promise<LanguageCount[]> {
+  const response = await fetch(`${RUST_API}/github/languages`);
+  if (response.status === 404) return [];
+  if (!response.ok)
+    throw new Error(`GET /github/languages: ${response.status}`);
+  const body: { date: string; languages: LanguageCount[] } =
+    await response.json();
+  return body.languages;
 }
 
 const CELL =
@@ -56,6 +74,11 @@ export default function GithubRank({ lan }: { lan: string }) {
   }, [lan, i18n]);
   const [tab, setTab] = useState(TABS[0]);
   const [selected, setSelected] = useState<RepoRow | null>(null);
+  const [lang, setLang] = useState("");
+  const { data: languages = [] } = useQuery({
+    queryKey: ["github", "languages"],
+    queryFn: fetchLanguages,
+  });
   const {
     data: pages,
     isSuccess,
@@ -63,8 +86,8 @@ export default function GithubRank({ lan }: { lan: string }) {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ["github", tab],
-    queryFn: ({ pageParam }) => fetchOverall(pageParam),
+    queryKey: ["github", tab, lang],
+    queryFn: ({ pageParam }) => fetchOverall(pageParam, lang),
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) =>
       lastPage.length === 0 ? undefined : allPages.flat().length,
@@ -88,6 +111,19 @@ export default function GithubRank({ lan }: { lan: string }) {
             {key}
           </button>
         ))}
+        <select
+          value={lang}
+          onChange={(event) => setLang(event.target.value)}
+          aria-label={t("github_col_language")}
+          className="ml-auto rounded-md border border-gray-400 bg-transparent px-2 py-1 dark:border-gray-600"
+        >
+          <option value="">{t("github_lang_all")}</option>
+          {languages.map((language) => (
+            <option key={language.name} value={language.name}>
+              {language.name} ({language.count})
+            </option>
+          ))}
+        </select>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">

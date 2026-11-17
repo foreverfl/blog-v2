@@ -49,9 +49,15 @@ paths:
             type: integer
             default: 0
             minimum: 0
+        - name: lang
+          in: query
+          description: Keeps only repos whose primary language (as GitHub reports it) equals this value, before offset and limit count.
+          schema:
+            type: string
+          example: Rust
       responses:
         '200':
-          description: The day and its repos. repos is empty when offset is past the last row.
+          description: The day and its repos. repos is empty when offset is past the last row or no repo has the lang.
           content:
             application/json:
               schema:
@@ -68,9 +74,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /github/languages:
+    get:
+      tags: [GitHub]
+      operationId: listLanguages
+      summary: Count the latest day's overall repos per language
+      description: Counts the latest day's 'overall' repos by their main language, most first. Repos with no language are left out.
+      security: []
+      responses:
+        '200':
+          description: The latest day and its language counts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LanguageCounts'
+        '404':
+          description: No overall rows collected yet.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
 components:
   schemas:
+    LanguageCounts:
+      type: object
+      required: [date, languages]
+      properties:
+        date:
+          type: string
+          format: date
+        languages:
+          type: array
+          items:
+            type: object
+            required: [name, count]
+            properties:
+              name:
+                type: string
+                example: TypeScript
+              count:
+                type: integer
+                example: 21
     Error:
       type: object
       required: [error]
