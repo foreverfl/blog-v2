@@ -1,5 +1,6 @@
 mod auth;
 mod config;
+mod github;
 mod handlers;
 mod places;
 mod routes;

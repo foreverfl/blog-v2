@@ -71,6 +71,7 @@ pub fn create_router(state: AppState) -> Router {
         .nest("/comments", comments::router())
         .nest("/likes", likes::router())
         .nest("/places", crate::places::router())
+        .nest("/github", crate::github::router())
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(|req: &axum::http::Request<_>| {
