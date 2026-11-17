@@ -1,4 +1,5 @@
 import type { RepoRow } from "@/components/github/GithubRank";
+import { pickDescription } from "@/components/github/description";
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -9,14 +10,15 @@ type RepoModalProps = {
 };
 
 /**
- * Native dialog for one repo row: the name linking to GitHub, full description, category, languages, stars and creation date.
+ * Native dialog for one repo row: the name linking to GitHub, description in the page language (original below it when translated), topics, category, languages, stars and creation date.
  *
  * @param props - { repo, onClose }
  * @returns the dialog, open whenever repo is not null
  */
 export default function RepoModal({ repo, onClose }: RepoModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const shownDescription = repo ? pickDescription(i18n.language, repo) : null;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -50,8 +52,28 @@ export default function RepoModal({ repo, onClose }: RepoModalProps) {
             </a>
           </h2>
           <p className="mt-2 whitespace-pre-wrap text-sm">
-            {repo.description ?? "—"}
+            {shownDescription ?? "—"}
           </p>
+          {repo.description && shownDescription !== repo.description && (
+            <p className="mt-1 whitespace-pre-wrap text-xs text-gray-500">
+              {repo.description}
+            </p>
+          )}
+          {repo.topics.length > 0 && (
+            <ul
+              aria-label={t("github_field_topics")}
+              className="mt-3 flex flex-wrap gap-1"
+            >
+              {repo.topics.map((topic) => (
+                <li
+                  key={topic}
+                  className="rounded-full bg-gray-100 px-2 py-0.5 text-xs dark:bg-neutral-800"
+                >
+                  {topic}
+                </li>
+              ))}
+            </ul>
+          )}
           <dl className="mt-4 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
             <dt>{t("github_field_kind")}</dt>
             <dd>{repo.kind ?? "—"}</dd>
@@ -61,6 +83,12 @@ export default function RepoModal({ repo, onClose }: RepoModalProps) {
             </dd>
             <dt>{t("github_col_stars")}</dt>
             <dd>{repo.stars.toLocaleString("en-US")}</dd>
+            {repo.stars_today !== null && (
+              <>
+                <dt>{t("github_field_stars_today")}</dt>
+                <dd>{repo.stars_today.toLocaleString("en-US")}</dd>
+              </>
+            )}
             <dt>{t("github_field_created_at")}</dt>
             <dd>{repo.repo_created_at.slice(0, 10)}</dd>
           </dl>
