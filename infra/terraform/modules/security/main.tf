@@ -69,8 +69,8 @@
 # =============================================================================
 
 locals {
-  db_instance_name  = "parapara-postgres"
-  app_instance_name = "parapara-server"
+  db_instance_name  = "parapara-data"
+  app_instance_name = "parapara-was"
   db_postgres_port  = 5431
   db_redis_port     = 6379
 }
