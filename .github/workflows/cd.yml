@@ -163,9 +163,22 @@ jobs:
             # Cleanup old images
             docker image prune -f
 
+  deploy-web:
+    name: Deploy web
+    needs: [deploy]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.VERSION }}
+      # Cloudflare Pages builds the production branch, so point it at this release
+      - run: git push --force origin HEAD:refs/heads/production
+
   notify-failure:
     name: Notify CD failure
-    needs: [build-auth, build-rust, build-go, build-haskell, deploy]
+    needs: [build-auth, build-rust, build-go, build-haskell, deploy, deploy-web]
     if: failure()
     runs-on: ubuntu-24.04
     steps:
