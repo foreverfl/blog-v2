@@ -72,9 +72,17 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VER: ${{ steps.ver.outputs.ver }}
+          LAST: ${{ steps.ver.outputs.last }}
           NOTES: ${{ steps.changelog.outputs.changelog }}
           SHA: ${{ github.sha }}
         run: |
+          # The action can only link to a sha because the new tag does not exist yet.
+          if [ -n "$LAST" ]; then
+            NOTES="$NOTES
+
+          **Full Changelog**: https://github.com/${{ github.repository }}/compare/$LAST...$VER"
+          fi
+
           # Drop existing drafts so we never accumulate stale ones.
           gh release list --limit 50 --json tagName,isDraft \
             --jq '.[] | select(.isDraft) | .tagName' \
