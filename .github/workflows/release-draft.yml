@@ -59,11 +59,10 @@ jobs:
           fi
           echo "ver=$ver" >> "$GITHUB_OUTPUT"
           echo "last=$last" >> "$GITHUB_OUTPUT"
-      - name: Build changelog from commits
+      - name: Build changelog from pull requests
         id: changelog
         uses: mikepenz/release-changelog-builder-action@v6
         with:
-          mode: COMMIT
           configuration: .github/changelog-config.json
           fromTag: ${{ steps.ver.outputs.last }}
           toTag: ${{ github.sha }}
