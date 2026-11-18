@@ -10,7 +10,7 @@
     { "title": "## 🔬 Spikes",        "rules": [{ "pattern": "^spike(\\(.*\\))?:",      "on_property": "title", "flags": "iu" }] }
   ],
   "template": "#{{CHANGELOG}}\n#{{UNCATEGORIZED}}\n\n**Full Changelog**: #{{RELEASE_DIFF}}",
-  "commit_template": "- #{{TITLE}} (#{{MERGE_SHA}})",
+  "pr_template": "- #{{TITLE}} (##{{NUMBER}})",
   "empty_template": "- No changes",
   "uncategorized_title": "## 🗂 Other"
 }
